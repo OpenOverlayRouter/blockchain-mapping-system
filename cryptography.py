@@ -73,16 +73,25 @@ def address_to_ripemd160(address):
     return base58.b58decode_check(address).hex()
 
 
-def verify_sign(pubkey, sign, digest):
-    vk = ecdsa.VerifyingKey.from_string(bytes.fromhex(pubkey[2:]), curve=ecdsa.SECP256k1)
-    # Alert, Bitcoin 01 hashtype
-    s, junk = ecdsa.der.remove_sequence(bytes.fromhex(sign))
-    if junk != '':
-        print ('JUNK', junk.hex())
-    #assert(junk == '')
-    print(s)
-    x, s = ecdsa.der.remove_integer(s)
-    y, s = ecdsa.der.remove_integer(s)
-    s = '{:064x}{:064x}'.format(x,y)
-    verify = vk.verify_digest(bytes.fromhex(s), bytes.fromhex(digest), sigdecode=ecdsa.util.sigdecode_der)
-    return verify
+def verify_signature(pubkey, signature, digest):
+    _pubkey = bytes.fromhex(pubkey[2:])
+    _signature = bytes.fromhex(signature)
+    _digest = bytes.fromhex(digest)
+    vk = ecdsa.VerifyingKey.from_string(_pubkey, curve=ecdsa.SECP256k1)
+    try:
+        vk.verify_digest(_signature, _digest, sigdecode=ecdsa.util.sigdecode_der)
+        return True
+    except:
+        return False
+    
+
+def main():
+    # TESTS
+    pubkey = '042e930f39ba62c6534ee98ed20ca98959d34aa9e057cda01cfd422c6bab3667b76426529382c23f42b9b08d7832d4fee1d6b437a8526e59667ce9c4e9dcebcabb'
+    sig = '30450221009908144ca6539e09512b9295c8a27050d478fbb96f8addbc3d075544dc41328702201aa528be2b907d316d2da068dd9eb1e23243d97e444d59290d2fddf25269ee0e'
+    digest = 'c2d48f45d7fbeff644ddb72b0f60df6c275f0943444d7df8cc851b3d55782669'
+    print (verify_signature(pubkey, sig, digest))
+
+
+if __name__ == "__main__":
+    main()
