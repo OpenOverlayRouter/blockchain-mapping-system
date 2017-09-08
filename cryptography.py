@@ -49,7 +49,7 @@ def validate_pubkey(pubkey):
 
 def double_sha256(data):
     single = hashlib.sha256(bytes.fromhex(data)).digest()
-    return hashlib.sha256(single).hexdigest()
+    return hashlib.sha256(single).digest()
 
 
 def pubkey_to_ripemd160(pubkey):
@@ -59,7 +59,7 @@ def pubkey_to_ripemd160(pubkey):
 
 def ripemd160_to_address(r160):
     pubkey_ver_r160 = '00' + r160
-    checksum = double_sha256(pubkey_ver_r160)
+    checksum = double_sha256(pubkey_ver_r160).hex()
     address = pubkey_ver_r160 + checksum[:8]
     return base58.b58encode(bytes.fromhex(address))
 
@@ -73,10 +73,18 @@ def address_to_ripemd160(address):
     return base58.b58decode_check(address).hex()
 
 
+def generate_signature(pivkey, data):
+    _pivkey = bytes.fromhex(pivkey)
+    _data = double_sha256(data)
+    sk = ecdsa.SigningKey.from_string(_pivkey, curve=ecdsa.SECP256k1)
+    return sk.sign_digest(_data, sigencode=ecdsa.util.sigdecode_der) # 01 hashtype?
+
+
 def verify_signature(pubkey, signature, digest):
     _pubkey = bytes.fromhex(pubkey[2:])
     _signature = bytes.fromhex(signature)
     _digest = bytes.fromhex(digest)
+    #_data = double_sha256(data)
     vk = ecdsa.VerifyingKey.from_string(_pubkey, curve=ecdsa.SECP256k1)
     try:
         vk.verify_digest(_signature, _digest, sigdecode=ecdsa.util.sigdecode_der)
