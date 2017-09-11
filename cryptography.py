@@ -70,7 +70,12 @@ def pubkey_to_address(pubkey):
 
 
 def address_to_ripemd160(address):
-    return base58.b58decode_check(address).hex()
+    decode = base58.b58decode(address).hex()
+    decode, checksum = decode[:-8], decode[-8:]
+    digest = double_sha256(decode).hex()
+    if checksum != digest[:8]:
+        raise ValueError("Invalid checksum")
+    return decode[2:]
 
 
 def generate_signature(pivkey, data):
@@ -80,14 +85,13 @@ def generate_signature(pivkey, data):
     return sk.sign_digest(_data, sigencode=ecdsa.util.sigdecode_der) # 01 hashtype?
 
 
-def verify_signature(pubkey, signature, digest):
-    _pubkey = bytes.fromhex(pubkey[2:])
+def verify_signature(pubkey, signature, data):
     _signature = bytes.fromhex(signature)
-    _digest = bytes.fromhex(digest)
-    #_data = double_sha256(data)
-    vk = ecdsa.VerifyingKey.from_string(_pubkey, curve=ecdsa.SECP256k1)
+    digest = double_sha256(data)
     try:
-        vk.verify_digest(_signature, _digest, sigdecode=ecdsa.util.sigdecode_der)
+        _pubkey = bytes.fromhex(uncompress_pubkey(pubkey)[2:])
+        vk = ecdsa.VerifyingKey.from_string(_pubkey, curve=ecdsa.SECP256k1)
+        vk.verify_digest(_signature, digest, sigdecode=ecdsa.util.sigdecode_der)
         return True
     except:
         return False
@@ -96,9 +100,16 @@ def verify_signature(pubkey, signature, digest):
 def main():
     # TESTS
     pubkey = '042e930f39ba62c6534ee98ed20ca98959d34aa9e057cda01cfd422c6bab3667b76426529382c23f42b9b08d7832d4fee1d6b437a8526e59667ce9c4e9dcebcabb'
+    pubkey = compress_pubkey(pubkey)
     sig = '30450221009908144ca6539e09512b9295c8a27050d478fbb96f8addbc3d075544dc41328702201aa528be2b907d316d2da068dd9eb1e23243d97e444d59290d2fddf25269ee0e'
     digest = 'c2d48f45d7fbeff644ddb72b0f60df6c275f0943444d7df8cc851b3d55782669'
-    print (verify_signature(pubkey, sig, digest))
+    data = '01000000018dd4f5fbd5e980fc02f35c6ce145935b11e284605bf599a13c6d41\
+            5db55d07a1000000001976a91446af3fb481837fadbb421727f9959c2d32a368\
+            2988acffffffff0200719a81860000001976a914df1bd49a6c9e34dfa8631f2c\
+            54cf39986027501b88ac009f0a5362000000434104cd5e9726e6afeae357b180\
+            6be25a4c3d3811775835d235417ea746b7db9eeab33cf01674b944c64561ce33\
+            88fa1abd0fa88b06c44ce81e2234aa70fe578d455dac0000000001000000'
+    print (verify_signature(pubkey, sig, data))
 
 
 if __name__ == "__main__":
