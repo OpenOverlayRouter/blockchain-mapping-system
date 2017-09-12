@@ -52,30 +52,35 @@ def double_sha256(data):
     return hashlib.sha256(single).digest()
 
 
-def pubkey_to_ripemd160(pubkey):
+def pubkey_to_hash160(pubkey):
     pubkey_sha256 = hashlib.sha256(bytes.fromhex(pubkey)).digest()
     return hashlib.new('ripemd160', pubkey_sha256).hexdigest()
 
 
-def ripemd160_to_address(r160):
-    pubkey_ver_r160 = '00' + r160
+def hash160_to_address(r160, p2sh=False):
+    pubkey_ver_r160 = '00' + r160 if not p2sh else '05' + r160
     checksum = double_sha256(pubkey_ver_r160).hex()
     address = pubkey_ver_r160 + checksum[:8]
     return base58.b58encode(bytes.fromhex(address))
 
 
 def pubkey_to_address(pubkey):
-    r160 = pubkey_to_ripemd160(pubkey)
-    return ripemd160_to_address(r160)
+    r160 = pubkey_to_hash160(pubkey)
+    return hash160_to_address(r160)
 
 
-def address_to_ripemd160(address):
+def address_to_hash160(address):
     decode = base58.b58decode(address).hex()
     decode, checksum = decode[:-8], decode[-8:]
     digest = double_sha256(decode).hex()
     if checksum != digest[:8]:
         raise ValueError("Invalid checksum")
     return decode[2:]
+
+
+def redeemScript_to_address(script):
+    r160 = pubkey_to_hash160(script)
+    return hash160_to_address(r160, p2sh=True)
 
 
 def generate_signature(pivkey, data):
