@@ -19,6 +19,23 @@ def length_to_bytes(n):
     return r
 
 
+def len_script_to_bytes(n):
+    r = b''
+    if n//2 <= 75:
+        length = 1
+    elif n//2 <= 2**8-1:    # PushData1
+        length = 1
+        r += bytes.fromhex('4c')
+    elif n//2 <= 2**16-1:   # PushData2
+        length = 2
+        r += bytes.fromhex('4d')
+    else:                   # PushData4
+        length = 4
+        r += bytes.fromhex('4e')
+    r += int(n//2).to_bytes(length=length, byteorder='little')
+    return r
+
+
 def make_output(output):
     script, ips = output
     return bytes.fromhex(script)
@@ -54,8 +71,11 @@ def make_transaction(privkeys, inputs, outputs, locktime):
         tx_aux += prev_scripts[i]
         tx_aux += tx_out
         sig = cr.generate_signature(privkeys[i], tx_aux)
-        script_sig = len(sig) + sig + len(pub_keys[i]) + pub_keys[i]
-        script_sigs.append(bytes.fromhex(len(script_sig) + script_sig))
+        script_sig = int(len(sig)//2).to_bytes(length=1, byteorder='little') + sig
+        script_sig += int(len(pub_keys[i])//2).to_bytes(length=1, byteorder='little')
+        script_sig += bytes.fromhex(pub_keys[i])
+        script_sig = int(len(script_sig)//2).to_bytes(length=1, byteorder='little') + script_sig
+        script_sigs.append(script_sig)
 
     tx_in = b''
     for i, input in enumerate(inputs):
@@ -64,7 +84,7 @@ def make_transaction(privkeys, inputs, outputs, locktime):
         tx_in += prev_scripts[i]
         tx_in += script_sigs[i]
 
-    tx += tx_in + tx_out + bytes.fromhex(locktime)
+    tx += tx_in + tx_out + locktime.to_bytes(length=4, byteorder='little')
     return tx
 
 

@@ -92,7 +92,7 @@ def generate_signature(pivkey, data):
     _pivkey = bytes.fromhex(pivkey)
     dat = double_sha256(data)
     sk = ecdsa.SigningKey.from_string(_pivkey, curve=ecdsa.SECP256k1)
-    return sk.sign_digest(dat, sigencode=ecdsa.util.sigdecode_der)
+    return sk.sign_digest(dat, sigencode=ecdsa.util.sigencode_der)
 
 
 def verify_signature(pubkey, signature, data):
