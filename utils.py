@@ -1,4 +1,6 @@
 from rlp.sedes import BigEndianInt, Binary
+import rlp
+from Crypto.Hash import keccak
 
 # 58 character alphabet used
 alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
@@ -12,11 +14,28 @@ def b58encode(s):
         n //= 58
     return result
 
+
 def b58decode(s):
     result = 0
     for i in range(0, len(s)):
         result = result * 58 + alphabet.index(s[i])
     return '{:x}'.format(result).zfill(50)
+
+
+def to_string(value):
+    return str(value)
+
+
+def sha3(seed):
+    return sha3_256(to_string(seed))
+
+
+def sha3rlp(x):
+    return sha3(rlp.encode(x))
+
+
+def sha3_256(x):
+    return keccak.new(digest_bits=256, data=x).digest()
 
 address = Binary.fixed_length(20, allow_empty=True)
 int20 = BigEndianInt(20)

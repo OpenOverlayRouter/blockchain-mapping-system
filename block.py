@@ -3,6 +3,7 @@ import transaction
 import trie
 from rlp.sedes import big_endian_int, Binary, binary, CountableList
 from utils import hash32, trie_root
+from Crypto.Hash import keccak
 
 class BlockHeader:
     fields = [
@@ -14,9 +15,11 @@ class BlockHeader:
         ('signer_addr')
     ]
 
-    def __init__(self):
+    def __init__(self, extra_data):
         self.tx_root_trie = trie.BLANK_NODE
         self.timestamp = big_endian_int
+        self.extra_data = extra_data
+
 
 class Block:
     fields = [
