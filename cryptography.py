@@ -18,9 +18,12 @@ def random_key():
     return hashlib.sha256(entropy.encode('utf-8')).hexdigest()
 
 
-def privkey_to_pubkey(privkey):
+def privkey_to_pubkey(privkey, compressed=True):
     sk = ecdsa.SigningKey.from_string(bytes.fromhex(privkey), curve=ecdsa.SECP256k1)
-    return ('04' + sk.get_verifying_key().to_string().hex())
+    pubkey = '04' + sk.get_verifying_key().to_string().hex()
+    if compressed:
+        return compress_pubkey(pubkey)
+    return (pubkey)
 
 
 def compress_pubkey(pubkey):
@@ -48,7 +51,9 @@ def validate_pubkey(pubkey):
 
 
 def double_sha256(data):
-    single = hashlib.sha256(bytes.fromhex(data)).digest()
+    if type(data) == str:
+        data = bytes.fromhex(data)
+    single = hashlib.sha256(data).digest()
     return hashlib.sha256(single).digest()
 
 
@@ -85,9 +90,9 @@ def redeemScript_to_address(script):
 
 def generate_signature(pivkey, data):
     _pivkey = bytes.fromhex(pivkey)
-    _data = double_sha256(data)
+    dat = double_sha256(data)
     sk = ecdsa.SigningKey.from_string(_pivkey, curve=ecdsa.SECP256k1)
-    return sk.sign_digest(_data, sigencode=ecdsa.util.sigdecode_der) # 01 hashtype?
+    return sk.sign_digest(dat, sigencode=ecdsa.util.sigdecode_der)
 
 
 def verify_signature(pubkey, signature, data):
