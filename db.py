@@ -24,22 +24,13 @@ class _EphemDB(BaseDB):
         self.kv = self.db
 
     def get(self, key):
-        try:
-            return self.db.Get(key)
-        except KeyError:
-            print("leveldb get error")
+        return self.db.get(key)
 
     def put(self, key, value):
-        try:
-            return self.db.Put(key, value)
-        except KeyError:
-            print("leveldb put error")
+        return self.db.put(key, value)
 
     def delete(self, key):
-        try:
-            return self.db.Delete(key)
-        except KeyError:
-            print("leveldb delete error")
+        return self.db.delete(key)
 
     def commit(self):
         pass
