@@ -1,13 +1,8 @@
-from ethereum import utils
-from ethereum.slogging import get_logger
+import utils
+
 from rlp.utils import str_to_bytes
 import sys
-if sys.version_info.major == 2:
-    from repoze.lru import lru_cache
-else:
-    from functools import lru_cache
 
-log = get_logger('db')
 
 
 databases = {}

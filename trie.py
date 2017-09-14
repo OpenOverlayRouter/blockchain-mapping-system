@@ -3,7 +3,9 @@ import rlp
 import leveldb
 from pprint import pprint
 import random
+import string
 from rlp.utils import decode_hex, ascii_chr, str_to_bytes
+import sys
 
 (
     NODE_TYPE_BLANK,
@@ -21,6 +23,29 @@ NIBBLE_TERMINATOR = 16
 
 def is_key_value_type(node_type):
     return node_type in [NODE_TYPE_LEAF,NODE_TYPE_EXTENSION]
+
+def encode_optimized(item):
+    """RLP encode (a nested sequence of) bytes"""
+    if isinstance(item, bytes):
+        if len(item) == 1 and ord(item) < 128:
+            return item
+        prefix = length_prefix(len(item), 128)
+    else:
+        item = b''.join([encode_optimized(x) for x in item])
+        prefix = length_prefix(len(item), 192)
+    return prefix + item
+
+def length_prefix(length, offset):
+    """Construct the prefix to lists or strings denoting their length.
+    :param length: the length of the item in bytes
+    :param offset: ``0x80`` when encoding raw bytes, ``0xc0`` when encoding a
+                   list
+    """
+    if length < 56:
+        return chr(offset + length)
+    else:
+        length_string = utils.int_to_big_endian(length)
+    return chr(offset + 56 - 1 + len(length_string)) + length_string
 
 hti = {}
 for i, c in enumerate(b'0123456789abcdef'):
@@ -116,9 +141,9 @@ class Trie(object):
         return self._root_hash
 
     def _update_root_hash(self):
-        val = rlp.encode(self.root_node)
+        val = encode_optimized(self.root_node)
         key = utils.sha3(val)
-        self.db.put(key, str_to_bytes(val))
+        self.db.Put(key, str_to_bytes(val))
         self._root_hash = key
 
     @root_hash.setter
@@ -150,18 +175,29 @@ class Trie(object):
             self._delete_child_storage(self._decode_to_node(node[1]))
 
     def _encode_node(self, node, put_in_db=True):
+        #print("NODE")
+        #print (node)
         if node == BLANK_NODE:
+            print("RETURN BLANK NODE")
             return BLANK_NODE
-        rlpnode = rlp.encode(node)
+        rlpnode = encode_optimized(node)
         if len(rlpnode) < 32:
+            print("RETURN NODE")
             return node
+        #print("NO NEW NODE")
+
+        hashkey = utils.sha3(rlpnode)
+        if put_in_db:
+            self.db.Put(hashkey, str_to_bytes(rlpnode))
+
+        return hashkey
 
     def _decode_to_node(self, encoded):
         if encoded == BLANK_NODE:
             return BLANK_NODE
         if isinstance(encoded, list):
             return encoded
-        o = rlp.decode(self.db.get(encoded))
+        o = rlp.decode(self.db.Get(encoded))
         return o
 
     def _get_node_type(self, node):
@@ -215,7 +251,7 @@ class Trie(object):
                 node[key[0]] = self._encode_node(new_node)
             return node
 
-        elif utils.is_key_value_type(node_type):
+        elif is_key_value_type(node_type):
             return self._update_kv_node(node, key, value)
 
     def _update_and_delete_storage(self, node, key, value):
@@ -223,6 +259,8 @@ class Trie(object):
         new_node = self._update(node, key, value)
         if old_node != new_node:
             self._delete_node_storage(old_node)
+        #print("NEW_NODE")
+        #print(new_node)
         return new_node
 
     def _update_kv_node(self, node, key, value):
@@ -523,7 +561,11 @@ class Trie(object):
         if node == BLANK_NODE:
             return
         # assert isinstance(node, list)
+        #print("NODE")
+        #print(node)
         encoded = self._encode_node(node, put_in_db=False)
+
+        #print (encoded)
         if len(encoded) < 32:
             return
         """
@@ -840,8 +882,20 @@ class Trie(object):
 
 db = leveldb.LevelDB('./db')
 t = Trie(db)
-for i in range(0,1000):
-    key = utils.sha3(random.randint());
-    t.update("pene", "prah")
+
+for i in range(0,10000):
+    value = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(20))
+    key = utils.sha3(value);
+    t.update(str(key), str(value))
+print(value)
+print(t.get(key))
+"""
+print("SYS:")
+print(sys.version_info.major)
+for i in range(10000):
+    t.update(str(i), str(i**3))
+    """
+"""
 l = vars(t)
 pprint(l)
+"""
