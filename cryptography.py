@@ -90,16 +90,20 @@ def redeemScript_to_address(script):
 
 def generate_signature(pivkey, data):
     _pivkey = bytes.fromhex(pivkey)
-    dat = double_sha256(data)
+    _data = double_sha256(data)
     sk = ecdsa.SigningKey.from_string(_pivkey, curve=ecdsa.SECP256k1)
-    return sk.sign_digest(dat, sigencode=ecdsa.util.sigencode_der)
+    return sk.sign_digest(_data, sigencode=ecdsa.util.sigencode_der)
 
 
 def verify_signature(pubkey, signature, data):
+    if pubkey[:2] != '04':
+        _pubkey = uncompress_pubkey(pubkey)
+    else:
+        _pubkey = pubkey
+    _pubkey = bytes.fromhex(_pubkey[2:])
     _signature = bytes.fromhex(signature)
     digest = double_sha256(data)
     try:
-        _pubkey = bytes.fromhex(uncompress_pubkey(pubkey)[2:])
         vk = ecdsa.VerifyingKey.from_string(_pubkey, curve=ecdsa.SECP256k1)
         vk.verify_digest(_signature, digest, sigdecode=ecdsa.util.sigdecode_der)
         return True

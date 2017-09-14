@@ -9,30 +9,10 @@ def length_to_bytes(n):
     elif n <= 0xFFFF:
         length = 2
         r += bytes.fromhex('fd') 
-    elif n <= 0xFFFFFFFF:
+    else:
         length = 4
         r += bytes.fromhex('fe')
-    else:
-        length = 8
-        r += bytes.fromhex('ff')
     r += n.to_bytes(length=length, byteorder='little')
-    return r
-
-
-def len_script_to_bytes(n):
-    r = b''
-    if n//2 <= 75:
-        length = 1
-    elif n//2 <= 2**8-1:    # PushData1
-        length = 1
-        r += bytes.fromhex('4c')
-    elif n//2 <= 2**16-1:   # PushData2
-        length = 2
-        r += bytes.fromhex('4d')
-    else:                   # PushData4
-        length = 4
-        r += bytes.fromhex('4e')
-    r += int(n//2).to_bytes(length=length, byteorder='little')
     return r
 
 
@@ -45,6 +25,36 @@ def get_script(input):
     return bytes.fromhex('0000000000000000')
 
 
+def get_transaction_id(transaction):
+    tx = b''
+    input_count = transaction[4]
+    tx += transaction[:5]
+    if input_count == 0xfd:
+        input_count = int.from_bytes(transaction[5:7], byteorder='little')
+        tx += transaction[5:7]
+    elif input_count == 0xfe:
+        input_count = int.from_bytes(transaction[5:9], byteorder='little')
+        tx += transaction[5:9]
+
+    index = len(tx)
+
+    for i in range(input_count):
+        tx += transaction[index:index+36]
+        index += 36
+        script_length = transaction[index]
+        index += 1
+        if script_length == 0xfd:
+            script_length = int.from_bytes(transaction[index:index+3], byteorder='little')
+            index += 2
+        elif script_length == 0xfe:
+            script_length = int.from_bytes(transaction[index:index+5], byteorder='little')
+            index += 4
+        index += script_length
+
+    tx += transaction[index:]
+    return cr.double_sha256(tx)
+
+
 def make_transaction(privkeys, inputs, outputs, locktime):
     tx = b''
     tx += int(__version__).to_bytes(length=4, byteorder='little')   # 4 bytes
@@ -54,6 +64,8 @@ def make_transaction(privkeys, inputs, outputs, locktime):
     tx_out = b''
     tx_out += length_to_bytes(len(outputs)) # +1 bytes
     tx_out += b''.join(map(make_output, outputs))
+
+    tx_locktime = locktime.to_bytes(length=4, byteorder='little')
     
     prev_scripts = list(map(get_script, inputs))
 
@@ -63,28 +75,31 @@ def make_transaction(privkeys, inputs, outputs, locktime):
     for i, input in enumerate(inputs):
         tx_aux = tx
         for j in range(i):
-            tx_aux += bytes.fromhex(input[0])
-            tx_aux += int(input[1]).to_bytes(length=4, byteorder='little')
+            tx_aux += bytes.fromhex(inputs[j][0])
+            tx_aux += int(inputs[j][1]).to_bytes(length=4, byteorder='little')
             tx_aux += bytes.fromhex('00')
         tx_aux += bytes.fromhex(input[0])
         tx_aux += int(input[1]).to_bytes(length=4, byteorder='little')
         tx_aux += prev_scripts[i]
-        tx_aux += tx_out
+        for j in range(i+1, len(inputs)):
+            tx_aux += bytes.fromhex(inputs[j][0])
+            tx_aux += int(inputs[j][1]).to_bytes(length=4, byteorder='little')
+            tx_aux += bytes.fromhex('00')
+        tx_aux += tx_out + tx_locktime
         sig = cr.generate_signature(privkeys[i], tx_aux)
-        script_sig = int(len(sig)//2).to_bytes(length=1, byteorder='little') + sig
+        script_sig = int(len(sig)).to_bytes(length=1, byteorder='little') + sig
         script_sig += int(len(pub_keys[i])//2).to_bytes(length=1, byteorder='little')
         script_sig += bytes.fromhex(pub_keys[i])
-        script_sig = int(len(script_sig)//2).to_bytes(length=1, byteorder='little') + script_sig
+        script_sig = length_to_bytes(len(script_sig)) + script_sig
         script_sigs.append(script_sig)
 
     tx_in = b''
     for i, input in enumerate(inputs):
         tx_in += bytes.fromhex(input[0])
         tx_in += int(input[1]).to_bytes(length=4, byteorder='little')
-        tx_in += prev_scripts[i]
         tx_in += script_sigs[i]
 
-    tx += tx_in + tx_out + locktime.to_bytes(length=4, byteorder='little')
+    tx += tx_in + tx_out + tx_locktime
     return tx
 
 
