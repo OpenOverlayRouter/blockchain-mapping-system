@@ -41,19 +41,25 @@ def sha3rlp(x):
 
 def sha3_256(x):
     return keccak.new(digest_bits=256, data=x).digest()
-def is_numeric(x): return isinstance(x, (int, long))
+
+
+def is_numeric(x):
+    return isinstance(x, (int, long))
 
 def is_string(x):
     return isinstance(x, (str, unicode))
 
+
 def to_string(value):
     return str(value)
+
 
 def big_endian_to_int(x): return big_endian_int.deserialize(
     str_to_bytes(x).lstrip(b'\x00'))
 
 
 def int_to_big_endian(x): return big_endian_int.serialize(x)
+
 
 def int_to_bytes(value):
     if isinstance(value, str):
