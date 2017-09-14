@@ -2,6 +2,7 @@ import utils
 import rlp
 import leveldb
 from pprint import pprint
+import random
 from rlp.utils import decode_hex, ascii_chr, str_to_bytes
 
 (
@@ -837,9 +838,10 @@ class Trie(object):
             return True
         return self.root_hash in self.db
 
-leveldb.DestroyDB('./db')
 db = leveldb.LevelDB('./db')
 t = Trie(db)
-t.update("pene","prah")
+for i in range(0,1000):
+    key = utils.sha3(random.randint());
+    t.update("pene", "prah")
 l = vars(t)
 pprint(l)

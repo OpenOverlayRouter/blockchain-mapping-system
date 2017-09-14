@@ -41,6 +41,7 @@ def sha3rlp(x):
 
 def sha3_256(x):
     return keccak.new(digest_bits=256, data=x).digest()
+
 def is_numeric(x): return isinstance(x, (int, long))
 
 def is_string(x):
