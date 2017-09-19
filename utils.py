@@ -5,6 +5,7 @@ import sys
 import rlp
 from rlp.sedes import big_endian_int, BigEndianInt, Binary
 from rlp.utils import decode_hex, encode_hex, ascii_chr, str_to_bytes
+
 import random
 
 # 58 character alphabet used
@@ -38,11 +39,11 @@ def sha3(seed):
 def sha3rlp(x):
     return sha3(rlp.encode(x))
 
-
 def sha3_256(x):
     return keccak.new(digest_bits=256, data=x).digest()
 
-def is_numeric(x): return isinstance(x, (int, long))
+def is_numeric(x):
+    return isinstance(x, (int, long))
 
 def is_string(x):
     return isinstance(x, (str, unicode))
@@ -50,16 +51,20 @@ def is_string(x):
 def to_string(value):
     return str(value)
 
-def big_endian_to_int(x): return big_endian_int.deserialize(
-    str_to_bytes(x).lstrip(b'\x00'))
+def big_endian_to_int(x):
+    return big_endian_int.deserialize(str_to_bytes(x).lstrip(b'\x00'))
 
 
-def int_to_big_endian(x): return big_endian_int.serialize(x)
+def int_to_big_endian(x):
+    return big_endian_int.serialize(x)
 
 def int_to_bytes(value):
     if isinstance(value, str):
         return value
     return int_to_big_endian(value)
+
+def remove_0x_head(s):
+    return s[2:] if s[:2] in (b'0x', '0x') else s
 
 address = Binary.fixed_length(20, allow_empty=True)
 int20 = BigEndianInt(20)
