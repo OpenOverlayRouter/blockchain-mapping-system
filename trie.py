@@ -134,7 +134,7 @@ class Trie(object):
     def _update_root_hash(self):
         val = encode_optimized(self.root_node)
         key = utils.sha3(val)
-        self.db.Put(key, str_to_bytes(val))
+        self.db.put(key, str_to_bytes(val))
         self._root_hash = key
 
     @root_hash.setter
@@ -173,7 +173,7 @@ class Trie(object):
             return node
         hashkey = utils.sha3(rlpnode)
         if put_in_db:
-            self.db.Put(hashkey, str_to_bytes(rlpnode))
+            self.db.put(hashkey, str_to_bytes(rlpnode))
 
         return hashkey
 
@@ -182,7 +182,7 @@ class Trie(object):
             return BLANK_NODE
         if isinstance(encoded, list):
             return encoded
-        o = rlp.decode(self.db.Get(encoded))
+        o = rlp.decode(self.db.get(encoded))
         return o
 
     def _get_node_type(self, node):

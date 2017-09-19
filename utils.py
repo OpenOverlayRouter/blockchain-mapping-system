@@ -31,6 +31,8 @@ def b58decode(s):
 def to_string(value):
     return str(value)
 
+def sha3_256(x):
+    return keccak.new(digest_bits=256, data=x).digest()
 
 def sha3(seed):
     return sha3_256(to_string(seed))
@@ -53,7 +55,6 @@ def to_string(value):
 
 def big_endian_to_int(x):
     return big_endian_int.deserialize(str_to_bytes(x).lstrip(b'\x00'))
-
 
 def int_to_big_endian(x):
     return big_endian_int.serialize(x)

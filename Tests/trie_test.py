@@ -1,14 +1,18 @@
 import leveldb
 from trie import Trie
+from Crypto.Hash import keccak
 import random
 import string
 import utils
+from db import _EphemDB
 
 N = 50000
 print("TEST STARTING")
-db = leveldb.LevelDB('./db')
-t = Trie(db)
+DataBase = _EphemDB()
+t = Trie(DataBase)
 tempDB = {}
+
+
 print("ADDING SOME NODES...")
 for i in range(N):
     value = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(20))
@@ -19,6 +23,7 @@ for i in range(N):
         print("...")
 fail = 0
 print("ADDITION FINISHED")
+
 print("CHECKING VALUES...")
 cont = 0
 for i in tempDB.keys():
