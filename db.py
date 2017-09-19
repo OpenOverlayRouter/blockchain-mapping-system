@@ -1,8 +1,5 @@
 import utils
-
 from rlp.utils import str_to_bytes
-import sys
-
 
 
 databases = {}
@@ -19,13 +16,13 @@ class _EphemDB(BaseDB):
         self.kv = self.db
 
     def get(self, key):
-        return self.db.get(key)
+        return self.db[key]
 
     def put(self, key, value):
-        return self.db.put(key, value)
+        self.db[key] = value
 
     def delete(self, key):
-        return self.db.delete(key)
+        del self.db[key]
 
     def commit(self):
         pass
@@ -55,37 +52,20 @@ class ListeningDB(BaseDB):
 
     def get(self, key):
         if key not in self.kv:
-            try:
-                self.kv[key] = self.parent.Get(key)
-            except KeyError:
-                print("leveldb get error")
-        try:
-            return self.parent.Get(key)
-        except KeyError:
-            print("leveldb get error")
+            self.kv[key] = self.parent.get(key)
+        return self.parent.get(key)
 
     def put(self, key, value):
-        try:
-            self.parent.Put(key, value)
-        except KeyError:
-            print("leveldb put error")
+        self.parent.put(key, value)
 
     def commit(self):
         pass
 
     def delete(self, key):
-        try:
-            self.parent.Delete(key)
-        except KeyError:
-            print("leveldb delete error")
+        self.parent.delete(key)
 
     def _has_key(self, key):
-        try:
-            if (self.parent.Get(key) is None):
-                return False
-            return True
-        except KeyError:
-            print("leveldb get error")
+        return self.parent._has_key(key)
 
     def __contains__(self, key):
         return self.parent.__contains__(key)
@@ -136,13 +116,13 @@ class OverlayDB(BaseDB):
         return utils.big_endian_to_int(str_to_bytes(self.__repr__()))
 
 
-@lru_cache(128)
+
 def add1(b):
     v = utils.big_endian_to_int(b)
     return utils.zpad(utils.encode_int(v + 1), 4)
 
 
-@lru_cache(128)
+
 def sub1(b):
     v = utils.big_endian_to_int(b)
     return utils.zpad(utils.encode_int(v - 1), 4)
@@ -155,32 +135,32 @@ class RefcountDB(BaseDB):
         self.kv = None
 
     def get(self, key):
-        return self.db.Get(key)[4:]
+        return self.db.get(key)[4:]
 
     def get_refcount(self, key):
         try:
-            return utils.big_endian_to_int(self.db.Get(key)[:4])
+            return utils.big_endian_to_int(self.db.get(key)[:4])
         except KeyError:
             return 0
 
     def put(self, key, value):
         try:
-            existing = self.db.Get(key)
+            existing = self.db.get(key)
             assert existing[4:] == value
-            self.db.Put(key, add1(existing[:4]) + value)
+            self.db.put(key, add1(existing[:4]) + value)
             # print('putin', key, utils.big_endian_to_int(existing[:4]) + 1)
         except KeyError:
-            self.db.Put(key, b'\x00\x00\x00\x01' + value)
+            self.db.put(key, b'\x00\x00\x00\x01' + value)
             # print('putin', key, 1)
 
     def delete(self, key):
-        existing = self.db.Get(key)
+        existing = self.db.get(key)
         if existing[:4] == b'\x00\x00\x00\x01':
             # print('deletung')
-            self.db.Delete(key)
+            self.db.delete(key)
         else:
             # print(repr(existing[:4]))
-            self.db.Put(key, sub1(existing[:4]) + existing[4:])
+            self.db.put(key, sub1(existing[:4]) + existing[4:])
 
     def commit(self):
         pass
