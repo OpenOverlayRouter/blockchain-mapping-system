@@ -1,4 +1,5 @@
 import cryptography as cr
+from ipaddress import IPv4Address
 
 __version__ = '1'   # Must have integer representation
 
@@ -10,27 +11,37 @@ def int_to_bytes(integer, length):
     return integer.to_bytes(length=length, byteorder='little')
 
 
+def hex_to_bytes(data):
+    return bytes.fromhex(data)
+
+
+def ip_to_bytes(addr):
+    address, mask = addr.split('/')
+    address = int(IPv4Address(address))
+    return int_to_bytes(address, 4) + int_to_bytes(int(mask), 1)
+
+
 def length_to_bytes(n):
     r = b''
     if n < 253:
         length = 1
     elif n <= 0xFFFF:
         length = 2
-        r += bytes.fromhex('fd') 
+        r += hex_to_bytes('fd') 
     else:
         length = 4
-        r += bytes.fromhex('fe')
+        r += hex_to_bytes('fe')
     r += int_to_bytes(n, length)
     return r
 
 
 def make_output(output):
-    script, ips = output
-    return bytes.fromhex(script)
+    address, ips = output
+    return ip_to_bytes(ips) + hex_to_bytes(cr.address_to_hash160(address))
 
 
 def get_script(input):
-    return bytes.fromhex('0000000000000000')
+    return hex_to_bytes('0000000000000000')
 
 
 def get_transaction_id(transaction):
@@ -83,29 +94,32 @@ def make_transaction(privkeys, inputs, outputs, locktime):
     for i, input in enumerate(inputs):
         tx_aux = tx
         for j in range(i):
-            tx_aux += bytes.fromhex(inputs[j][0])
-            tx_aux += int_to_bytes(inputs[j][1], 4)
-            tx_aux += bytes.fromhex('00')
-        tx_aux += bytes.fromhex(input[0])
-        tx_aux += int_to_bytes(input[1], 4)
-        tx_aux += prev_scripts[i]
+            tx_aux += hex_to_bytes(inputs[j][0])    \
+                    + int_to_bytes(inputs[j][1], 4) \
+                    + hex_to_bytes('00')
+
+        tx_aux += hex_to_bytes(input[0])    \
+                + int_to_bytes(input[1], 4) \
+                + prev_scripts[i]
+
         for j in range(i+1, len(inputs)):
-            tx_aux += bytes.fromhex(inputs[j][0])
-            tx_aux += int_to_bytes(inputs[j][1], 4)
-            tx_aux += bytes.fromhex('00')
+            tx_aux += hex_to_bytes(inputs[j][0])    \
+                    + int_to_bytes(inputs[j][1], 4) \
+                    + hex_to_bytes('00')
+
         tx_aux += tx_out + tx_locktime
         sig = cr.generate_signature(privkeys[i], tx_aux)
-        script_sig = int_to_bytes(len(sig), 1) + sig
-        script_sig += int_to_bytes(len(pub_keys[i])//2, 1)
-        script_sig += bytes.fromhex(pub_keys[i])
+        script_sig = int_to_bytes(len(sig), 1) + sig        \
+                    + int_to_bytes(len(pub_keys[i])//2, 1)  \
+                    + hex_to_bytes(pub_keys[i])
         script_sig = length_to_bytes(len(script_sig)) + script_sig
         script_sigs.append(script_sig)
 
     tx_in = b''
     for i, input in enumerate(inputs):
-        tx_in += bytes.fromhex(input[0])
-        tx_in += int_to_bytes(input[1], 4)
-        tx_in += script_sigs[i]
+        tx_in += hex_to_bytes(input[0])     \
+                + int_to_bytes(input[1], 4) \
+                + script_sigs[i]
 
     tx += tx_in + tx_out + tx_locktime
     return tx
@@ -121,8 +135,8 @@ def main():
               ('d1bd200ecf87320b3f5bb465c7ade141067bc9f1e0623726e1f9a282bb3f3b91', 3),
               ('3b04a3c1a4155f757374b29786f3f7c43273f7638f5d94b8c38fbd3e4888fbb7', 1)]
 
-    outputs = [('227be909766b35e4d9e0252de237d89ce13172df', '0.0.0.0'),
-               ('5989d1e3bfb0852230a0316f5efed66dff48b252', '0.0.0.0')]
+    outputs = [('16L2y2kkatSZLUWgq11AcH1GmD7vVJk6Jv', '192.152.0.0/16'),
+               ('18hqs6eChqSppu5gc39NVHX15PJaHus5zL', '192.160.15.0/30')]
 
     locktime = 0
 
