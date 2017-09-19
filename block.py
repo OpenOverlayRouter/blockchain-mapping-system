@@ -32,4 +32,3 @@ class Block:
         self.header = header
         self.transactions = transactions
         self.uncles = uncles
-
