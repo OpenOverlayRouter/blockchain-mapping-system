@@ -60,12 +60,14 @@ class ChainService(WiredService):
     synchronizer = None
     config = None
     block_queue_size = 1024
-    processed_gas = 0
+    #processed_gas = 0
     processed_elapsed = 0
 
     def __init__(self, app):
         self.config = app.config
         sce = self.config['eth']
+
+        """""""""
         if int(sce['pruning']) >= 0:
             self.db = RefcountDB(app.services.db)
             if "I am not pruning" in self.db.db:
@@ -81,6 +83,7 @@ class ChainService(WiredService):
                     "The database in '{}' was initialized as pruning. "
                     "Can not disable pruning now".format(self.config['data_dir']))
             self.db.put("I am not pruning", "1")
+        """""""""
 
         if 'network_id' in self.db:
             db_network_id = self.db.get('network_id')
@@ -128,7 +131,7 @@ class ChainService(WiredService):
         self._head_candidate_needs_updating = True
         # Initialize a new head candidate.
         _ = self.head_candidate
-        self.min_gasprice = 20 * 10**9 # TODO: better be an option to validator service?
+        "self.min_gasprice = 20 * 10**9 # TODO: better be an option to validator service?"
         self.add_blocks_lock = False
         self.add_transaction_lock = gevent.lock.Semaphore()
         self.broadcast_filter = DuplicatesFilter()
@@ -141,14 +144,18 @@ class ChainService(WiredService):
 
     @property
     def is_mining(self):
+        """""""""
         if 'pow' in self.app.services:
             return self.app.services.pow.active
         if 'validator' in self.app.services:
             return self.app.services.validator.active
         return False
+        """""""""
+        return True #TODO: cambiar a versión definitiva; eliminar si sobra
 
     # TODO: Move to pyethereum
     def get_receipts(self, block):
+        """"""""""
         # Receipts are no longer stored in the database, so need to generate
         # them on the fly here.
         temp_state = self.chain.mk_poststate_of_blockhash(block.header.prevhash)
@@ -156,6 +163,9 @@ class ChainService(WiredService):
         for tx in block.transactions:
             apply_transaction(temp_state, tx)
         return temp_state.receipts
+        """""""""""
+        #TODO: no hay receipts, revisar clases donde se use esta función
+
 
     def _on_new_head(self, block):
         log.debug('new head cbs', num=len(self.on_new_head_cbs))
@@ -207,7 +217,7 @@ class ChainService(WiredService):
             if not self.is_mining or self.is_syncing:
                 log.debug('discarding tx', syncing=self.is_syncing, mining=self.is_mining)
                 return
-
+        """""""""
         if tx.gasprice >= self.min_gasprice:
             self.add_transaction_lock.acquire()
             self.transaction_queue.add_transaction(tx, force=force)
@@ -215,6 +225,7 @@ class ChainService(WiredService):
             self.add_transaction_lock.release()
         else:
             log.info("too low gasprice, ignore", tx=encode_hex(tx.hash)[:8], gasprice=tx.gasprice)
+        """""""""
 
     def check_header(self, header):
         return check_pow(self.chain.state, header)
