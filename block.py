@@ -8,7 +8,7 @@ from Crypto.Hash import keccak
 class BlockHeader:
     fields = [
         ('prevhash', hash32),
-        ('tx_root_trie', trie_root),
+        ('tx_root_trie', trie.BLANK_ROOT),
         ('timestamp', big_endian_int),
         ('extra_data', binary),
         ('signature'),
@@ -32,3 +32,4 @@ class Block:
         self.header = header
         self.transactions = transactions
         self.uncles = uncles
+
