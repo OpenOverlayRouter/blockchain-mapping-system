@@ -2,7 +2,7 @@ import rlp
 from utils import normalize_address, hash32, trie_root, \
     big_endian_int, address, int256, encode_hex, encode_int, \
     big_endian_to_int, int_to_addr, parse_as_bin, parse_as_int, \
-    decode_hex, sha3, is_string, is_numeric
+    decode_hex, sha3, is_string, is_numeric, zpad
 from rlp.sedes import big_endian_int, Binary, binary, CountableList
 import utils
 import trie
@@ -12,6 +12,7 @@ from config import default_config, Env
 from db import BaseDB, EphemDB, OverlayDB, RefcountDB
 import copy
 from account import Account
+from trie import BLANK_NODE, BLANK_ROOT
 import sys
 
 STATE_DEFAULTS = {
@@ -158,6 +159,38 @@ class State():
         self.trie.deletes = []
         self.cache = {}
         self.journal = []
+
+    def load_state(env, alloc):
+        db = env.db
+        state = SecureTrie(Trie(db, BLANK_ROOT))
+        count = 0
+        print("Start loading state from snapshot")
+        for addr in alloc:
+            print("[%d] loading account %s" % (count, addr))
+            account = alloc[addr]
+            acct = Account.blank_account(db, env.config['ACCOUNT_INITIAL_NONCE'])
+            if len(account['storage']) > 0:
+                t = SecureTrie(Trie(db, BLANK_ROOT))
+                c = 0
+                for k in account['storage']:
+                    v = account['storage'][k]
+                    enckey = zpad(decode_hex(k), 32)
+                    t.update(enckey, decode_hex(v))
+                    c += 1
+                    if c % 1000 and len(db.db_service.uncommitted) > 50000:
+                        print("%d uncommitted. committing..." % len(db.db_service.uncommitted))
+                        db.commit()
+                acct.storage = t.root_hash
+            if account['nonce']:
+                acct.nonce = int(account['nonce'])
+            if account['balance']:
+                acct.balance = int(account['balance'])
+            if account['code']:
+                acct.code = decode_hex(account['code'])
+            state.update(decode_hex(addr), rlp.encode(acct))
+            count += 1
+        db.commit()
+        return state
 
 def prev_header_to_dict(h):
     return {
