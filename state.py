@@ -22,11 +22,6 @@ STATE_DEFAULTS = {
     "block_coinbase": '\x00' * 20,
     "block_difficulty": 1,
     "timestamp": 0,
-    "logs": [],
-    "receipts": [],
-    "bloom": 0,
-    "suicides": [],
-    "recent_uncles": {},
     "prev_headers": [],
     "refunds": 0,
 }
@@ -39,8 +34,6 @@ class State():
             setattr(self, k, kwargs.get(k, copy.copy(v)))
         self.journal = []
         self.cache = {}
-        self.log_listeners = []
-        self.deletes = []
         self.changed = {}
         self.executing_on_head = executing_on_head
 
@@ -128,6 +121,13 @@ class State():
             return a.existent_at_start
         return o
 
+    def delta_balance(self, address, value):
+        address = utils.normalize_address(address)
+        acct = self.get_and_cache_account(address)
+        newbal = acct.balance + value
+        self.set_and_journal(acct, 'balance', newbal)
+        self.set_and_journal(acct, 'touched', True)
+
     def transfer_value(self, from_addr, to_addr, value):
         assert value >= 0
         if self.get_balance(from_addr) >= value:
@@ -143,7 +143,6 @@ class State():
         for addr, acct in self.cache.items():
             if acct.touched or acct.deleted:
                 acct.commit()
-                self.deletes.extend(acct.storage_trie.deletes)
                 self.changed[addr] = True
                 if self.account_exists(addr) or allow_empties:
                     self.trie.update(addr, rlp.encode(acct))
@@ -156,7 +155,6 @@ class State():
                             self.db.delete(b'address:' + addr)
                         except KeyError:
                             pass
-        self.deletes.extend(self.trie.deletes)
         self.trie.deletes = []
         self.cache = {}
         self.journal = []
