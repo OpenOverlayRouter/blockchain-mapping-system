@@ -8,10 +8,14 @@ from utils import decode_hex, big_endian_to_int, encode_hex, parse_as_bin, parse
 import utils
 import json
 import random
+from db import LevelDB
+
+from account import Account
 
 def mk_basic_state(alloc, header=None, env=None, executing_on_head=False):
-    env = env or Env()
-    state = State(env=env, executing_on_head=executing_on_head)
+    env = env or Env(LevelDB("./state"))
+    state = State(root = "6c08c2bdb7c09eb5a2524e9ed8f3dac707c7b0f6ca2116a173989a5370f77340".decode('hex'),env=env, executing_on_head=executing_on_head)
+    print(state.get_balance("3282791d6fd713f1e94f4bfd565eaa78b3a0599d"))
     if not header:
         header = {
             "number": 0, "gas_limit": env.config['BLOCK_GAS_LIMIT'],
@@ -33,9 +37,9 @@ def mk_basic_state(alloc, header=None, env=None, executing_on_head=False):
     state.timestamp = header["timestamp"]
     state.commit()
 
+    env.db.commit()
     return state
 
-print("TEST STARTING")
 
 with open('../genesis.json') as data_file:
     data = json.load(data_file)
@@ -68,6 +72,7 @@ for i in range(N):
     tx[addresses[randFrom]] = tx[addresses[randFrom]] - randBalance
     tx[addresses[randTo]] = tx[addresses[randTo]] + randBalance
 
+state.commit()
 print("TX PART FINISHED")
 
 err = False
