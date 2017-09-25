@@ -25,4 +25,3 @@ class ChainService():
 
     def getTransactioni(self, transactionIndex):
         return self.block.lock.transactions[transactionIndex]
-
