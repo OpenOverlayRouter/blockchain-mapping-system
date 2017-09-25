@@ -5,6 +5,7 @@ import keys
 class Transaction():
     fields = [
         ('nonce', big_endian_int),
+        ('ffrom', address),
         ('to', address),
         ('EID', big_endian_int),
         ('delegate', big_endian_int),
@@ -16,3 +17,14 @@ class Transaction():
         ('r', big_endian_int),
         ('s', big_endian_int),
     ]
+
+    def __init__(self, nonce, ffrom, to, EID, delegate, data, v, r, s):
+        self.nonce = nonce
+        self.ffrom = ffrom
+        self.to = to
+        self.EID = EID
+        self.delegate = delegate
+        self.data = data
+        self.v = v
+        self.r = r
+        self.s = s
