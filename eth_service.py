@@ -12,7 +12,6 @@ class ChainService():
     Manages the chain and requests to it.
     """
 
-
     def __init__(self, db):
         self.db = db
 

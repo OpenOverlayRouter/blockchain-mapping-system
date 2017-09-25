@@ -2,6 +2,7 @@ from rlp.sedes import big_endian_int, binary
 from utils import address
 import rlp
 
+
 class Transaction(rlp.Serializable):
     fields = [
         ('nonce', big_endian_int),
