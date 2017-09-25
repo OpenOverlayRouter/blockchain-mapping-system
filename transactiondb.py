@@ -1,7 +1,8 @@
 from rlp.sedes import big_endian_int, binary
 from utils import address
+import rlp
 
-class Transaction():
+class Transaction(rlp.Serializable):
     fields = [
         ('nonce', big_endian_int),
         ('ffrom', address),
@@ -27,3 +28,16 @@ class Transaction():
         self.v = v
         self.r = r
         self.s = s
+
+        super(
+            Transaction,
+            self).__init__(
+            nonce,
+            ffrom,
+            to,
+            EID,
+            delegate,
+            data,
+            v,
+            r,
+            s)

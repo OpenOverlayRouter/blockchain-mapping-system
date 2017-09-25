@@ -6,9 +6,9 @@ db = db.OverlayDB(db)
 service = eth_service.ChainService(db)
 
 transactions = []
-transactions.append(transactiondb.Transaction(1, '0x000', '0x001', 1, 0, 'data', 'v', 'r', 's'))
-transactions.append(transactiondb.Transaction(2, '0x001', '0x002', 2, 0, 'data', 'v', 'r', 's'))
-transactions.append(transactiondb.Transaction(3, '0x002', '0x003', 3, 0, 'data', 'v', 'r', 's'))
+transactions.append(transactiondb.Transaction(1, '', '', 1, 0, 'data', 1, 1, 1)) #to be serializable, address can be empty and
+transactions.append(transactiondb.Transaction(2, '', '', 2, 0, 'data', 1, 1, 1)) #v, r, s have to be integers
+transactions.append(transactiondb.Transaction(3, '', '', 3, 0, 'data', 1, 1, 1))
 
 service.newBlock() #create empty block
 

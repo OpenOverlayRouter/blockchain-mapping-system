@@ -21,8 +21,8 @@ class ChainService():
 
     def addTransaction(self, transaction):
         self.block.transactions.append(transaction)
-        encodedTransaction = utils.sha3rlp(transaction)
-        self.block.header.tx_root_trie.update(encodedTransaction, rlp.encode(transaction))
+        encodedTransaction = utils.sha3(rlp.encode(transaction))
+        self.block.header.tx_root.update(encodedTransaction, rlp.encode(transaction))
 
     def getTransactioni(self, transactionIndex):
         return self.block.lock.transactions[transactionIndex]
