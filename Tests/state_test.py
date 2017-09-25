@@ -15,6 +15,7 @@ from account import Account
 def mk_basic_state(alloc, header=None, env=None, executing_on_head=False):
     env = env or Env(LevelDB("./state"))
     state = State(root = "6c08c2bdb7c09eb5a2524e9ed8f3dac707c7b0f6ca2116a173989a5370f77340".decode('hex'),env=env, executing_on_head=executing_on_head)
+
     print(state.get_balance("3282791d6fd713f1e94f4bfd565eaa78b3a0599d"))
     if not header:
         header = {
