@@ -4,14 +4,14 @@ import utils
 import rlp
 import db
 
-log = get_logger('eth.chainservice')
 
 
-class ChainService("WiredService"):
+class ChainService():
 
     """
     Manages the chain and requests to it.
     """
+
 
     def __init__(self, db):
         self.db = db
@@ -25,5 +25,5 @@ class ChainService("WiredService"):
         self.block.header.tx_root_trie.update(encodedTransaction, rlp.encode(transaction))
 
     def getTransactioni(self, transactionIndex):
-        return self.Block.transactions[transactionIndex]
+        return self.block.lock.transactions[transactionIndex]
 

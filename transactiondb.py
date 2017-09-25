@@ -1,6 +1,5 @@
 from rlp.sedes import big_endian_int, binary
 from utils import address
-import keys
 
 class Transaction():
     fields = [

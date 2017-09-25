@@ -1,5 +1,5 @@
 import rlp #used to encode data
-import transaction
+import transactiondb
 import trie
 from rlp.sedes import big_endian_int, Binary, binary, CountableList
 from utils import hash32, trie_root, address
@@ -35,11 +35,11 @@ class BlockHeader:
 class Block:
     fields = [
         ('header', BlockHeader),
-        ('transactions', transaction),
+        ('transactions', transactiondb),
         ('uncles', BlockHeader)
     ]
 
-    def __init__(self, header, transactions=None, uncles=None):
+    def __init__(self, header, transactions=[], uncles=None):
         self.header = header
         self.transactions = transactions
         self.uncles = uncles
