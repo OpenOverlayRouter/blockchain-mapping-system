@@ -88,9 +88,6 @@ class Chain(object):
             raise Exception("Block hash %s not found" % encode_hex(blockhash))
 
         block_rlp = self.db.get(blockhash)
-        if block_rlp == 'GENESIS':
-            return State.from_snapshot(json.loads(
-                self.db.get('GENESIS_STATE')), self.env)
         block = rlp.decode(block_rlp, Block)
 
         state = State(env=self.env)
@@ -135,8 +132,7 @@ class Chain(object):
                 return self.genesis
             else:
                 return rlp.decode(block_rlp, Block)
-        except Exception as e:
-            log.debug("Failed to get block", hash=blockhash, error=e)
+        except Exception:
             return None
 
     # Add a record allowing you to later look up the provided block's
@@ -158,7 +154,7 @@ class Chain(object):
     def get_blockhash_by_number(self, number):
         try:
             return self.db.get(b'block:%d' % number)
-        except BaseException:
+        except Exception:
             return None
 
     # Gets the block with the given block number
@@ -173,7 +169,7 @@ class Chain(object):
             for i in range(0, len(data), 32):
                 o.append(data[i:i + 32])
             return o
-        except BaseException:
+        except Exception:
             return []
 
     # Get the children of a block
@@ -183,25 +179,6 @@ class Chain(object):
         if isinstance(block, BlockHeader):
             block = block.hash
         return [self.get_block(h) for h in self.get_child_hashes(block)]
-
-    # Get the score (AKA total difficulty in PoW) of a given block
-    def get_score(self, block):
-        if not block:
-            return 0
-        key = b'score:' + block.header.hash
-
-        fills = []
-        while key not in self.db:
-            fills.insert(0, (block.header.hash, block.difficulty))
-            key = b'score:' + block.header.prevhash
-            block = self.get_parent(block)
-        score = int(self.db.get(key))
-        for h, d in fills:
-            key = b'score:' + h
-            score = score + d + random.randrange(d // 10**6 + 1)
-            self.db.put(key, str(score))
-
-        return score
 
     # This function should be called periodically so as to
     # process blocks that were received but laid aside because
