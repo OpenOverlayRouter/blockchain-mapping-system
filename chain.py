@@ -14,7 +14,6 @@ from ethereum.exceptions import InvalidNonce, InsufficientStartGas, UnsignedTran
 from config import Env
 from state import State, dict_to_prev_header
 from block import Block, BlockHeader, BLANK_UNCLES_HASH, FakeHeader
-from ethereum.pow.consensus import initialize
 from ethereum.genesis_helpers import mk_basic_state, state_from_genesis_declaration, \
     initialize_genesis_keys
 from db import RefcountDB
@@ -43,18 +42,10 @@ class Chain(object):
             self.state = genesis
             self.env = self.state.env
             print('Initializing chain from provided state')
-            reset_genesis = True
         elif "extraData" in genesis:
             self.state = state_from_genesis_declaration(
                 genesis, self.env, executing_on_head=True)
-            reset_genesis = True
             print('Initializing chain from provided genesis declaration')
-        elif "prev_headers" in genesis:
-            self.state = State.from_snapshot(
-                genesis, self.env, executing_on_head=True)
-            reset_genesis = True
-            print('Initializing chain from provided state snapshot, %d (%s)' %
-                  (self.state.block_number, encode_hex(self.state.prev_headers[0].hash[:8])))
         elif isinstance(genesis, dict):
             print('Initializing chain from new state based on alloc')
             self.state = mk_basic_state(genesis, {
@@ -66,24 +57,13 @@ class Chain(object):
                 "hash": kwargs.get('prevhash', '00' * 32),
                 "uncles_hash": kwargs.get('uncles_hash', '0x' + encode_hex(BLANK_UNCLES_HASH))
             }, self.env)
-            reset_genesis = True
 
         assert self.env.db == self.state.db
 
-        initialize(self.state)
         self.new_head_cb = new_head_cb
 
         assert self.state.block_number == self.state.prev_headers[0].number
-        if reset_genesis:
-            if isinstance(self.state.prev_headers[0], FakeHeader):
-                header = self.state.prev_headers[0].to_block_header()
-            else:
-                header = self.state.prev_headers[0]
-            self.genesis = Block(header)
-            self.state.prev_headers[0] = header
-            initialize_genesis_keys(self.state, self.genesis)
-        else:
-            self.genesis = self.get_block_by_number(0)
+        self.genesis = self.get_block_by_number(0)
         self.head_hash = self.state.prev_headers[0].hash
         self.time_queue = []
         self.parent_queue = {}
@@ -99,8 +79,7 @@ class Chain(object):
                 return self.genesis
             else:
                 return rlp.decode(block_rlp, Block)
-        except Exception as e:
-            log.error(e)
+        except Exception:
             return None
 
     # Returns the post-state of the block
@@ -138,11 +117,6 @@ class Chain(object):
                 jsondata = json.loads(state.db.get('GENESIS_STATE'))
                 for h in jsondata["prev_headers"][:header_depth - i]:
                     state.prev_headers.append(dict_to_prev_header(h))
-                for blknum, uncles in jsondata["recent_uncles"].items():
-                    if int(blknum) >= state.block_number - \
-                            int(state.config['MAX_UNCLE_DEPTH']):
-                        state.recent_uncles[blknum] = [
-                            parse_as_bin(u) for u in uncles]
             else:
                 raise Exception("Dangling prevhash")
         assert len(state.journal) == 0, state.journal
