@@ -104,10 +104,6 @@ class Chain(object):
         header_depth = state.config['PREV_HEADER_DEPTH']
         for i in range(header_depth + 1):
             state.prev_headers.append(b.header)
-            if i < 6:
-                state.recent_uncles[state.block_number - i] = []
-                for u in b.uncles:
-                    state.recent_uncles[state.block_number - i].append(u.hash)
             try:
                 b = rlp.decode(state.db.get(b.header.prevhash), Block)
             except BaseException:
