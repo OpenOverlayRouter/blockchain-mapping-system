@@ -6,6 +6,7 @@ from rlp.sedes import big_endian_int
 from securetrie import SecureTrie
 from trie import Trie
 from db import RefcountDB, BaseDB
+import ipaddress
 
 import trie
 import utils
@@ -33,6 +34,7 @@ class Account(rlp.Serializable):
         self.existent_at_start = True
         self._mutable = True
         self.deleted = False
+
 
     def commit(self):
         for k, v in self.storage_cache.items():
