@@ -9,28 +9,6 @@ from py_ecc.secp256k1 import privtopub, ecdsa_raw_sign, ecdsa_raw_recover
 
 import random
 
-# 58 character alphabet used
-alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
-TT256 = 2 ** 256
-TT256M1 = 2 ** 256 - 1
-TT255 = 2 ** 255
-SECP256K1P = 2**256 - 4294968273
-
-def b58encode(s):
-    n = int(s,16)
-    result = ''
-    while n > 0:
-        result = alphabet[n%58] + result
-        n //= 58
-    return result
-
-
-def b58decode(s):
-    result = 0
-    for i in range(0, len(s)):
-        result = result * 58 + alphabet.index(s[i])
-    return '{:x}'.format(result).zfill(50)
-
 
 def to_string(value):
     return str(value)
