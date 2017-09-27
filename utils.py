@@ -9,9 +9,17 @@ from py_ecc.secp256k1 import privtopub, ecdsa_raw_sign, ecdsa_raw_recover
 
 import random
 
-
-def to_string(value):
-    return str(value)
+if sys.version_info.major == 2:
+    def to_string(value):
+        return str(value)
+else:
+    def to_string(value):
+        if isinstance(value, bytes):
+            return value
+        if isinstance(value, str):
+            return bytes(value, 'utf-8')
+        if isinstance(value, int):
+            return bytes(str(value), 'utf-8')
 
 def sha3_256(x):
     return keccak.new(digest_bits=256, data=x).digest()
@@ -31,9 +39,6 @@ def is_numeric(x):
 
 def is_string(x):
     return isinstance(x, (str, unicode))
-
-def to_string(value):
-    return str(value)
 
 def big_endian_to_int(x):
     return big_endian_int.deserialize(str_to_bytes(x).lstrip(b'\x00'))
@@ -120,6 +125,20 @@ def normalize_key(key):
     if o == b'\x00' * 32:
         raise Exception("Zero privkey invalid")
     return o
+
+def ecrecover_to_pub(rawhash, v, r, s):
+    result = ecdsa_raw_recover(rawhash, (v,r,s))
+    if result:
+        x, y = result
+        pub = encode_int32(x) + encode_int32(y)
+    else:
+        raise ValueError('Invalid VRS')
+    assert len(pub) == 64
+    return pub
+
+def ecsign(rawhash, key):
+    v, r, s = ecdsa_raw_sign(rawhash, key)
+    return v, r, s
 
 address = Binary.fixed_length(20, allow_empty=True)
 int20 = BigEndianInt(20)
