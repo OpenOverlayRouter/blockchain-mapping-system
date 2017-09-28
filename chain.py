@@ -4,7 +4,6 @@ import time
 import itertools
 import trie
 from utils import parse_as_bin, big_endian_to_int
-from ethereum.common import update_block_env_variables
 import rlp
 from rlp.utils import encode_hex
 from config import Env
@@ -14,6 +13,16 @@ from db import EphemDB
 
 
 config_string = ':info'  # ,eth.chain:debug'
+
+
+# Update block variables into the state
+def update_block_env_variables(state, block):
+    state.timestamp = block.header.timestamp
+    state.gas_limit = block.header.gas_limit
+    state.block_number = block.header.number
+    state.recent_uncles[state.block_number] = [x.hash for x in block.uncles]
+    state.block_coinbase = block.header.coinbase
+    state.block_difficulty = block.header.difficulty
 
 
 def validate_header(state, header):
@@ -56,24 +65,17 @@ def validate_transaction_tree(state, block):
 def apply_block(state, block):
     # Pre-processing and verification
     snapshot = state.snapshot()
-    cs = get_consensus_strategy(state.config)
     try:
-        # Start a new block context
-        cs.initialize(state, block)
         # Basic validation
         assert validate_header(state, block.header)
-        assert cs.check_seal(state, block.header)
         assert validate_transaction_tree(state, block)
         # Process transactions
         for tx in block.transactions:
-            apply_transaction(state, tx) #TODO: adaptar esta función
-        # Finalize (incl paying block rewards)
-        cs.finalize(state, block)
+            apply_transaction(state, tx) #TODO: adaptar esta funcion
         # Verify state root, tx list root, receipt root
         # print('std', state.to_dict())
-        assert verify_execution_results(state, block)
         # Post-finalize (ie. add the block header to the state for now)
-        post_finalize(state, block)
+        state.add_block_header(block.header)
     except (ValueError, AssertionError) as e:
         state.revert(snapshot)
         raise e
