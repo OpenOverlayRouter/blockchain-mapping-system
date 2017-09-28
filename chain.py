@@ -8,7 +8,7 @@ import rlp
 from rlp.utils import encode_hex
 from config import Env
 from state import State, dict_to_prev_header
-from block import Block, BlockHeader, BLANK_UNCLES_HASH, FakeHeader
+from block import Block, BlockHeader
 from db import EphemDB
 
 
@@ -101,10 +101,6 @@ class Chain(object):
             self.state = genesis
             self.env = self.state.env
             print('Initializing chain from provided state')
-        elif "extraData" in genesis:
-            self.state = state_from_genesis_declaration(
-                genesis, self.env, executing_on_head=True)
-            print('Initializing chain from provided genesis declaration')
         elif isinstance(genesis, dict):
             print('Initializing chain from new state based on alloc')
             self.state = mk_basic_state(genesis, {
@@ -162,7 +158,7 @@ class Chain(object):
             state.prev_headers.append(b.header)
             try:
                 b = rlp.decode(state.db.get(b.header.prevhash), Block)
-            except BaseException:
+            except Exception:
                 break
         if i < header_depth:
             if state.db.get(b.header.prevhash) == 'GENESIS':
@@ -199,7 +195,7 @@ class Chain(object):
     def add_child(self, child):
         try:
             existing = self.db.get(b'child:' + child.header.prevhash)
-        except BaseException:
+        except Exception:
             existing = b''
         existing_hashes = []
         for i in range(0, len(existing), 32):
