@@ -2,21 +2,82 @@ import json
 import random
 import time
 import itertools
-import utils
+import trie
 from utils import parse_as_bin, big_endian_to_int
-from ethereum.meta import apply_block
 from ethereum.common import update_block_env_variables
 import rlp
 from rlp.utils import encode_hex
 from config import Env
 from state import State, dict_to_prev_header
 from block import Block, BlockHeader, BLANK_UNCLES_HASH, FakeHeader
-from ethereum.genesis_helpers import mk_basic_state, state_from_genesis_declaration, \
-    initialize_genesis_keys
-from db import RefcountDB
+from db import EphemDB
 
 
 config_string = ':info'  # ,eth.chain:debug'
+
+
+def validate_header(state, header):
+    parent = state.prev_headers[0]
+    if parent:
+        if header.prevhash != parent.hash:
+            raise ValueError("Block's prevhash and parent's hash do not match: block prevhash %s parent hash %s" %
+                             (encode_hex(header.prevhash), encode_hex(parent.hash)))
+        if header.number != parent.number + 1:
+            raise ValueError(
+                "Block's number is not the successor of its parent number")
+        if header.timestamp <= parent.timestamp:
+            raise ValueError("Timestamp equal to or before parent")
+        if header.timestamp >= 2**256:
+            raise ValueError("Timestamp waaaaaaaaaaayy too large")
+    if 0 <= header.number - \
+            state.config["DAO_FORK_BLKNUM"] < 10 and header.extra_data != state.config["DAO_FORK_BLKEXTRA"]:
+        raise ValueError("Missing extra data for block near DAO fork")
+    return True
+
+
+# Make the root of a receipt tree
+def mk_transaction_sha(receipts):
+    t = trie.Trie(EphemDB())
+    for i, receipt in enumerate(receipts):
+        t.update(rlp.encode(i), rlp.encode(receipt))
+    return t.root_hash
+
+
+# Validate that the transaction list root is correct
+def validate_transaction_tree(state, block):
+    if block.header.tx_list_root != mk_transaction_sha(block.transactions):
+        raise ValueError("Transaction root mismatch: header %s computed %s, %d transactions" %
+                         (encode_hex(block.header.tx_list_root), encode_hex(mk_transaction_sha(block.transactions)),
+                          len(block.transactions)))
+    return True
+
+
+# Applies the block-level state transition function
+def apply_block(state, block):
+    # Pre-processing and verification
+    snapshot = state.snapshot()
+    cs = get_consensus_strategy(state.config)
+    try:
+        # Start a new block context
+        cs.initialize(state, block)
+        # Basic validation
+        assert validate_header(state, block.header)
+        assert cs.check_seal(state, block.header)
+        assert validate_transaction_tree(state, block)
+        # Process transactions
+        for tx in block.transactions:
+            apply_transaction(state, tx) #TODO: adaptar esta función
+        # Finalize (incl paying block rewards)
+        cs.finalize(state, block)
+        # Verify state root, tx list root, receipt root
+        # print('std', state.to_dict())
+        assert verify_execution_results(state, block)
+        # Post-finalize (ie. add the block header to the state for now)
+        post_finalize(state, block)
+    except (ValueError, AssertionError) as e:
+        state.revert(snapshot)
+        raise e
+    return state
 
 
 class Chain(object):
