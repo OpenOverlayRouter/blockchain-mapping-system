@@ -56,6 +56,6 @@ class ChainService():
     def add_block(self, block):
         self.chain.add_block(block)
 
-    def get_transactioni(self, transactionIndex):
+    def get_transaction_i(self, transactionIndex):
         return self.block.transactions[transactionIndex]
 
