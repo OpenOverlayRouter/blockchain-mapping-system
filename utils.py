@@ -6,6 +6,7 @@ import rlp
 from rlp.sedes import big_endian_int, BigEndianInt, Binary
 from rlp.utils import decode_hex, encode_hex, ascii_chr, str_to_bytes
 from py_ecc.secp256k1 import privtopub, ecdsa_raw_sign, ecdsa_raw_recover
+from ipaddress import IPv4Address
 
 import random
 
@@ -37,6 +38,12 @@ else:
 
     def encode_int32(v):
         return v.to_bytes(32, byteorder='big')
+
+    def encode_int_len(v, length):
+        return v.to_bytes(length=length, byteorder='big')
+
+    def bytes_to_int(data):
+        return int.from_bytes(data, byteorder='big')
 
 def sha3_256(x):
     return keccak.new(digest_bits=256, data=x).digest()
@@ -152,6 +159,16 @@ def random_privkey():
 
 def pubkey_to_address(pubkey):
     return sha3_256(pubkey)[-20:]
+
+def ip_to_bytes(addr):
+    address, mask = addr.split('/')
+    address = int(IPv4Address(address))
+    return encode_int_len(address, 4) + encode_int_len(int(mask), 1)
+
+def bytes_to_ip(b):
+    ip = str(b[0]) + '.' + str(b[1]) + '.' + str(b[2]) + '.' + str(b[3])
+    ip += '/' + str(b[4])
+    return ip
 
 address = Binary.fixed_length(20, allow_empty=True)
 int20 = BigEndianInt(20)
