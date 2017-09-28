@@ -70,14 +70,11 @@ def apply_block(state, block):
         assert validate_header(state, block.header)
         assert validate_transaction_tree(state, block)
         # Process transactions
-        for tx in block.transactions:
-            apply_transaction(state, tx) #TODO: adaptar esta funcion
-        # Verify state root, tx list root, receipt root
-        # print('std', state.to_dict())
+        #for tx in block.transactions:
+            #apply_transaction(state, tx) #TODO: adaptar esta funcion
         # Post-finalize (ie. add the block header to the state for now)
         state.add_block_header(block.header)
     except (ValueError, AssertionError) as e:
-        state.revert(snapshot)
         raise e
     return state
 
@@ -103,15 +100,15 @@ class Chain(object):
             print('Initializing chain from provided state')
         elif isinstance(genesis, dict):
             print('Initializing chain from new state based on alloc')
-            self.state = mk_basic_state(genesis, {
-                "number": kwargs.get('number', 0),
-                "gas_limit": kwargs.get('gas_limit', self.env.config['BLOCK_GAS_LIMIT']),
-                "gas_used": kwargs.get('gas_used', 0),
-                "timestamp": kwargs.get('timestamp', 1467446877),
-                "difficulty": kwargs.get('difficulty', 2**25),
-                "hash": kwargs.get('prevhash', '00' * 32),
-                "uncles_hash": kwargs.get('uncles_hash', '0x' + encode_hex(BLANK_UNCLES_HASH))
-            }, self.env)
+            #self.state = mk_basic_state(genesis, {
+            #    "number": kwargs.get('number', 0),
+            #    "gas_limit": kwargs.get('gas_limit', self.env.config['BLOCK_GAS_LIMIT']),
+            #    "gas_used": kwargs.get('gas_used', 0),
+            #    "timestamp": kwargs.get('timestamp', 1467446877),
+            #    "difficulty": kwargs.get('difficulty', 2**25),
+            #    "hash": kwargs.get('prevhash', '00' * 32),
+            #    "uncles_hash": kwargs.get('uncles_hash', '0x' + encode_hex(BLANK_UNCLES_HASH))
+            #}, self.env)
 
         assert self.env.db == self.state.db
 
