@@ -204,12 +204,3 @@ def prev_header_to_dict(h):
     }
 
 BLANK_UNCLES_HASH = sha3(rlp.encode([]))
-
-def dict_to_prev_header(h):
-    return FakeHeader(hash=parse_as_bin(h['hash']),
-                      number=parse_as_int(h['number']),
-                      timestamp=parse_as_int(h['timestamp']),
-                      difficulty=parse_as_int(h['difficulty']),
-                      gas_used=parse_as_int(h.get('gas_used', '0')),
-                      gas_limit=parse_as_int(h['gas_limit']),
-                      uncles_hash=parse_as_bin(h.get('uncles_hash', '0x' + encode_hex(BLANK_UNCLES_HASH))))

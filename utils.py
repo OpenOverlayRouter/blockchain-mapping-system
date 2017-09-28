@@ -6,33 +6,44 @@ import rlp
 from rlp.sedes import big_endian_int, BigEndianInt, Binary
 from rlp.utils import decode_hex, encode_hex, ascii_chr, str_to_bytes
 from py_ecc.secp256k1 import privtopub, ecdsa_raw_sign, ecdsa_raw_recover
+from ipaddress import IPv4Address
 
 import random
 
-# 58 character alphabet used
-alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
-TT256 = 2 ** 256
-TT256M1 = 2 ** 256 - 1
-TT255 = 2 ** 255
-SECP256K1P = 2**256 - 4294968273
+if sys.version_info.major == 2:
+    def to_string(value):
+        return str(value)
 
-def b58encode(s):
-    n = int(s,16)
-    result = ''
-    while n > 0:
-        result = alphabet[n%58] + result
-        n //= 58
-    return result
+    def is_numeric(x):
+        return isinstance(x, (int, long))
 
+    def is_string(x):
+        return isinstance(x, (str, unicode))
 
-def b58decode(s):
-    result = 0
-    for i in range(0, len(s)):
-        result = result * 58 + alphabet.index(s[i])
-    return '{:x}'.format(result).zfill(50)
+    def encode_int32(v):
+        return zpad(int_to_big_endian(v), 32)
 
-def to_string(value):
-    return str(value)
+else:
+    def to_string(value):
+        if isinstance(value, bytes):
+            return value
+        if isinstance(value, str):
+            return bytes(value, 'utf-8')
+        if isinstance(value, int):
+            return bytes(str(value), 'utf-8')
+
+    def is_numeric(x): return isinstance(x, int)
+
+    def is_string(x): return isinstance(x, bytes)
+
+    def encode_int32(v):
+        return v.to_bytes(32, byteorder='big')
+
+    def encode_int_len(v, length):
+        return v.to_bytes(length=length, byteorder='big')
+
+    def bytes_to_int(data):
+        return int.from_bytes(data, byteorder='big')
 
 def sha3_256(x):
     return keccak.new(digest_bits=256, data=x).digest()
@@ -42,18 +53,6 @@ def sha3(seed):
 
 def sha3rlp(x):
     return sha3(rlp.encode(x))
-
-def sha3_256(x):
-    return keccak.new(digest_bits=256, data=x).digest()
-
-def is_numeric(x):
-    return isinstance(x, (int, long))
-
-def is_string(x):
-    return isinstance(x, (str, unicode))
-
-def to_string(value):
-    return str(value)
 
 def big_endian_to_int(x):
     return big_endian_int.deserialize(str_to_bytes(x).lstrip(b'\x00'))
@@ -104,6 +103,7 @@ def encode_int(v):
         raise Exception("Integer invalid or out of range: %r" % v)
     return int_to_big_endian(v)
 
+
 def zpad(x, l):
     """ Left zero pad value `x` at least to length `l`.
     >>> zpad('', 1)
@@ -117,8 +117,6 @@ def zpad(x, l):
     """
     return b'\x00' * max(0, l - len(x)) + x
 
-def encode_int32(v):
-    return zpad(int_to_big_endian(v), 32)
 
 def privtoaddr(k):
     k = normalize_key(k)
@@ -139,6 +137,38 @@ def normalize_key(key):
     if o == b'\x00' * 32:
         raise Exception("Zero privkey invalid")
     return o
+
+def ecrecover_to_pub(rawhash, v, r, s):
+    result = ecdsa_raw_recover(rawhash, (v,r,s))
+    if result:
+        x, y = result
+        pub = encode_int32(x) + encode_int32(y)
+    else:
+        raise ValueError('Invalid VRS')
+    assert len(pub) == 64
+    return pub
+
+def ecsign(rawhash, key):
+    v, r, s = ecdsa_raw_sign(rawhash, key)
+    return v, r, s
+
+def random_privkey():
+    key = hex(random.SystemRandom.getrandbits(256))
+    key = key[2:-1].zfill(64)
+    return bytes.fromhex(key)
+
+def pubkey_to_address(pubkey):
+    return sha3_256(pubkey)[-20:]
+
+def ip_to_bytes(addr):
+    address, mask = addr.split('/')
+    address = int(IPv4Address(address))
+    return encode_int_len(address, 4) + encode_int_len(int(mask), 1)
+
+def bytes_to_ip(b):
+    ip = str(b[0]) + '.' + str(b[1]) + '.' + str(b[2]) + '.' + str(b[3])
+    ip += '/' + str(b[4])
+    return ip
 
 address = Binary.fixed_length(20, allow_empty=True)
 int20 = BigEndianInt(20)

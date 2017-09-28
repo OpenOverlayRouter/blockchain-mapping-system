@@ -5,23 +5,14 @@ import bitcoin
 from hashlib import pbkdf2_hmac
 from rlp.utils import decode_hex
 from utils import encode_hex, sha3
-
-
-scrypt = __import__('scrypt')
-
-
 import binascii
 import struct
 from math import ceil
-
-
-
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA256
 from Crypto.Util import Counter
 
-
-
+scrypt = __import__('scrypt')
 
 SCRYPT_CONSTANTS = {
     "n": 262144,
@@ -99,7 +90,6 @@ if scrypt is not None:
         "calc": scrypt_hash,
         "mkparams": mk_scrypt_params
     }
-
 
 def make_keystore_json(priv, pw, kdf="pbkdf2", cipher="aes-128-ctr"):
     # Get the hash function and default parameters

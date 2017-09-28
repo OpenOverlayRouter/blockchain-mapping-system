@@ -1,4 +1,4 @@
-import block
+from block import Block, BlockHeader
 import transactiondb
 import utils
 import rlp
@@ -15,13 +15,15 @@ class ChainService():
     def __init__(self, db):
         self.db = db
 
-    def newBlock(self):
-        self.block = block.Block(block.BlockHeader()) #empty header
+    def new_block(self):
+        self.block = Block(BlockHeader()) #empty header
 
-    def addTransaction(self, transaction):
+    def add_transaction(self, transaction):
         self.block.transactions.append(transaction)
         encodedTransaction = utils.sha3(rlp.encode(transaction))
         self.block.header.tx_root.update(encodedTransaction, rlp.encode(transaction))
 
-    def getTransactioni(self, transactionIndex):
-        return self.block.lock.transactions[transactionIndex]
+    def get_transactioni(self, transactionIndex):
+        return self.block.transactions[transactionIndex]
+
+

@@ -2,45 +2,61 @@ import rlp #used to encode data
 import transactiondb
 import trie
 from rlp.sedes import big_endian_int, Binary, binary, CountableList
-from utils import hash32, trie_root, address
+from utils import hash32, trie_root, address, encode_hex
+import utils
 from Crypto.Hash import keccak
 from config import default_config
+from transactiondb import Transaction
 
-class BlockHeader:
+class BlockHeader(rlp.Serializable):
     fields = [
         ('prevhash', hash32),
         ('timestamp', big_endian_int),
         ('extra_data', binary),
         ('state_root', trie_root),
         ('tx_root', trie_root),
-        ('signature'),
-        ('signer_addr',address)
+        ('coinbase',address)
     ]
 
     def __init__(self,
                  prevhash=default_config['GENESIS_PREVHASH'],
-                 signer_addr=default_config['GENESIS_COINBASE'],
                  state_root=trie.BLANK_ROOT,
                  tx_root=trie.BLANK_ROOT,
                  timestamp=0,
+                 coinbase=default_config['GENESIS_COINBASE'],
                  extra_data=''):
         self.prevhash = prevhash
-        self.signer_addr = signer_addr
+        self.coinbase = coinbase
         self.state_root = state_root
         self.tx_root = tx_root
         self.timestamp = timestamp
         self.extra_data = extra_data
 
+    @property
+    def hash(self):
+        return utils.sha3(rlp.encode(self))
 
-class Block:
+    @property
+    def hex_hash(self):
+        return encode_hex(self.hash)
+
+
+class Block(rlp.Serializable):
     fields = [
         ('header', BlockHeader),
-        ('transactions', transactiondb),
-        ('uncles', BlockHeader)
+        ('transactions', CountableList(Transaction))
     ]
 
-    def __init__(self, header, transactions=[], uncles=None):
+    def __init__(self, header, transactions=None):
         self.header = header
-        self.transactions = transactions
-        self.uncles = uncles
+        self.transactions = transactions or []
 
+    def __getattribute__(self, name):
+        try:
+            return rlp.Serializable.__getattribute__(self, name)
+        except AttributeError:
+            return getattr(self.header, name)
+
+    @property
+    def transaction_count(self):
+        return len(self.transactions)
