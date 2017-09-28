@@ -12,6 +12,16 @@ import random
 if sys.version_info.major == 2:
     def to_string(value):
         return str(value)
+
+    def is_numeric(x):
+        return isinstance(x, (int, long))
+
+    def is_string(x):
+        return isinstance(x, (str, unicode))
+
+    def encode_int32(v):
+        return zpad(int_to_big_endian(v), 32)
+
 else:
     def to_string(value):
         if isinstance(value, bytes):
@@ -21,24 +31,21 @@ else:
         if isinstance(value, int):
             return bytes(str(value), 'utf-8')
 
+    def is_numeric(x): return isinstance(x, int)
+
+    def is_string(x): return isinstance(x, bytes)
+
+    def encode_int32(v):
+        return v.to_bytes(32, byteorder='big')
+
 def sha3_256(x):
     return keccak.new(digest_bits=256, data=x).digest()
 
 def sha3(seed):
     return sha3_256(to_string(seed))
 
-
 def sha3rlp(x):
     return sha3(rlp.encode(x))
-
-def sha3_256(x):
-    return keccak.new(digest_bits=256, data=x).digest()
-
-def is_numeric(x):
-    return isinstance(x, (int, long))
-
-def is_string(x):
-    return isinstance(x, (str, unicode))
 
 def big_endian_to_int(x):
     return big_endian_int.deserialize(str_to_bytes(x).lstrip(b'\x00'))
@@ -103,8 +110,6 @@ def zpad(x, l):
     """
     return b'\x00' * max(0, l - len(x)) + x
 
-def encode_int32(v):
-    return zpad(int_to_big_endian(v), 32)
 
 def privtoaddr(k):
     k = normalize_key(k)
@@ -139,6 +144,14 @@ def ecrecover_to_pub(rawhash, v, r, s):
 def ecsign(rawhash, key):
     v, r, s = ecdsa_raw_sign(rawhash, key)
     return v, r, s
+
+def random_privkey():
+    key = hex(random.SystemRandom.getrandbits(256))
+    key = key[2:-1].zfill(64)
+    return bytes.fromhex(key)
+
+def pubkey_to_address(pubkey):
+    return sha3_256(pubkey)[-20:]
 
 address = Binary.fixed_length(20, allow_empty=True)
 int20 = BigEndianInt(20)
