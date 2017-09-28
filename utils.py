@@ -31,7 +31,6 @@ def b58decode(s):
         result = result * 58 + alphabet.index(s[i])
     return '{:x}'.format(result).zfill(50)
 
-
 def to_string(value):
     return str(value)
 
@@ -40,7 +39,6 @@ def sha3_256(x):
 
 def sha3(seed):
     return sha3_256(to_string(seed))
-
 
 def sha3rlp(x):
     return sha3(rlp.encode(x))
@@ -105,7 +103,6 @@ def encode_int(v):
     if not is_numeric(v) or v < 0 or v >= TT256:
         raise Exception("Integer invalid or out of range: %r" % v)
     return int_to_big_endian(v)
-
 
 def zpad(x, l):
     """ Left zero pad value `x` at least to length `l`.
