@@ -3,7 +3,8 @@ import rlp
 import netaddr
 from netaddr import IPNetwork, IPAddress, IPSet
 from utils import address, normalize_address
-
+import random
+import json
 
 class Balance(rlp.Serializable):
     fields = [
@@ -25,7 +26,7 @@ class Balance(rlp.Serializable):
 
     def add_delegated_ips(self, address, ips):
         n_address = normalize_address(address)
-        if n_address in self.delegated_ips:
+        if n_address in self.delegated_ips.keys():
             self.delegated_ips[n_address].add(ips)
         else:
             self.delegated_ips[n_address] = IPSet(ips)
@@ -38,7 +39,7 @@ class Balance(rlp.Serializable):
 
     def add_recieved_ips(self, address, ips):
         n_address = normalize_address(address)
-        if n_address in self.recieved_ips:
+        if n_address in self.recieved_ips.keys():
             self.recieved_ips[n_address].add(ips)
         else:
             self.recieved_ips[n_address] = IPSet(ips)
@@ -63,5 +64,4 @@ class Balance(rlp.Serializable):
             if set.__contains__(ips):
                 return True
         return False
-
 

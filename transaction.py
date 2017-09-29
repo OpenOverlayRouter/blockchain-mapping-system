@@ -1,5 +1,5 @@
 import rlp
-from utils import sha3, sha3rlp, int_to_big_endian, parse_as_bin, ecsign, \
+from utils import sha3, sha3rlp, int_to_bytes, parse_as_bin, ecsign, \
                   ecrecover_to_pub, to_string, pubkey_to_address, \
                   ip_to_bytes, bytes_to_ip, bytes_to_int, int_to_addr
 
@@ -47,23 +47,25 @@ def decode_transaction(tx):
 
 
 def hash_message(category, msg):
+    if isinstance(msg, str):
+        msg = parse_as_bin(msg)
     prefix = b''
     if category == 0:
-        prefix = b'\x19Allocate:\n'
+        prefix = b'Allocate:\n'
     elif category == 1:
-        prefix = b'\x19Delege:\n'
+        prefix = b'Delegate:\n'
     elif category == 2:
-        prefix = b'\x19MapServer:\n'
+        prefix = b'MapServer:\n'
     elif category == 3:
-        prefix = b'\x19Locator:\n'
+        prefix = b'Locator:\n'
     elif category == 4:
-        prefix = b'\x19Revoke:\n'
-    prefix += to_string(len(msg))
-    return sha3(prefix+msg)
+        prefix = b'Revoke:\n'
+    return sha3(int_to_bytes(len(prefix)) + prefix +
+                int_to_bytes(len(msg)) + msg)
 
 
 def encode_transaction(category, privkey, dest_address, value, time, metadata=None):
-    nonce = int_to_big_endian(5) # get_nonce
+    nonce = int_to_bytes(5) # get_nonce
     to = int_to_addr(dest_address)
     _value = ip_to_bytes(value)
     if category <= 1:
