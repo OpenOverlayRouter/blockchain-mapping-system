@@ -2,9 +2,9 @@ from balance import Balance
 from netaddr import IPNetwork, IPAddress
 import json
 import random
-ip_list = list(IPNetwork('192.0.2.128/28'))
-random.shuffle(ip_list)
-N = 5000
+
+
+N = 500
 
 balance = Balance()
 
@@ -15,7 +15,7 @@ def create_rand_net():
     b = random.randint(0,192)
     c = random.randint(0,192)
     d = random.randint(0,192)
-    e = random.randint(15,32)
+    e = random.randint(24,32)
     return IPNetwork(str(a)+"."+str(b)+"."+str(c)+"."+str(d)+"/"+str(e))
 cont = 0
 alloc = data['alloc']
@@ -26,10 +26,26 @@ for addr, bal in alloc.items():
 for i in range(N):
     balance.add_own_ips(create_rand_net())
     net = create_rand_net()
+    net = create_rand_net()
+    addr = addresses[random.randint(0,len(addr))]
+    balance.add_delegated_ips(addr,net)
+    net = create_rand_net()
+    addr = addresses[random.randint(0,len(addr))]
+    balance.add_recieved_ips(addr,net)
+
+for i in range(N):
+    net = create_rand_net()
+
     if(balance.in_own_ips(net)):
-        cont = cont + 1
         balance.remove_own_ips(net)
+
+    net = create_rand_net()
+    addr = addresses[random.randint(0,len(addr))]
+
+    net = create_rand_net()
+    addr = addresses[random.randint(0,len(addr))]
 
 print(cont)
 print(balance.own_ips)
+print(balance.delegated_ips)
 print(balance.recieved_ips)
