@@ -1,5 +1,4 @@
 import json
-import random
 import time
 import itertools
 import trie
@@ -20,7 +19,6 @@ def update_block_env_variables(state, block):
     state.timestamp = block.header.timestamp
     state.gas_limit = block.header.gas_limit
     state.block_number = block.header.number
-    state.recent_uncles[state.block_number] = [x.hash for x in block.uncles]
     state.block_coinbase = block.header.coinbase
     state.block_difficulty = block.header.difficulty
 
@@ -145,9 +143,7 @@ class Chain(object):
         state = State(env=self.env)
         state.trie.root_hash = block.header.state_root
         update_block_env_variables(state, block)
-        state.gas_used = block.header.gas_used
         state.txindex = len(block.transactions)
-        state.recent_uncles = {}
         state.prev_headers = []
         b = block
         header_depth = state.config['PREV_HEADER_DEPTH']
