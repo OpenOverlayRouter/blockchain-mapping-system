@@ -15,10 +15,7 @@ def get_transaction_from(tx):
     _tx = vals[:-3]
     category = bytes_to_int(vals[1])
     digest = hash_message(category, sha3rlp(_tx))
-    v, r, s = vals[-3:]
-    v = bytes_to_int(v)
-    r = bytes_to_int(r)
-    s = bytes_to_int(s)
+    v, r, s = map(bytes_to_int, vals[-3:])
     pubkey = ecrecover_to_pub(digest, v, r, s)
     return pubkey_to_address(pubkey)
 
