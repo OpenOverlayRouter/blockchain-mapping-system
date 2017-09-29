@@ -14,25 +14,25 @@ import copy
 from account import Account
 from trie import BLANK_NODE, BLANK_ROOT
 import sys
+from block import FakeHeader
 
 STATE_DEFAULTS = {
     "txindex": 0,
-    "gas_used": 0,
-    "gas_limit": 3141592,
     "block_number": 0,
     "block_coinbase": '\x00' * 20,
-    "block_difficulty": 1,
     "timestamp": 0,
-    "prev_headers": [],
-    "refunds": 0,
+    "prev_headers": []
 }
 
 class State():
     def __init__(self, root=b'', env=Env(), executing_on_head=False, **kwargs):
         self.env = env
         self.trie = SecureTrie(Trie(RefcountDB(self.db), root))
-        for k, v in STATE_DEFAULTS.items():
-            setattr(self, k, kwargs.get(k, copy.copy(v)))
+        self.txindex = STATE_DEFAULTS['txindex']
+        self.block_number = STATE_DEFAULTS['block_number']
+        self.block_coinbase = STATE_DEFAULTS['block_coinbase']
+        self.timestamp = STATE_DEFAULTS['timestamp']
+        self.prev_headers = STATE_DEFAULTS['prev_headers']
         self.journal = []
         self.cache = {}
         self.changed = {}
@@ -196,11 +196,12 @@ def prev_header_to_dict(h):
     return {
         "hash": '0x' + encode_hex(h.hash),
         "number": str(h.number),
-        "timestamp": str(h.timestamp),
-        "difficulty": str(h.difficulty),
-        "gas_used": str(h.gas_used),
-        "gas_limit": str(h.gas_limit),
-        "uncles_hash": '0x' + encode_hex(h.uncles_hash)
+        "timestamp": str(h.timestamp)
     }
+
+def dict_to_prev_header(h):
+    return FakeHeader(hash=parse_as_bin(h['hash']),
+                      number=parse_as_int(h['number']),
+                      timestamp=parse_as_int(h['timestamp']))
 
 BLANK_UNCLES_HASH = sha3(rlp.encode([]))

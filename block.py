@@ -15,6 +15,7 @@ class BlockHeader(rlp.Serializable):
         ('extra_data', binary),
         ('state_root', trie_root),
         ('tx_root', trie_root),
+        ('number', big_endian_int),
         ('coinbase',address)
     ]
 
@@ -22,6 +23,7 @@ class BlockHeader(rlp.Serializable):
                  prevhash=default_config['GENESIS_PREVHASH'],
                  state_root=trie.BLANK_ROOT,
                  tx_root=trie.BLANK_ROOT,
+                 number=0,
                  timestamp=0,
                  coinbase=default_config['GENESIS_COINBASE'],
                  extra_data=''):
@@ -29,6 +31,7 @@ class BlockHeader(rlp.Serializable):
         self.coinbase = coinbase
         self.state_root = state_root
         self.tx_root = tx_root
+        self.number = number
         self.timestamp = timestamp
         self.extra_data = extra_data
 
@@ -40,6 +43,18 @@ class BlockHeader(rlp.Serializable):
     def hex_hash(self):
         return encode_hex(self.hash)
 
+class FakeHeader():
+
+    def __init__(self, hash='\x00' * 32, number=0, timestamp=0):
+        self.hash = hash
+        self.number = number
+        self.timestamp = timestamp
+
+    def to_block_header(self):
+        return BlockHeader(
+            number=self.number,
+            timestamp=self.timestamp
+        )
 
 class Block(rlp.Serializable):
     fields = [

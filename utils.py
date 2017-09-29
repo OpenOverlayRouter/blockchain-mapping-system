@@ -9,6 +9,11 @@ from py_ecc.secp256k1 import privtopub, ecdsa_raw_sign, ecdsa_raw_recover
 
 import random
 
+TT256 = 2 ** 256
+TT256M1 = 2 ** 256 - 1
+TT255 = 2 ** 255
+SECP256K1P = 2**256 - 4294968273
+
 if sys.version_info.major == 2:
     def to_string(value):
         return str(value)
