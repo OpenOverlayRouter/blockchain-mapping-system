@@ -6,7 +6,6 @@ import rlp
 from rlp.sedes import big_endian_int, BigEndianInt, Binary
 from rlp.utils import decode_hex, encode_hex, ascii_chr, str_to_bytes
 from py_ecc.secp256k1 import privtopub, ecdsa_raw_sign, ecdsa_raw_recover
-from ipaddress import IPv4Address
 
 import random
 
@@ -161,13 +160,15 @@ def pubkey_to_address(pubkey):
     return sha3_256(pubkey)[-20:]
 
 def ip_to_bytes(addr):
-    address, mask = addr.split('/')
-    address = int(IPv4Address(address))
-    return encode_int_len(address, 4) + encode_int_len(int(mask), 1)
+    address, mask = addr.split('/') if '/' in addr else (addr, None)
+    b = b''.join([encode_int_len(int(x),1) for x in address.split('.')])
+    if mask is not None: b += encode_int_len(int(mask),1)
+    return b
+
 
 def bytes_to_ip(b):
     ip = str(b[0]) + '.' + str(b[1]) + '.' + str(b[2]) + '.' + str(b[3])
-    ip += '/' + str(b[4])
+    if len(b) == 5: ip += '/' + str(b[4])
     return ip
 
 address = Binary.fixed_length(20, allow_empty=True)
@@ -176,3 +177,4 @@ int32 = BigEndianInt(32)
 int256 = BigEndianInt(256)
 hash32 = Binary.fixed_length(32)
 trie_root = Binary.fixed_length(32, allow_empty=True)
+null_address = b'\xff' * 20
