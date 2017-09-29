@@ -37,14 +37,14 @@ class ChainService():
         self.chain = chain.Chain()
         self.block = Block(BlockHeader())
 
-    def add_transaction(self, tx, origin=None, force_broadcast=False, force=False):
+    def add_transaction(self, tx):
         assert isinstance(tx, Transaction)
 
         # validate transaction
         try:
             # Transaction validation for broadcasting. Transaction is validated
             # against the current head candidate.
-            validate_transaction(self._head_candidate_state, tx)
+            validate_transaction(self.chain.state, tx)
         except Exception as e:
             print(e)
 

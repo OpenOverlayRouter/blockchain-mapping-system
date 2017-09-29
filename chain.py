@@ -2,16 +2,17 @@ import json
 import time
 import itertools
 import trie
-from utils import parse_as_bin, big_endian_to_int
+from utils import big_endian_to_int
 import rlp
 from rlp.utils import encode_hex
 from config import Env
-from state import State, dict_to_prev_header
+from state import State, dict_to_prev_header, mk_basic_state
 from block import Block, BlockHeader
 from db import EphemDB
 
 
 config_string = ':info'  # ,eth.chain:debug'
+
 
 
 # Update block variables into the state
@@ -43,30 +44,30 @@ def validate_header(state, header):
 
 
 # Make the root of a receipt tree
-def mk_transaction_sha(receipts):
-    t = trie.Trie(EphemDB())
+def mk_transaction_sha(receipts, db):
+    t = trie.Trie(db)
     for i, receipt in enumerate(receipts):
         t.update(rlp.encode(i), rlp.encode(receipt))
     return t.root_hash
 
 
 # Validate that the transaction list root is correct
-def validate_transaction_tree(state, block):
-    if block.header.tx_list_root != mk_transaction_sha(block.transactions):
+def validate_transaction_tree(state, block, db):
+    if block.header.tx_list_root != mk_transaction_sha(block.transactions, db):
         raise ValueError("Transaction root mismatch: header %s computed %s, %d transactions" %
-                         (encode_hex(block.header.tx_list_root), encode_hex(mk_transaction_sha(block.transactions)),
+                         (encode_hex(block.header.tx_list_root), encode_hex(mk_transaction_sha(block.transactions, db)),
                           len(block.transactions)))
     return True
 
 
 # Applies the block-level state transition function
-def apply_block(state, block):
+def apply_block(state, block, db):
     # Pre-processing and verification
     snapshot = state.snapshot()
     try:
         # Basic validation
         assert validate_header(state, block.header)
-        assert validate_transaction_tree(state, block)
+        assert validate_transaction_tree(state, block, db)
         # Process transactions
         #for tx in block.transactions:
             #apply_transaction(state, tx) #TODO: adaptar esta funcion
@@ -90,24 +91,7 @@ class Chain(object):
             print('Initializing chain from saved head, #%d (%s)' %
                   (self.state.prev_headers[0].number, encode_hex(self.state.prev_headers[0].hash)))
         elif genesis is None:
-            raise Exception("Need genesis decl!")
-        elif isinstance(genesis, State):
-            assert env is None
-            self.state = genesis
-            self.env = self.state.env
-            print('Initializing chain from provided state')
-        elif isinstance(genesis, dict):
-            print('Initializing chain from new state based on alloc')
-            #self.state = mk_basic_state(genesis, {
-            #    "number": kwargs.get('number', 0),
-            #    "gas_limit": kwargs.get('gas_limit', self.env.config['BLOCK_GAS_LIMIT']),
-            #    "gas_used": kwargs.get('gas_used', 0),
-            #    "timestamp": kwargs.get('timestamp', 1467446877),
-            #    "difficulty": kwargs.get('difficulty', 2**25),
-            #    "hash": kwargs.get('prevhash', '00' * 32),
-            #    "uncles_hash": kwargs.get('uncles_hash', '0x' + encode_hex(BLANK_UNCLES_HASH))
-            #}, self.env)
-
+            self.state = mk_basic_state() # if genesis not provided, generate it
         assert self.env.db == self.state.db
 
         self.new_head_cb = new_head_cb
@@ -257,7 +241,7 @@ class Chain(object):
             self.state.deletes = []
             self.state.changed = {}
             try:
-                apply_block(self.state, block)
+                apply_block(self.state, block, self.env.db)
             except (Exception):
                 return False
             self.db.put(b'block:%d' % block.header.number, block.header.hash)
@@ -274,7 +258,7 @@ class Chain(object):
         elif block.header.prevhash in self.env.db:
             temp_state = self.mk_poststate_of_blockhash(block.header.prevhash)
             try:
-                apply_block(temp_state, block)
+                apply_block(temp_state, block, self.env.db)
             except (Exception):
                 return False
             changed = temp_state.changed

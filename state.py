@@ -204,4 +204,13 @@ def dict_to_prev_header(h):
                       number=parse_as_int(h['number']),
                       timestamp=parse_as_int(h['timestamp']))
 
+
+# generates a genesis state
+def mk_basic_state():
+    state = State()
+    state.block_number = 1
+    state.prev_headers = None
+    state.commit()
+    return state
+
 BLANK_UNCLES_HASH = sha3(rlp.encode([]))
