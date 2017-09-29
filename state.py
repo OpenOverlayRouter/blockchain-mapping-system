@@ -28,8 +28,11 @@ class State():
     def __init__(self, root=b'', env=Env(), executing_on_head=False, **kwargs):
         self.env = env
         self.trie = SecureTrie(Trie(RefcountDB(self.db), root))
-        for k, v in STATE_DEFAULTS.items():
-            setattr(self, k, kwargs.get(k, copy.copy(v)))
+        self.txindex = STATE_DEFAULTS['txindex']
+        self.block_number = STATE_DEFAULTS['block_number']
+        self.block_coinbase = STATE_DEFAULTS['block_coinbase']
+        self.timestamp = STATE_DEFAULTS['timestamp']
+        self.prev_headers = STATE_DEFAULTS['prev_headers']
         self.journal = []
         self.cache = {}
         self.changed = {}
