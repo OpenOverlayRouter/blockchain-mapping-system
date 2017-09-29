@@ -213,4 +213,5 @@ def mk_basic_state():
     state.commit()
     return state
 
+
 BLANK_UNCLES_HASH = sha3(rlp.encode([]))

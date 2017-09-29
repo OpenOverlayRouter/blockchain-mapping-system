@@ -91,7 +91,7 @@ class Chain(object):
             print('Initializing chain from saved head, #%d (%s)' %
                   (self.state.prev_headers[0].number, encode_hex(self.state.prev_headers[0].hash)))
         elif genesis is None:
-            self.state = mk_basic_state() # if genesis not provided, generate it
+            self.state = mk_basic_state()# if genesis not provided, generate it
         assert self.env.db == self.state.db
 
         self.new_head_cb = new_head_cb

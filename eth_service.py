@@ -26,8 +26,8 @@ def validate_transaction(state, tx):
 
     return True
 
-class ChainService():
 
+class ChainService():
     """
     Manages the chain and requests to it.
     """
