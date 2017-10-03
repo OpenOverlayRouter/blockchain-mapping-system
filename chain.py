@@ -9,6 +9,7 @@ from config import Env
 from state import State, dict_to_prev_header, mk_basic_state
 from block import Block, BlockHeader
 from db import EphemDB
+from genesis_helpers import state_from_genesis_declaration
 
 
 config_string = ':info'  # ,eth.chain:debug'
@@ -91,7 +92,24 @@ class Chain(object):
             print('Initializing chain from saved head, #%d (%s)' %
                   (self.state.prev_headers[0].number, encode_hex(self.state.prev_headers[0].hash)))
         elif genesis is None:
-            self.state = mk_basic_state()# if genesis not provided, generate it
+            raise Exception("Need genesis decl!")
+        elif isinstance(genesis, State):
+            assert env is None
+            self.state = genesis
+            self.env = self.state.env
+            print('Initializing chain from provided state')
+        elif "extraData" in genesis:
+            self.state = state_from_genesis_declaration(
+                genesis, self.env, executing_on_head=True)
+            print('Initializing chain from provided genesis declaration')
+        elif isinstance(genesis, dict):
+            print('Initializing chain from new state based on alloc')
+            self.state = mk_basic_state(genesis, {
+                "number": kwargs.get('number', 0),
+                "timestamp": kwargs.get('timestamp', 1467446877),
+                "hash": kwargs.get('prevhash', '00' * 32)
+            }, self.env)
+
         assert self.env.db == self.state.db
 
         self.new_head_cb = new_head_cb

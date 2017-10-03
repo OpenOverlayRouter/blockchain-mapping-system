@@ -4,6 +4,7 @@ from utils import null_address
 import rlp
 import db
 import chain
+import json
 
 
 def validate_transaction(state, tx):
@@ -34,7 +35,7 @@ class ChainService():
 
     def __init__(self, db):
         self.db = db
-        self.chain = chain.Chain()
+        self.chain = chain.Chain(json.load(open('genesis.json')))
         self.block = Block(BlockHeader())
 
     def add_transaction(self, tx):
