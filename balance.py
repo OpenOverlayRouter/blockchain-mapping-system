@@ -6,6 +6,8 @@ from utils import address, normalize_address
 import random
 import json
 
+
+
 class Balance(rlp.Serializable):
     fields = [
         ('own_ips', IPSet),
@@ -17,6 +19,7 @@ class Balance(rlp.Serializable):
         self.own_ips = own_ips
         self.delegated_ips = delegated_ips
         self.received_ips = received_ips
+        super(Balance,self).__init__(own_ips,delegated_ips,received_ips)
 
     def add_own_ips(self, ips):
         self.own_ips.add(ips)
