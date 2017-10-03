@@ -15,4 +15,5 @@ for i in range (0, len(transactions)):
     service.add_transaction(transactions[i])
 
 for i in range (0, len(transactions)):
-    print(service.get_transaction_i(i))
+    if service.get_transaction_i(i) is not None:
+        print('transaction found in index' + str(i))

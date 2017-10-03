@@ -6,14 +6,12 @@ from utils import big_endian_to_int
 import rlp
 from rlp.utils import encode_hex
 from config import Env
-from state import State, dict_to_prev_header, mk_basic_state
+from state import State, dict_to_prev_header
 from block import Block, BlockHeader
-from db import EphemDB
-from genesis_helpers import state_from_genesis_declaration
+from genesis_helpers import state_from_genesis_declaration, mk_basic_state
 
 
 config_string = ':info'  # ,eth.chain:debug'
-
 
 
 # Update block variables into the state
