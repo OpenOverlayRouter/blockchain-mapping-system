@@ -95,7 +95,6 @@ class Chain(object):
         assert self.env.db == self.state.db
 
         self.new_head_cb = new_head_cb
-
         assert self.state.block_number == self.state.prev_headers[0].number
         self.genesis = self.get_block_by_number(0)
         self.head_hash = self.state.prev_headers[0].hash

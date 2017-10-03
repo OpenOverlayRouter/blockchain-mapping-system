@@ -1,6 +1,6 @@
 import utils
 import rlp
-import leveldb
+#import leveldb
 from rlp.utils import decode_hex, ascii_chr, str_to_bytes
 import sys
 

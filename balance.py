@@ -10,13 +10,13 @@ class Balance(rlp.Serializable):
     fields = [
         ('own_ips', IPSet),
         ('delegated_ips', {address, IPSet}),
-        ('recieved_ips', {address, IPSet})
+        ('received_ips', {address, IPSet})
     ]
 
-    def __init__(self, own_ips=IPSet(), delegated_ips={}, recieved_ips={}):
+    def __init__(self, own_ips=IPSet(), delegated_ips={}, received_ips={}):
         self.own_ips = own_ips
         self.delegated_ips = delegated_ips
-        self.recieved_ips = recieved_ips
+        self.received_ips = received_ips
 
     def add_own_ips(self, ips):
         self.own_ips.add(ips)
@@ -37,18 +37,18 @@ class Balance(rlp.Serializable):
         if len(self.delegated_ips[n_address]) == 0:
             self.delegated_ips.pop(n_address)
 
-    def add_recieved_ips(self, address, ips):
+    def add_received_ips(self, address, ips):
         n_address = normalize_address(address)
-        if n_address in self.recieved_ips.keys():
-            self.recieved_ips[n_address].add(ips)
+        if n_address in self.received_ips.keys():
+            self.received_ips[n_address].add(ips)
         else:
-            self.recieved_ips[n_address] = IPSet(ips)
+            self.received_ips[n_address] = IPSet(ips)
 
-    def remove_recieved_ips(self, address, ips):
+    def remove_received_ips(self, address, ips):
         n_address = normalize_address(address)
-        self.recieved_ips[n_address].remove(ips)
-        if len(self.recieved_ips[n_address]) == 0:
-            self.recieved_ips.pop(n_address)
+        self.received_ips[n_address].remove(ips)
+        if len(self.received_ips[n_address]) == 0:
+            self.received_ips.pop(n_address)
 
     def in_own_ips(self,ips):
         return self.own_ips.__contains__(ips)
@@ -59,8 +59,8 @@ class Balance(rlp.Serializable):
                 return True
         return False
 
-    def in_recieved_ips(self,ips):
-        for set in self.recieved_ips.itervalues():
+    def in_received_ips(self,ips):
+        for set in self.received_ips.itervalues():
             if set.__contains__(ips):
                 return True
         return False
