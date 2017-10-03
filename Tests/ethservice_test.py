@@ -17,3 +17,12 @@ for i in range (0, len(transactions)):
 for i in range (0, len(transactions)):
     if service.get_transaction_i(i) is not None:
         print('transaction found in index' + str(i))
+
+print('add_block')
+service.add_block()
+
+print('checking if exists block 0')
+if service.get_block_in_position_i(0) is not None:
+    print ('exists')
+else:
+    print ('not exists')

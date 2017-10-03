@@ -3,6 +3,8 @@ from transactiondb import Transaction
 from utils import null_address
 import chain
 import json
+from config import Env
+from db import LevelDB
 
 
 def validate_transaction(state, tx):
@@ -34,7 +36,7 @@ class ChainService():
 
     def __init__(self, db):
         self.db = db
-        self.chain = chain.Chain(json.load(open('../genesis.json')))
+        self.chain = chain.Chain(json.load(open('../genesis.json')), env=Env(LevelDB("./chain")))
         self.block = Block(BlockHeader())
 
     def add_transaction(self, tx):
@@ -49,10 +51,16 @@ class ChainService():
             print(e)
         self.block.transactions.append(tx)
 
-    # adds a block to the chain
-    def add_block(self, block):
-        self.chain.add_block(block)
+    # adds the current block to the chain and generates a new one
+    def add_block(self):
+        self.chain.add_block(self.block)
+        self.block = Block(BlockHeader())
 
+    # gets the transaction in index i of the current block
     def get_transaction_i(self, transactionIndex):
         return self.block.transactions[transactionIndex]
+
+
+    def get_block_in_position_i(self, position):
+        return self.chain.get_block_by_number(position)
 
