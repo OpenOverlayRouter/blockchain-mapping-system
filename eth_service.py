@@ -1,24 +1,23 @@
 from block import Block, BlockHeader
 from transactiondb import Transaction
 from utils import null_address
-import rlp
-import db
 import chain
 import json
 
 
 def validate_transaction(state, tx):
-
+    unsigned = False
     # (1) The transaction signature is valid;
-    if not tx.sender:  # sender is set and validated on Transaction initialization
+    if tx.v is None or tx.s is None or tx.r is None:  # sender is set and validated on Transaction initialization
+        unsigned = True
         raise Exception('unsigned transaction')
 
     #assert check_signature(state.config, state.block_number, tx) #TODO: hacer funcion check_signature
 
     # (2) the transaction nonce is valid (equivalent to the
     #     sender account's current nonce);
-    req_nonce = 0 if tx.sender == null_address else state.get_nonce(tx.sender)
-    if req_nonce != tx.nonce:
+    req_nonce = 0 if unsigned is True else state.get_nonce(tx.sender) #TODO: cambiar tx.sender por funcion para
+    if req_nonce != tx.nonce:                                         #TODO: obtenerlo a partir de v, r, s
         raise Exception('invalid nonce')
 
     # (3) check that the address sending an IP address has it
@@ -48,9 +47,6 @@ class ChainService():
             validate_transaction(self.chain.state, tx)
         except Exception as e:
             print(e)
-
-    # adds a transaction to the block
-    def _add_transaction_to_block(self, tx):
         self.block.transactions.append(tx)
 
     # adds a block to the chain
