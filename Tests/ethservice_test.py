@@ -14,9 +14,6 @@ transactions.append(transactions.Transaction(3, '', '', 3, 0, 'data', 1, 1, 1))
 for i in range (0, len(transactions)):
     service.add_transaction(transactions[i])
 
-for i in range (0, len(transactions)):
-    if service.get_transaction_i(i) is not None:
-        print('transaction found in index' + str(i))
 
 print('add_block')
 service.add_block()

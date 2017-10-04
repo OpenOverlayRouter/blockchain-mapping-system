@@ -5,6 +5,8 @@ import chain
 import json
 from config import Env
 from db import LevelDB
+import time
+from genesis_helpers import mk_genesis_data
 
 
 def validate_transaction(state, tx):
@@ -36,8 +38,10 @@ class ChainService():
 
     def __init__(self, db):
         self.db = db
-        self.chain = chain.Chain(json.load(open('../genesis.json')), env=Env(LevelDB("./chain")))
-        self.block = Block(BlockHeader())
+        self.env = Env(LevelDB("./chain"))
+        genesis_data = mk_genesis_data(self.env)
+        self.chain = chain.Chain(genesis=genesis_data, env=self.env)
+        self.block = Block(BlockHeader(timestamp=time.time()))
 
     def add_transaction(self, tx):
         assert isinstance(tx, Transaction)
@@ -53,8 +57,10 @@ class ChainService():
 
     # adds the current block to the chain and generates a new one
     def add_block(self):
+        self.chain.process_time_queue()
         self.chain.add_block(self.block)
-        self.block = Block(BlockHeader())
+        prevhash = self.block.header.hash()
+        self.block = Block(BlockHeader(timestamp=time.time(), prevhash=prevhash))
 
     # gets the transaction in index i of the current block
     def get_transaction_i(self, transactionIndex):
