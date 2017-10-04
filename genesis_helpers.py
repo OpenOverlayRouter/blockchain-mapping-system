@@ -1,11 +1,12 @@
 from state import State
 from block import Block, BlockHeader
-from utils import encode_hex, \
+from utils import  \
     parse_as_bin, parse_as_int, normalize_address
 from config import Env
 from db import RefcountDB
 import json
 import rlp
+from rlp.utils import encode_hex
 
 
 def block_from_genesis_declaration(genesis_data, env):
@@ -21,13 +22,13 @@ def state_from_genesis_declaration(
         block = block_from_genesis_declaration(genesis_data, env)
 
     state = State(env=env)
-    for addr, data in genesis_data["alloc"].items():
-        addr = normalize_address(addr)
-        assert len(addr) == 20
-        if 'balance' in data:
-            state.set_balance(addr, parse_as_int(data['balance']))
-        if 'nonce' in data:
-            state.set_nonce(addr, parse_as_int(data['nonce']))
+    #for addr, data in genesis_data["alloc"].items(): #TODO: puede ser util para inicializar los balances de las cuentas
+    #    addr = normalize_address(addr)
+    #    assert len(addr) == 20
+    #    if 'balance' in data:
+    #        state.set_balance(addr, parse_as_int(data['balance']))
+    #    if 'nonce' in data:
+    #        state.set_nonce(addr, parse_as_int(data['nonce']))
     #get_consensus_strategy(state.config).initialize(state, block)
     if executing_on_head:
         state.executing_on_head = True
@@ -86,16 +87,7 @@ def mk_genesis_data(env, **kwargs):
 
 # Block initialization state transition
 def initialize(state):
-    config = state.config
-
     state.txindex = 0
-
-    if state.is_DAO(at_fork_height=True):
-        for acct in state.config['CHILD_DAO_LIST']:
-            state.transfer_value(
-                acct,
-                state.config['DAO_WITHDRAWER'],
-                state.get_balance(acct))
 
 
 def initialize_genesis_keys(state, genesis, env):

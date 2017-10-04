@@ -2,8 +2,9 @@ import rlp #used to encode data
 import transactions
 import trie
 from rlp.sedes import big_endian_int, Binary, binary, CountableList
-from utils import hash32, trie_root, address, encode_hex
+from utils import hash32, trie_root, address
 import utils
+from rlp.utils import encode_hex
 from Crypto.Hash import keccak
 from config import default_config
 from transactions import Transaction

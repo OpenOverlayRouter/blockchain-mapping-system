@@ -1,6 +1,6 @@
 import rlp
 from utils import normalize_address, hash32, trie_root, \
-    big_endian_int, address, int256, encode_hex, encode_int, \
+    big_endian_int, address, int256, encode_int, \
     big_endian_to_int, int_to_addr, zpad, parse_as_bin, parse_as_int
 from rlp.sedes import big_endian_int
 from securetrie import SecureTrie
