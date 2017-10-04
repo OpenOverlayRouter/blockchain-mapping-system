@@ -258,6 +258,7 @@ class Chain(object):
             try:
                 apply_block(self.state, block, self.env.db)
             except (Exception):
+                print ("exception found int add_block (apply_block failed), returning False")
                 return False
             self.db.put(b'block:%d' % block.header.number, block.header.hash)
             # side effect: put 'score:' cache in db
@@ -275,6 +276,7 @@ class Chain(object):
             try:
                 apply_block(temp_state, block, self.env.db)
             except (Exception):
+                print ("exception found int add_block (apply_block in line 275 failed), returning False")
                 return False
             changed = temp_state.changed
         # Block has no parent yet
@@ -282,6 +284,7 @@ class Chain(object):
             if block.header.prevhash not in self.parent_queue:
                 self.parent_queue[block.header.prevhash] = []
             self.parent_queue[block.header.prevhash].append(block)
+            print ("previous hash not found in parent queue, returning False")
             return False
         self.add_child(block)
         self.db.put('head_hash', self.head_hash)

@@ -1,6 +1,6 @@
 from state import State
 from block import Block, BlockHeader
-from utils import big_endian_to_int, \
+from utils import encode_hex, \
     parse_as_bin, parse_as_int, normalize_address
 from config import Env
 from db import RefcountDB
@@ -58,3 +58,25 @@ def mk_basic_state(alloc, header=None, env=None, executing_on_head=False):
     state.timestamp = header["timestamp"]
     state.commit()
     return state
+
+def mk_genesis_data(env, **kwargs):
+    assert isinstance(env, Env)
+
+    allowed_args = set([
+        'start_alloc',
+        'parent_hash',
+        'coinbase',
+        'timestamp',
+        'extra_data',
+        'nonce',
+    ])
+    assert set(kwargs.keys()).issubset(allowed_args)
+
+    genesis_data = {
+        "parentHash": kwargs.get('parent_hash', encode_hex(env.config['GENESIS_PREVHASH'])),
+        "coinbase": kwargs.get('coinbase', encode_hex(env.config['GENESIS_COINBASE'])),
+        "timestamp": kwargs.get('timestamp', 0),
+        "extraData": kwargs.get('extra_data', encode_hex(env.config['GENESIS_EXTRA_DATA'])),
+        "nonce": kwargs.get('nonce', encode_hex(env.config['GENESIS_NONCE'])),
+    }
+    return genesis_data
