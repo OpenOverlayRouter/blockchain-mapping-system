@@ -1,6 +1,7 @@
 from rlp.sedes import big_endian_int, binary
 from utils import address, normalize_address, sha3, ecrecover_to_pub, normalize_key, privtoaddr, ecsign
-from exceptions import InvalidTransaction
+from own_exceptions import InvalidTransaction
+
 import rlp
 from netaddr import IPNetwork
 
@@ -11,7 +12,7 @@ class Transaction(rlp.Serializable):
     fields = [
         ('nonce', big_endian_int),
         ('to', address),
-        ('value', IPNetwork),
+        ('value', binary),
         ('type', big_endian_int),
         #delegate = 0 (delegate with delegate permissions)
         #delegate = 1 (delegate without delegate permissions)
@@ -27,7 +28,7 @@ class Transaction(rlp.Serializable):
         self.nonce = nonce
         to = normalize_address(to, allow_blank=True)
         self.to = to
-        self.value = value
+        self.value = value.encode()
         self.type = type
         self.data = data
         self.v = v
@@ -36,24 +37,24 @@ class Transaction(rlp.Serializable):
 
         super(Transaction,self).__init__(nonce, to, value, type, data, v, r, s)
 
-        def sign(self, key, network_id=None):
-            if network_id is None:
-                rawhash = sha3(rlp.encode(self, UnsignedTransaction))
-            else:
-                assert 1 <= network_id < 2 ** 63 - 18
-                rlpdata = rlp.encode(rlp.infer_sedes(self).serialize(self)[
-                                     :-3] + [network_id, b'', b''])
-                rawhash = sha3(rlpdata)
+    def sign(self, key, network_id=None):
+        if network_id is None:
+            rawhash = sha3(rlp.encode(self, UnsignedTransaction))
+        else:
+            assert 1 <= network_id < 2 ** 63 - 18
+            rlpdata = rlp.encode(rlp.infer_sedes(self).serialize(self)[
+                                 :-3] + [network_id, b'', b''])
+            rawhash = sha3(rlpdata)
 
-            key = normalize_key(key)
+        key = normalize_key(key)
 
-            self.v, self.r, self.s = ecsign(rawhash, key)
-            if network_id is not None:
-                self.v += 8 + network_id * 2
+        self.v, self.r, self.s = ecsign(rawhash, key)
+        if network_id is not None:
+            self.v += 8 + network_id * 2
 
-            self._sender = privtoaddr(key)
+        self._sender = privtoaddr(key)
 
-            return self
+        return self
 
     @property
     def sender(self):
@@ -75,6 +76,7 @@ class Transaction(rlp.Serializable):
                 if self.r >= secpk1n or self.s >= secpk1n or self.r == 0 or self.s == 0:
                     raise InvalidTransaction("Invalid signature values!")
                 pub = ecrecover_to_pub(sighash, vee, self.r, self.s)
+                print(pub)
                 if pub == b"\x00" * 64:
                     raise InvalidTransaction(
                         "Invalid signature (zero privkey cannot sign)")
@@ -85,5 +87,11 @@ class Transaction(rlp.Serializable):
     @property
     def hash(self):
         return sha3(rlp.encode(self))
+
+
+    @property
+    def ip_network(self):
+        return IPNetwork(self.value.decode())
+
 
 UnsignedTransaction = Transaction.exclude(['v', 'r', 's'])

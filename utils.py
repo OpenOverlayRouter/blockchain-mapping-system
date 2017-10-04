@@ -1,10 +1,8 @@
-from rlp.sedes import BigEndianInt, Binary
-import rlp
 from Crypto.Hash import keccak
 import sys
 import rlp
 from rlp.sedes import big_endian_int, BigEndianInt, Binary
-from rlp.utils import decode_hex, encode_hex, ascii_chr, str_to_bytes
+from rlp.utils import decode_hex, ascii_chr, str_to_bytes
 from py_ecc.secp256k1 import privtopub, ecdsa_raw_sign, ecdsa_raw_recover
 
 import random
