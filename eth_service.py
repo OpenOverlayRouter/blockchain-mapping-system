@@ -7,6 +7,7 @@ from config import Env
 from db import LevelDB
 import time
 from genesis_helpers import mk_genesis_data
+import datetime, threading
 
 
 def validate_transaction(state, tx):
@@ -39,9 +40,9 @@ class ChainService():
     def __init__(self, db):
         self.db = db
         self.env = Env(LevelDB("./chain"))
-        genesis_data = mk_genesis_data(self.env)
-        self.chain = chain.Chain(genesis=genesis_data, env=self.env)
+        self.chain = chain.Chain(genesis=mk_genesis_data(self.env), env=self.env)
         self.block = Block(BlockHeader(timestamp=time.time()))
+        self.process_time_queue_periodically()
 
     def add_transaction(self, tx):
         assert isinstance(tx, Transaction)
@@ -69,4 +70,8 @@ class ChainService():
 
     def get_block_in_position_i(self, position):
         return self.chain.get_block_by_number(position)
+
+    def process_time_queue_periodically(self):
+        threading.Timer(120, self.chain.process_time_queue()).start()
+
 

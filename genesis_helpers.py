@@ -4,6 +4,8 @@ from utils import encode_hex, \
     parse_as_bin, parse_as_int, normalize_address
 from config import Env
 from db import RefcountDB
+import json
+import rlp
 
 
 def block_from_genesis_declaration(genesis_data, env):
@@ -43,7 +45,7 @@ def mk_basic_state(alloc, header=None, env=None, executing_on_head=False):
         header = {
             "number": 0, "timestamp": 1467446877
         }
-    h = BlockHeader(timestamp=parse_as_int(header['timestamp']))
+    h = BlockHeader(timestamp=parse_as_int(header['timestamp']), number=parse_as_int(header['number']))
     state.prev_headers = [h]
 
     for addr, data in alloc.items():
@@ -80,3 +82,29 @@ def mk_genesis_data(env, **kwargs):
         "nonce": kwargs.get('nonce', encode_hex(env.config['GENESIS_NONCE'])),
     }
     return genesis_data
+
+
+# Block initialization state transition
+def initialize(state):
+    config = state.config
+
+    state.txindex = 0
+
+    if state.is_DAO(at_fork_height=True):
+        for acct in state.config['CHILD_DAO_LIST']:
+            state.transfer_value(
+                acct,
+                state.config['DAO_WITHDRAWER'],
+                state.get_balance(acct))
+
+
+def initialize_genesis_keys(state, genesis, env):
+    db = env.db
+    db.put('GENESIS_NUMBER', str(genesis.header.number))
+    db.put('GENESIS_HASH', str(genesis.header.hash))
+    db.put('GENESIS_STATE', json.dumps(state)) #was meant to be state.to_snapshot(), saved just the state instead
+    db.put('GENESIS_RLP', rlp.encode(genesis))
+    db.put(b'block:0', genesis.header.hash)
+    db.put(b'state:' + genesis.header.hash, state.trie.root_hash)
+    db.put(genesis.header.hash, 'GENESIS')
+    db.commit()

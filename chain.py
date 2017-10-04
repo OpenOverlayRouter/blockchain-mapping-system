@@ -7,8 +7,8 @@ import rlp
 from rlp.utils import encode_hex
 from config import Env
 from state import State, dict_to_prev_header
-from block import Block, BlockHeader
-from genesis_helpers import state_from_genesis_declaration, mk_basic_state
+from block import Block, BlockHeader, FakeHeader
+from genesis_helpers import state_from_genesis_declaration, mk_basic_state, initialize, initialize_genesis_keys
 
 
 config_string = ':info'  # ,eth.chain:debug'
@@ -106,7 +106,14 @@ class Chain(object):
                 "number": kwargs.get('number', 0),
                 "timestamp": kwargs.get('timestamp', 1467446877),
                 "hash": kwargs.get('prevhash', '00' * 32)
-            }, self.env)
+                #TODO: add the rest of necessary fields for the genesis creation
+            }, env=self.env)
+
+        initialize(self.state)
+
+        self.state.prev_headers[0] = FakeHeader()
+        self.genesis = Block(self.state.prev_headers[0])
+        initialize_genesis_keys(self.state, self.genesis, self.env)
 
         assert self.env.db == self.state.db
 
