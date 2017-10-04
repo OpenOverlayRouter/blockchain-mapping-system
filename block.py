@@ -1,12 +1,12 @@
 import rlp #used to encode data
-import transactiondb
+import transactions
 import trie
 from rlp.sedes import big_endian_int, Binary, binary, CountableList
 from utils import hash32, trie_root, address, encode_hex
 import utils
 from Crypto.Hash import keccak
 from config import default_config
-from transactiondb import Transaction
+from transactions import Transaction
 
 class BlockHeader(rlp.Serializable):
     fields = [

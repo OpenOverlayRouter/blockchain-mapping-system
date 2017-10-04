@@ -1,5 +1,5 @@
 from block import Block, BlockHeader
-from transactiondb import Transaction
+from transactions import Transaction
 from utils import null_address
 import chain
 import json

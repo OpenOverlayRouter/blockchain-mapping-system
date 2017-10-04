@@ -6,10 +6,9 @@ import rlp
 class Transaction(rlp.Serializable):
     fields = [
         ('nonce', big_endian_int),
-        ('ffrom', address),
         ('to', address),
-        ('EID', big_endian_int),
-        ('delegate', big_endian_int),
+        ('value', big_endian_int),
+        ('type', big_endian_int),
         #delegate = 0 (delegate with delegate permissions)
         #delegate = 1 (delegate without delegate permissions)
         #delegate = 2 (delegate whithout delegate permissions and with recovery option activated)
