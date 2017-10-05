@@ -74,7 +74,7 @@ for i in range(N):
 
 state.commit()
 print("TX PART FINISHED")
-
+state.to_snapshot()
 err = False
 print("CHEKING VALUES...")
 for i in range(0,len(addresses)):
