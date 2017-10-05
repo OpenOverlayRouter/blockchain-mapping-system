@@ -8,6 +8,7 @@ from db import LevelDB
 import time
 from genesis_helpers import mk_genesis_data
 import datetime, threading
+from utils import int_to_big_endian
 
 
 def validate_transaction(state, tx):
@@ -41,7 +42,7 @@ class ChainService():
         self.db = db
         self.env = Env(LevelDB("./chain"))
         self.chain = chain.Chain(genesis=mk_genesis_data(self.env), env=self.env)
-        self.block = Block(BlockHeader(timestamp=time.time()))
+        self.block = Block(BlockHeader(timestamp=int_to_big_endian(int(time.time()))))
         self.process_time_queue_periodically()
 
     def add_transaction(self, tx):
@@ -61,7 +62,7 @@ class ChainService():
         self.chain.process_time_queue()
         self.chain.add_block(self.block)
         prevhash = self.block.header.hash()
-        self.block = Block(BlockHeader(timestamp=time.time(), prevhash=prevhash))
+        self.block = Block(BlockHeader(timestamp=int_to_big_endian(int(time.time())), prevhash=prevhash))
 
     # gets the transaction in index i of the current block
     def get_transaction_i(self, transactionIndex):
