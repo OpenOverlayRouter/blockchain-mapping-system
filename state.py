@@ -1,6 +1,6 @@
 import rlp
 from utils import normalize_address, hash32, trie_root, \
-    big_endian_int, address, int256, encode_hex, encode_int, \
+    big_endian_int, address, int256, encode_int, \
     big_endian_to_int, int_to_addr, parse_as_bin, parse_as_int, \
     decode_hex, sha3, is_string, is_numeric, zpad
 from rlp.sedes import big_endian_int, Binary, binary, CountableList
@@ -15,6 +15,7 @@ from account import Account
 from trie import BLANK_NODE, BLANK_ROOT
 import sys
 from block import FakeHeader
+from rlp.utils import encode_hex
 
 STATE_DEFAULTS = {
     "txindex": 0,
