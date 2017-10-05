@@ -38,9 +38,9 @@ class ChainService():
     Manages the chain and requests to it.
     """
 
-    def __init__(self, db):
-        self.db = db
+    def __init__(self):
         self.env = Env(LevelDB("./chain"))
+        self.db = self.env.db
         self.chain = chain.Chain(genesis=mk_genesis_data(self.env), env=self.env)
         self.block = Block(BlockHeader(timestamp=int_to_big_endian(int(time.time()))))
         self.process_time_queue_periodically()

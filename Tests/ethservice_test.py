@@ -2,8 +2,8 @@ from eth_service import ChainService
 import transactions
 import db
 
-db = db.EphemDB()
-service = ChainService(db)
+
+service = ChainService()
 
 transact = []
 transact.append(transactions.Transaction(1, '', "192.168.9.1/28", 0, 'data', 1, 1, 1)) #to be serializable, address can be empty and
