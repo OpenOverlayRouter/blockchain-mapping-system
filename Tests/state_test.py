@@ -12,13 +12,13 @@ from db import LevelDB
 
 from account import Account
 
+environment = Env(LevelDB("./state"))
 def mk_basic_state(alloc, header=None, env=None, executing_on_head=False):
-    env = env or Env(LevelDB("./state"))
-    state = State(root = "6c08c2bdb7c09eb5a2524e9ed8f3dac707c7b0f6ca2116a173989a5370f77340".decode('hex'),env=env, executing_on_head=executing_on_head)
+    state = State(root = "6c08c2bdb7c09eb5a2524e9ed8f3dac707c7b0f6ca2116a173989a5370f77340".decode('hex'),env=environment, executing_on_head=executing_on_head)
     print(state.get_balance("3282791d6fd713f1e94f4bfd565eaa78b3a0599d"))
     if not header:
         header = {
-            "number": 0, "gas_limit": env.config['BLOCK_GAS_LIMIT'],
+            "number": 0, "gas_limit": environment.config['BLOCK_GAS_LIMIT'],
             "gas_used": 0, "timestamp": 1467446877, "difficulty": 1
         }
     h = BlockHeader()
@@ -37,7 +37,7 @@ def mk_basic_state(alloc, header=None, env=None, executing_on_head=False):
     state.timestamp = header["timestamp"]
     state.commit()
 
-    env.db.commit()
+    environment.db.commit()
     return state
 
 
@@ -57,7 +57,7 @@ for addr, data in alloc.items():
     balances.append(parse_as_int(data['balance']))
     tx[addr] = 0
 
-N = 50000
+N = 50
 print("DOING SOME RANDOM TX...")
 for i in range(N):
     randFrom = random.randint(0, len(addresses)-1)
@@ -74,7 +74,8 @@ for i in range(N):
 
 state.commit()
 print("TX PART FINISHED")
-state.to_snapshot()
+snap = state.to_snapshot()
+state = state.from_snapshot(snap,environment)
 err = False
 print("CHEKING VALUES...")
 for i in range(0,len(addresses)):

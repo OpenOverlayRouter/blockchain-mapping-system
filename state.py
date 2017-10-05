@@ -219,6 +219,12 @@ class State():
                                         for h in headers] for n, headers in v.items()}
         return snapshot
 
+    def to_dict(self):
+        for addr in self.trie.to_dict().keys():
+            self.get_and_cache_account(addr)
+        return {encode_hex(addr): acct.to_dict()
+                for addr, acct in self.cache.items()}
+
     # Creates a state from a snapshot
     @classmethod
     def from_snapshot(cls, snapshot_data, env, executing_on_head=False):
@@ -277,6 +283,45 @@ class State():
         state.commit()
         state.changed = {}
         return state
+
+    @classmethod
+    def from_snapshot(cls, snapshot_data, env, executing_on_head=False):
+        state = State(env=env)
+        if "alloc" in snapshot_data:
+            for addr, data in snapshot_data["alloc"].items():
+                if len(addr) == 40:
+                    addr = decode_hex(addr)
+                assert len(addr) == 20
+                if 'balance' in data:
+                    state.set_balance(addr, parse_as_int(data['balance']))
+                if 'nonce' in data:
+                    state.set_nonce(addr, parse_as_int(data['nonce']))
+        elif "state_root" in snapshot_data:
+            state.trie.root_hash = parse_as_bin(snapshot_data["state_root"])
+        else:
+            raise Exception(
+                "Must specify either alloc or state root parameter")
+        for k, default in STATE_DEFAULTS.items():
+            default = copy.copy(default)
+            v = snapshot_data[k] if k in snapshot_data else None
+            if is_numeric(default):
+                setattr(state, k, parse_as_int(v)
+                if k in snapshot_data else default)
+            elif is_string(default):
+                setattr(state, k, parse_as_bin(v)
+                if k in snapshot_data else default)
+            elif k == 'prev_headers':
+                if k in snapshot_data:
+                    headers = [dict_to_prev_header(h) for h in v]
+                else:
+                    headers = default
+                setattr(state, k, headers)
+        if executing_on_head:
+            state.executing_on_head = True
+        state.commit()
+        state.changed = {}
+        return state
+
 
 def prev_header_to_dict(h):
     return {

@@ -32,6 +32,7 @@ default_config = dict(
     # Network ID
     NETWORK_ID=1,
     ACCOUNT_INITIAL_NONCE=0,
+    PREV_HEADER_DEPTH=256,
 )
 
 
