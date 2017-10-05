@@ -42,7 +42,8 @@ class ChainService():
         self.env = Env(LevelDB("./chain"))
         self.db = self.env.db
         self.chain = chain.Chain(genesis=mk_genesis_data(self.env), env=self.env)
-        self.block = Block(BlockHeader(timestamp=int(time.time())))
+        prevhash = self.chain.head_hash
+        self.block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash))
         self.process_time_queue_periodically()
 
     def add_transaction(self, tx):

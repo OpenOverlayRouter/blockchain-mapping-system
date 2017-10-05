@@ -15,11 +15,17 @@ for i in range (0, len(transact)):
     service.add_transaction(transact[i])
 
 
-print('add_block')
-service.add_block()
+#print('add_block')
+#service.add_block()
 
 print('checking if exists block 0')
 if service.get_block_in_position_i(0) is not None:
+    print ('exists')
+else:
+    print ('not exists')
+
+print('checking if exists block 1')
+if service.get_block_in_position_i(1) is not None:
     print ('exists')
 else:
     print ('not exists')
