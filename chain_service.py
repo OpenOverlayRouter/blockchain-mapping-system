@@ -45,7 +45,8 @@ class ChainService():
         self.db = self.env.db
         self.chain = chain.Chain(genesis=mk_genesis_data(self.env), env=self.env)
         prevhash = self.chain.head_hash
-        self.block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash))
+        prevnumber = self.chain.state.block_number
+        self.block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber+1))
         self.process_time_queue_periodically()
 
     def add_transaction(self, tx):
@@ -65,7 +66,8 @@ class ChainService():
         self.chain.process_time_queue()
         self.chain.add_block(self.block)
         prevhash = self.block.header.hash
-        self.block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash))
+        prevnumber = self.block.header.number
+        self.block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber+1))
 
     # gets the transaction in index i of the current block
     def get_transaction_i(self, transactionIndex):
