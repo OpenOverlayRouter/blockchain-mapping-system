@@ -29,6 +29,8 @@ def validate_header(state, header):
         if header.prevhash != parent.hash:
             raise ValueError("Block's prevhash and parent's hash do not match: block prevhash %s parent hash %s" %
                              (encode_hex(header.prevhash), encode_hex(parent.hash)))
+        print("HEADER NUMBER " + str(header.number))
+        print("PARENT NUMBER " + str(parent.number))
         if header.number != parent.number + 1:
             raise ValueError(
                 "Block's number is not the successor of its parent number")
@@ -36,9 +38,6 @@ def validate_header(state, header):
             raise ValueError("Timestamp equal to or before parent")
         if header.timestamp >= 2**256:
             raise ValueError("Timestamp waaaaaaaaaaayy too large")
-    if 0 <= header.number - \
-            state.config["DAO_FORK_BLKNUM"] < 10 and header.extra_data != state.config["DAO_FORK_BLKEXTRA"]:
-        raise ValueError("Missing extra data for block near DAO fork")
     return True
 
 
@@ -52,9 +51,9 @@ def mk_transaction_sha(receipts, db):
 
 # Validate that the transaction list root is correct
 def validate_transaction_tree(state, block, db):
-    if block.header.tx_list_root != mk_transaction_sha(block.transactions, db):
+    if block.header.tx_root != mk_transaction_sha(block.transactions, db):
         raise ValueError("Transaction root mismatch: header %s computed %s, %d transactions" %
-                         (encode_hex(block.header.tx_list_root), encode_hex(mk_transaction_sha(block.transactions, db)),
+                         (encode_hex(block.header.tx_root), encode_hex(mk_transaction_sha(block.transactions, db)),
                           len(block.transactions)))
     return True
 
