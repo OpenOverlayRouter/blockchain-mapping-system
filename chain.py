@@ -111,9 +111,14 @@ class Chain(object):
 
         initialize(self.state)
 
-        self.state.prev_headers[0] = FakeHeader()
-        self.genesis = Block(self.state.prev_headers[0])
-        initialize_genesis_keys(self.state, self.genesis, self.env)
+        if isinstance(self.state.prev_headers[0], FakeHeader):
+            header = self.state.prev_headers[0].to_block_header()
+        else:
+            header = self.state.prev_headers[0]
+
+        self.genesis = Block(header)
+        self.state.prev_headers[0] = header
+        initialize_genesis_keys(self.state, self.genesis)
 
         assert self.env.db == self.state.db
 

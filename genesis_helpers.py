@@ -90,8 +90,8 @@ def initialize(state):
     state.txindex = 0
 
 
-def initialize_genesis_keys(state, genesis, env):
-    db = env.db
+def initialize_genesis_keys(state, genesis):
+    db = state.db
     db.put('GENESIS_NUMBER', str(genesis.header.number))
     db.put('GENESIS_HASH', str(genesis.header.hash))
     db.put('GENESIS_STATE', json.dumps(state.to_snapshot()))
