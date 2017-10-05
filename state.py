@@ -322,6 +322,9 @@ class State():
         state.changed = {}
         return state
 
+    def snapshot(self):
+        return (self.trie.root_hash, len(self.journal), {
+            k: copy.copy(getattr(self, k)) for k in STATE_DEFAULTS})
 
 def prev_header_to_dict(h):
     return {

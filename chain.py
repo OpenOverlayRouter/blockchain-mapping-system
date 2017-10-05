@@ -270,11 +270,11 @@ class Chain(object):
         if block.header.prevhash == self.head_hash:
             self.state.deletes = []
             self.state.changed = {}
-            try:
-                apply_block(self.state, block, self.env.db)
-            except (Exception):
-                print ("exception found int add_block (apply_block failed), returning False")
-                return False
+            #try:
+            apply_block(self.state, block, self.env.db)
+            #except (Exception):
+                #print ("exception found int add_block (apply_block failed), returning False")
+                #return False
             self.db.put(b'block:%d' % block.header.number, block.header.hash)
             # side effect: put 'score:' cache in db
             self.head_hash = block.header.hash

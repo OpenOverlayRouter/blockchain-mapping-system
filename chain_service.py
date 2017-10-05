@@ -8,6 +8,7 @@ from db import LevelDB
 import time
 from genesis_helpers import mk_genesis_data
 import datetime, threading
+from db import _EphemDB
 from utils import int_to_big_endian
 
 
@@ -39,7 +40,8 @@ class ChainService():
     """
 
     def __init__(self):
-        self.env = Env(LevelDB("./chain"))
+        #self.env = Env(LevelDB("./chain"))
+        self.env = Env(_EphemDB())
         self.db = self.env.db
         self.chain = chain.Chain(genesis=mk_genesis_data(self.env), env=self.env)
         prevhash = self.chain.head_hash

@@ -1,4 +1,4 @@
-from eth_service import ChainService
+from chain_service import ChainService
 import transactions
 import db
 
@@ -16,7 +16,7 @@ for i in range (0, len(transact)):
 
 
 #print('add_block')
-#service.add_block()
+service.add_block()
 
 print('checking if exists block 0')
 if service.get_block_in_position_i(0) is not None:

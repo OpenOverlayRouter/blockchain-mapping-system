@@ -76,6 +76,7 @@ state.commit()
 print("TX PART FINISHED")
 snap = state.to_snapshot()
 state = state.from_snapshot(snap,environment)
+state.snapshot()
 err = False
 print("CHEKING VALUES...")
 for i in range(0,len(addresses)):
