@@ -192,6 +192,92 @@ class State():
         db.commit()
         return state
 
+        # Creates a snapshot from a state
+        def to_snapshot(self, root_only=False, no_prevblocks=False):
+            snapshot = {}
+            if root_only:
+                # Smaller snapshot format that only includes the state root
+                # (requires original DB to re-initialize)
+                snapshot["state_root"] = '0x' + encode_hex(self.trie.root_hash)
+            else:
+                # "Full" snapshot
+                snapshot["alloc"] = self.to_dict()
+            # Save non-state-root variables
+            for k, default in STATE_DEFAULTS.items():
+                default = copy.copy(default)
+                v = getattr(self, k)
+                if is_numeric(default):
+                    snapshot[k] = str(v)
+                elif isinstance(default, (str, bytes)):
+                    snapshot[k] = '0x' + encode_hex(v)
+                elif k == 'prev_headers' and not no_prevblocks:
+                    snapshot[k] = [prev_header_to_dict(
+                        h) for h in v[:self.config['PREV_HEADER_DEPTH']]]
+                elif k == 'recent_uncles' and not no_prevblocks:
+                    snapshot[k] = {str(n): ['0x' + encode_hex(h)
+                                            for h in headers] for n, headers in v.items()}
+            return snapshot
+
+        # Creates a state from a snapshot
+        @classmethod
+        def from_snapshot(cls, snapshot_data, env, executing_on_head=False):
+            state = State(env=env)
+            if "alloc" in snapshot_data:
+                for addr, data in snapshot_data["alloc"].items():
+                    if len(addr) == 40:
+                        addr = decode_hex(addr)
+                    assert len(addr) == 20
+                    if 'wei' in data:
+                        state.set_balance(addr, parse_as_int(data['wei']))
+                    if 'balance' in data:
+                        state.set_balance(addr, parse_as_int(data['balance']))
+                    if 'code' in data:
+                        state.set_code(addr, parse_as_bin(data['code']))
+                    if 'nonce' in data:
+                        state.set_nonce(addr, parse_as_int(data['nonce']))
+                    if 'storage' in data:
+                        for k, v in data['storage'].items():
+                            state.set_storage_data(
+                                addr,
+                                big_endian_to_int(parse_as_bin(k)),
+                                big_endian_to_int(parse_as_bin(v)))
+            elif "state_root" in snapshot_data:
+                state.trie.root_hash = parse_as_bin(snapshot_data["state_root"])
+            else:
+                raise Exception(
+                    "Must specify either alloc or state root parameter")
+            for k, default in STATE_DEFAULTS.items():
+                default = copy.copy(default)
+                v = snapshot_data[k] if k in snapshot_data else None
+                if is_numeric(default):
+                    setattr(state, k, parse_as_int(v)
+                    if k in snapshot_data else default)
+                elif is_string(default):
+                    setattr(state, k, parse_as_bin(v)
+                    if k in snapshot_data else default)
+                elif k == 'prev_headers':
+                    if k in snapshot_data:
+                        headers = [dict_to_prev_header(h) for h in v]
+                    else:
+                        headers = default
+                    setattr(state, k, headers)
+                elif k == 'recent_uncles':
+                    if k in snapshot_data:
+                        uncles = {}
+                        for height, _uncles in v.items():
+                            uncles[int(height)] = []
+                            for uncle in _uncles:
+                                uncles[int(height)].append(parse_as_bin(uncle))
+                    else:
+                        uncles = default
+                    setattr(state, k, uncles)
+            if executing_on_head:
+                state.executing_on_head = True
+            state.commit()
+            state.changed = {}
+
+    return state
+
 def prev_header_to_dict(h):
     return {
         "hash": '0x' + encode_hex(h.hash),
