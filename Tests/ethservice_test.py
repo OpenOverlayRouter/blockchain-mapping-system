@@ -6,9 +6,9 @@ db = db.EphemDB()
 service = ChainService(db)
 
 transact = []
-transact.append(transactions.Transaction(1, '', 1, 0, 'data', 1, 1, 1)) #to be serializable, address can be empty and
-transact.append(transactions.Transaction(2, '', 2, 0, 'data', 1, 1, 1)) #v, r, s have to be integers
-transact.append(transactions.Transaction(3, '', 3, 0, 'data', 1, 1, 1))
+transact.append(transactions.Transaction(1, '', "192.168.9.1/28", 0, 'data', 1, 1, 1)) #to be serializable, address can be empty and
+transact.append(transactions.Transaction(2, '', "192.170.9.1/28", 0, 'data', 1, 1, 1)) #v, r, s have to be integers
+transact.append(transactions.Transaction(3, '', "192.172.9.1/28", 0, 'data', 1, 1, 1))
 
 
 for i in range (0, len(transact)):
