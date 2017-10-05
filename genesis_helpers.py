@@ -94,7 +94,7 @@ def initialize_genesis_keys(state, genesis, env):
     db = env.db
     db.put('GENESIS_NUMBER', str(genesis.header.number))
     db.put('GENESIS_HASH', str(genesis.header.hash))
-    db.put('GENESIS_STATE', json.dumps(state)) #was meant to be state.to_snapshot(), saved just the state instead
+    db.put('GENESIS_STATE', json.dumps(state.to_snapshot()))
     db.put('GENESIS_RLP', rlp.encode(genesis))
     db.put(b'block:0', genesis.header.hash)
     db.put(b'state:' + genesis.header.hash, state.trie.root_hash)

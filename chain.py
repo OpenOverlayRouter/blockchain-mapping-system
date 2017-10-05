@@ -144,6 +144,9 @@ class Chain(object):
             raise Exception("Block hash %s not found" % encode_hex(blockhash))
 
         block_rlp = self.db.get(blockhash)
+        if block_rlp in ('GENESIS', b'GENESIS'):
+            return State.from_snapshot(json.loads(
+                self.db.get('GENESIS_STATE')), self.env)
         block = rlp.decode(block_rlp, Block)
 
         state = State(env=self.env)
