@@ -20,9 +20,13 @@ tx1 = transactions.Transaction(1, '', "192.168.9.1/28", 0, 'data', 1, 1, 1)
 tx2 = transactions.Transaction(2, '', "192.170.9.1/28", 0, 'data', 1, 1, 1)
 tx3 = transactions.Transaction(3, '', "192.172.9.1/28", 0, 'data', 1, 1, 1)
 
+
 blocks = []
 transact = []
 transact.extend([tx1,tx2,tx3])
+
+for tx in transact:
+    print(tx.hash.encode("HEX"))
 
 b1 = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber+1))
 
@@ -37,3 +41,5 @@ b1.header.tx_root = t.root_hash
 chain.add_block(b1)
 prevhash = b1.hash
 ++prevnumber
+for tx in chain.get_block_by_number(1).transactions:
+    print(tx.hash.encode("HEX"))

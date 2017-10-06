@@ -29,8 +29,6 @@ def validate_header(state, header):
         if header.prevhash != parent.hash:
             raise ValueError("Block's prevhash and parent's hash do not match: block prevhash %s parent hash %s" %
                              (encode_hex(header.prevhash), encode_hex(parent.hash)))
-        print("HEADER NUMBER " + str(header.number))
-        print("PARENT NUMBER " + str(parent.number))
         if header.number != parent.number + 1:
             raise ValueError(
                 "Block's number is not the successor of its parent number")
@@ -45,9 +43,6 @@ def validate_header(state, header):
 def mk_transaction_sha(receipts):
     t = trie.Trie(EphemDB())
     for i, receipt in enumerate(receipts):
-        print("mk_transaction_sha")
-        print(i)
-        print(receipt)
         t.update(rlp.encode(i), rlp.encode(receipt))
     return t.root_hash
 
