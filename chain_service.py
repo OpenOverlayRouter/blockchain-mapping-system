@@ -10,28 +10,7 @@ from genesis_helpers import mk_genesis_data
 import datetime, threading
 from db import _EphemDB
 from utils import int_to_big_endian
-
-
-def validate_transaction(state, tx):
-    unsigned = False
-    # (1) The transaction signature is valid;
-    if tx.v is None or tx.s is None or tx.r is None:  # sender is set and validated on Transaction initialization
-        unsigned = True
-        raise Exception('unsigned transaction')
-
-    #assert check_signature(state.config, state.block_number, tx) #TODO: hacer funcion check_signature
-
-    # (2) the transaction nonce is valid (equivalent to the
-    #     sender account's current nonce);
-    req_nonce = 0 if unsigned is True else state.get_nonce(tx.sender) #TODO: cambiar tx.sender por funcion para
-    if req_nonce != tx.nonce:                                         #TODO: obtenerlo a partir de v, r, s
-        raise Exception('invalid nonce')
-
-    # (3) check that the address sending an IP address has it
-
-    #check_ip_address(tx.ffrom) #TODO: hacer funcion check_ip_address
-
-    return True
+from validate import validate_transaction
 
 
 class ChainService():
