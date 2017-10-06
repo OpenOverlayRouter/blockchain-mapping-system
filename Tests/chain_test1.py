@@ -42,6 +42,11 @@ for iter in range(0,N):
     chain.process_time_queue()
     print(b.number)
 
-print(chain.get_tx_position("2dde7a636fe93a13aacdc73a46745e84d7319da3754cce3141a14943ce9cbe96"))
+for i in range(1,10):
+    for tx in chain.get_block_by_number(i).transactions:
+        print (tx.nonce)
+        print(tx.to)
+        print(tx.value)
+
 
 print(chain.get_block_by_number(1).transactions[0].hash.encode("HEX"))
