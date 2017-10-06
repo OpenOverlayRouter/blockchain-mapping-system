@@ -53,7 +53,7 @@ def mk_transaction_sha(receipts):
 
 
 # Validate that the transaction list root is correct
-def validate_transaction_tree(state, block, db):
+def validate_transaction_tree(state, block):
     if block.header.tx_root != mk_transaction_sha(block.transactions):
         print(trie.BLANK_ROOT.encode("HEX"))
         print(str(block.header.tx_root).encode("HEX"))
@@ -71,7 +71,7 @@ def apply_block(state, block, db):
     try:
         # Basic validation
         assert validate_header(state, block.header)
-        assert validate_transaction_tree(state, block, db)
+        assert validate_transaction_tree(state, block)
         # Process transactions
         #for tx in block.transactions:
             #apply_transaction(state, tx) #TODO: adaptar esta funcion
