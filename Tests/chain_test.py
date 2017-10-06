@@ -26,9 +26,9 @@ blocks.append(Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, n
 t = trie.Trie(db)
 s = state.State(env=env)
 
-for tx in transact:
+for i, tx in enumerate(transact):
     blocks[0].transactions.append(tx)
-    t.update(str(tx.hash), str(rlp.encode(tx)))
+    t.update(rlp.encode(i), rlp.encode(tx))
 
 blocks[0].header.tx_root = t
 
@@ -43,7 +43,7 @@ blocks.append(Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, n
 
 transact.append(transactions.Transaction(4, '', "192.168.0.1/24", 0, 'data', 1, 1, 1))
 blocks[1].transactions.append(transact[3])
-t2.update(str(transact[3].hash), str(rlp.encode(transact[3])))
+t2.update(rlp.encode(0), rlp.encode(transact[3]))
 blocks[1].header.tx_root = t2
 
 chain.add_block(blocks[1])
@@ -58,7 +58,7 @@ blocks.append(Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, n
 
 transact.append(transactions.Transaction(4, '', "192.168.0.2/24", 0, 'data', 1, 1, 1))
 blocks[2].transactions.append(transact[4])
-t2.update(str(transact[4].hash), str(rlp.encode(transact[4])))
+t2.update(rlp.encode(0), rlp.encode(transact[4]))
 blocks[2].header.tx_root = t3
 
 chain.add_block(blocks[2])
