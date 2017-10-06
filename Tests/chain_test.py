@@ -18,14 +18,14 @@ chain = Chain(genesis=mk_genesis_data(env), env=env)
 prevhash = chain.head_hash
 prevnumber = chain.state.block_number
 
-N = 5
+N = 0
 
 for iter in range(0,N):
     prevnumber += 1
     transact = []
     for i in range(0,150):
         transact.append(get_rand_tx())
-
+    print(transact[0].hash.encode("HEX"))
     b = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber))
     time.sleep(1)
 
@@ -42,5 +42,6 @@ for iter in range(0,N):
     chain.process_time_queue()
     print(b.number)
 
-print(b)
-print(chain.get_block_by_number(50))
+print(chain.get_tx_position("2dde7a636fe93a13aacdc73a46745e84d7319da3754cce3141a14943ce9cbe96"))
+
+print(chain.get_block_by_number(1).transactions[0].hash.encode("HEX"))

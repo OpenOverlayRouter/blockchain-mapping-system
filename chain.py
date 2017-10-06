@@ -281,6 +281,9 @@ class Chain(object):
             # side effect: put 'score:' cache in db
             self.head_hash = block.header.hash
             for i, tx in enumerate(block.transactions):
+                print('txindex:' + tx.hash.encode("HEX"))
+                print(b'txindex:' +
+                            tx.hash)
                 self.db.put(b'txindex:' +
                             tx.hash, rlp.encode([block.number, i]))
             assert self.get_blockhash_by_number(
@@ -352,7 +355,9 @@ class Chain(object):
 
     # Get block number and transaction index
     def get_tx_position(self, tx):
-        if not isinstance(tx, (str, bytes)):
+        if isinstance(tx,str):
+            tx = tx.decode("HEX")
+        elif not isinstance(tx, bytes):
             tx = tx.hash
         if b'txindex:' + tx in self.db:
             data = rlp.decode(self.db.get(b'txindex:' + tx))
