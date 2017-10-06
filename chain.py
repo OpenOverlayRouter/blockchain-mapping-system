@@ -9,7 +9,7 @@ from config import Env
 from state import State, dict_to_prev_header
 from block import Block, BlockHeader, FakeHeader
 from genesis_helpers import state_from_genesis_declaration, mk_basic_state, initialize, initialize_genesis_keys
-
+from db import EphemDB
 
 config_string = ':info'  # ,eth.chain:debug'
 
@@ -42,8 +42,8 @@ def validate_header(state, header):
 
 
 # Make the root of a receipt tree
-def mk_transaction_sha(receipts, db):
-    t = trie.Trie(db)
+def mk_transaction_sha(receipts):
+    t = trie.Trie(EphemDB())
     for i, receipt in enumerate(receipts):
         t.update(rlp.encode(i), rlp.encode(receipt))
     return t.root_hash
