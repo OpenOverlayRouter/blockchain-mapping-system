@@ -45,6 +45,7 @@ def validate_header(state, header):
 def mk_transaction_sha(receipts, db):
     t = trie.Trie(db)
     for i, receipt in enumerate(receipts):
+        print(receipt)
         t.update(rlp.encode(i), rlp.encode(receipt))
     return t.root_hash
 
