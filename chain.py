@@ -51,12 +51,12 @@ def mk_transaction_sha(receipts):
 
 # Validate that the transaction list root is correct
 def validate_transaction_tree(state, block, db):
-    if block.header.tx_root != mk_transaction_sha(block.transactions, db):
+    if block.header.tx_root != mk_transaction_sha(block.transactions):
         print(trie.BLANK_ROOT.encode("HEX"))
         print(str(block.header.tx_root).encode("HEX"))
-        print(mk_transaction_sha(block.transactions, db).encode("HEX"))
+        print(mk_transaction_sha(block.transactions).encode("HEX"))
         raise ValueError("Transaction root mismatch: header %s computed %s, %d transactions" %
-                         (encode_hex(str(block.header.tx_root)), encode_hex(str(mk_transaction_sha(block.transactions, db))),
+                         (encode_hex(str(block.header.tx_root)), encode_hex(str(mk_transaction_sha(block.transactions))),
                           len(block.transactions)))
     return True
 
