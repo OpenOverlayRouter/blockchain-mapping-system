@@ -16,6 +16,7 @@ import utils
 import json
 import random
 from db import LevelDB
+from utils_test import get_rand_net
 #import leveldb
 from rlp.utils import decode_hex, ascii_chr, str_to_bytes
 def length_prefix(length, offset):
@@ -41,13 +42,6 @@ balance = Balance()
 
 with open('../genesis.json') as data_file:
     data = json.load(data_file)
-def create_rand_net():
-    a = random.randint(0,192)
-    b = random.randint(0,192)
-    c = random.randint(0,192)
-    d = random.randint(0,192)
-    e = random.randint(24,32)
-    return IPNetwork(str(a)+"."+str(b)+"."+str(c)+"."+str(d)+"/"+str(e))
 cont = 0
 alloc = data['alloc']
 addresses = []
@@ -55,25 +49,25 @@ for addr, bal in alloc.items():
     addresses.append(addr)
 
 for i in range(N):
-    balance.add_own_ips(create_rand_net())
-    net = create_rand_net()
-    net = create_rand_net()
+    balance.add_own_ips(get_rand_net())
+    net = get_rand_net()
+    net = get_rand_net()
     addr = addresses[random.randint(0,len(addr))]
     balance.add_delegated_ips(addr,net)
-    net = create_rand_net()
+    net = get_rand_net()
     addr = addresses[random.randint(0,len(addr))]
     balance.add_received_ips(addr,net)
 
 for i in range(N):
-    net = create_rand_net()
+    net = get_rand_net()
 
     if(balance.in_own_ips(net)):
         balance.remove_own_ips(net)
 
-    net = create_rand_net()
+    net = get_rand_net()
     addr = addresses[random.randint(0,len(addr))]
 
-    net = create_rand_net()
+    net = get_rand_net()
     addr = addresses[random.randint(0,len(addr))]
 from trie import Trie
 from Crypto.Hash import keccak

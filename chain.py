@@ -17,10 +17,8 @@ config_string = ':info'  # ,eth.chain:debug'
 # Update block variables into the state
 def update_block_env_variables(state, block):
     state.timestamp = block.header.timestamp
-    state.gas_limit = block.header.gas_limit
     state.block_number = block.header.number
     state.block_coinbase = block.header.coinbase
-    state.block_difficulty = block.header.difficulty
 
 
 def validate_header(state, header):
@@ -246,7 +244,7 @@ class Chain(object):
     # process blocks that were received but laid aside because
     # they were received too early
     def process_time_queue(self, new_time=None):
-        self.localtime = time.time() if new_time is None else new_time
+        self.localtime = int(time.time()) if new_time is None else new_time
         i = 0
         while i < len(
                 self.time_queue) and self.time_queue[i].timestamp <= new_time:
@@ -259,6 +257,7 @@ class Chain(object):
     def add_block(self, block):
         now = self.localtime
         # Are we receiving the block too early?
+        print(block.header.timestamp, now)
         if block.header.timestamp > now:
             i = 0
             while i < len(
@@ -267,6 +266,8 @@ class Chain(object):
             self.time_queue.insert(i, block)
             return False
         # Is the block being added to the head?
+        print("ADD_BLOCK")
+        print(block.header.prevhash,self.head_hash)
         if block.header.prevhash == self.head_hash:
             self.state.deletes = []
             self.state.changed = {}
@@ -276,6 +277,7 @@ class Chain(object):
                 #print ("exception found int add_block (apply_block failed), returning False")
                 #return False
             self.db.put(b'block:%d' % block.header.number, block.header.hash)
+            print("PUT")
             # side effect: put 'score:' cache in db
             self.head_hash = block.header.hash
             for i, tx in enumerate(block.transactions):

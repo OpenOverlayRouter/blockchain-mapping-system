@@ -8,38 +8,39 @@ import transactions
 import trie
 import rlp
 import state
+from utils_test import get_rand_tx
+from db import LevelDB,_EphemDB
+import time
 
-env = Env(_EphemDB())
-db = env.db
+env = Env(LevelDB('./chain'))
+db = _EphemDB()
 chain = Chain(genesis=mk_genesis_data(env), env=env)
 prevhash = chain.head_hash
 prevnumber = chain.state.block_number
 
+N = 5
 
-tx1 = transactions.Transaction(1, '', "192.168.9.1/28", 0, 'data', 1, 1, 1)
-tx2 = transactions.Transaction(2, '', "192.170.9.1/28", 0, 'data', 1, 1, 1)
-tx3 = transactions.Transaction(3, '', "192.172.9.1/28", 0, 'data', 1, 1, 1)
+for iter in range(0,N):
+    prevnumber += 1
+    transact = []
+    for i in range(0,150):
+        transact.append(get_rand_tx())
 
+    b = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber))
+    time.sleep(1)
 
-blocks = []
-transact = []
-transact.extend([tx1,tx2,tx3])
+    t = trie.Trie(db)
+    s = state.State(env=env)
+    for index, tx in enumerate(transact):
+        b.transactions.append(tx)
+        t.update(rlp.encode(index), rlp.encode(tx))
 
-for tx in transact:
-    print(tx.hash.encode("HEX"))
+    b.header.tx_root = t.root_hash
 
-b1 = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber+1))
+    chain.add_block(b)
+    prevhash = b.hash
+    chain.process_time_queue()
+    print(b.number)
 
-t = trie.Trie(db)
-s = state.State(env=env)
-for index, tx in enumerate(transact):
-    b1.transactions.append(tx)
-    t.update(rlp.encode(index), rlp.encode(tx))
-
-b1.header.tx_root = t.root_hash
-
-chain.add_block(b1)
-prevhash = b1.hash
-++prevnumber
-for tx in chain.get_block_by_number(1).transactions:
-    print(tx.hash.encode("HEX"))
+print(b)
+print(chain.get_block_by_number(50))

@@ -22,7 +22,5 @@ def validate_transaction(state, tx):
     # (3) the sender account balance contains the value
     balance = state.get_balance(tx.sender)
     if not balance.in_own_ips(tx.ip_network):
-        raise InsufficientBalance(
-            rp(tx, 'balance', balance, tx.ip_network))
-
+        raise InsufficientBalance(rp(tx, 'balance', balance, tx.ip_network))
     return True
