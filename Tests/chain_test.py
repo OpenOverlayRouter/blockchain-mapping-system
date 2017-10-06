@@ -15,52 +15,27 @@ chain = Chain(genesis=mk_genesis_data(env), env=env)
 prevhash = chain.head_hash
 prevnumber = chain.state.block_number
 
+
+tx1 = transactions.Transaction(1, '', "192.168.9.1/28", 0, 'data', 1, 1, 1)
+tx2 = transactions.Transaction(2, '', "192.170.9.1/28", 0, 'data', 1, 1, 1)
+tx3 = transactions.Transaction(3, '', "192.172.9.1/28", 0, 'data', 1, 1, 1)
+
 blocks = []
 transact = []
-transact.append(transactions.Transaction(1, '', "192.168.9.1/28", 0, 'data', 1, 1, 1)) #to be serializable, address can be empty and
-transact.append(transactions.Transaction(2, '', "192.170.9.1/28", 0, 'data', 1, 1, 1)) #v, r, s have to be integers
-transact.append(transactions.Transaction(3, '', "192.172.9.1/28", 0, 'data', 1, 1, 1))
+transact.extend([tx1,tx2,tx3])
 
-blocks.append(Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber+1)))
+b1 = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber+1))
 
 t = trie.Trie(db)
 s = state.State(env=env)
+for index, tx in enumerate(transact):
+    print()
+    b1.transactions.append(tx)
+    t.update(rlp.encode(index), str(rlp.encode(tx)))
+    index = index + 1
 
-for tx in transact:
-    blocks[0].transactions.append(tx)
-    t.update(str(tx.hash), str(rlp.encode(tx)))
+b1.header.tx_root = t
 
-blocks[0].header.tx_root = t
-
-chain.add_block(blocks[0])
-prevhash = blocks[0].hash
+chain.add_block(b1)
+prevhash = b1.hash
 ++prevnumber
-# FIRST BLOCK CREATED
-
-t2 = trie.Trie(db)
-
-blocks.append(Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber+1)))
-
-transact.append(transactions.Transaction(4, '', "192.168.0.1/24", 0, 'data', 1, 1, 1))
-blocks[1].transactions.append(transact[3])
-t2.update(str(transact[3].hash), str(rlp.encode(transact[3])))
-blocks[1].header.tx_root = t2
-
-chain.add_block(blocks[1])
-prevhash = blocks[1].hash
-++prevnumber
-
-# SECOND BLOCK CREATED
-
-t3 = trie.Trie(db)
-
-blocks.append(Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber+1)))
-
-transact.append(transactions.Transaction(4, '', "192.168.0.2/24", 0, 'data', 1, 1, 1))
-blocks[2].transactions.append(transact[4])
-t2.update(str(transact[4].hash), str(rlp.encode(transact[4])))
-blocks[2].header.tx_root = t3
-
-chain.add_block(blocks[2])
-
-# THIRD BLOCK CREATED
