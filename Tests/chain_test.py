@@ -29,12 +29,10 @@ b1 = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=pre
 t = trie.Trie(db)
 s = state.State(env=env)
 for index, tx in enumerate(transact):
-    print()
     b1.transactions.append(tx)
-    t.update(rlp.encode(index), str(rlp.encode(tx)))
-    index = index + 1
+    t.update(rlp.encode(index), rlp.encode(tx))
 
-b1.header.tx_root = t
+b1.header.tx_root = t.root_hash
 
 chain.add_block(b1)
 prevhash = b1.hash
