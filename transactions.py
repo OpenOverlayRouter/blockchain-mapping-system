@@ -124,14 +124,19 @@ class Transaction(rlp.Serializable):
             if self.r == 0 and self.s == 0:
                 self._sender = null_address
             else:
-                if self.v not in (27, 28):
-                    raise InvalidTransaction("Invalid V value")
+                if self.v in (27, 28):
+                    vee = self.v
+                    sighash = sha3(rlp.encode(self, UnsignedTransaction))
+                elif self.v >= 37:
+                    vee = self.v - self.network_id * 2 - 8
+                    assert vee in (27, 28)
+                    rlpdata = rlp.encode(rlp.infer_sedes(self).serialize(self)[
+                                         :-3] + [self.network_id, '', ''])
+                    sighash = sha3(rlpdata)
                 if self.r >= secpk1n or self.s >= secpk1n or self.r == 0 or self.s == 0:
                     raise InvalidTransaction("Invalid signature values!")
 
-                sighash = sha3(rlp.encode(self, UnsignedTransaction))
                 sighash = self.hash_message(sighash)
-                
                 pub = ecrecover_to_pub(sighash, self.v, self.r, self.s)
                 if pub == b"\x00"*64:
                     raise InvalidTransaction(
@@ -139,15 +144,29 @@ class Transaction(rlp.Serializable):
                 self._sender = sha3(pub)[-20:]
         return self._sender
 
+    @property
+    def network_id(self):
+        if self.r == 0 and self.s == 0:
+            return self.v
+        elif self.v in (27, 28):
+            return None
+        else:
+            return ((self.v - 1) // 2) - 17
 
     def sign (self, key, network_id=None):
         if network_id is None:
             rawhash = sha3(rlp.encode(self, UnsignedTransaction))
-            rawhash = self.hash_message(rawhash)
+        else:
+            assert 1 <= network_id < 2**63 - 18
+            rlpdata = rlp.encode(rlp.infer_sedes(self).serialize(self)[
+                                 :-3] + [network_id, b'', b''])
+            rawhash = sha3(rlpdata)
         
+        rawhash = self.hash_message(rawhash)
         key = normalize_key(key)
-
         self.v, self.r, self.s = ecsign(rawhash, key)
+        if network_id is not None:
+            self.v += 8 + network_id * 2
         
         self._sender = privtoaddr(key)
         return self
