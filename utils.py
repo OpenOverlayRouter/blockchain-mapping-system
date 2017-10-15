@@ -4,6 +4,7 @@ import rlp
 from rlp.sedes import big_endian_int, BigEndianInt, Binary
 from rlp.utils import decode_hex, ascii_chr, str_to_bytes, encode_hex
 from py_ecc.secp256k1 import privtopub, ecdsa_raw_sign, ecdsa_raw_recover
+import struct
 
 import random
 
@@ -12,40 +13,23 @@ TT256M1 = 2 ** 256 - 1
 TT255 = 2 ** 255
 SECP256K1P = 2**256 - 4294968273
 
-if sys.version_info.major == 2:
-    def to_string(value):
-        return str(value)
+def to_string(value):
+    return str(value)
 
-    def is_numeric(x):
-        return isinstance(x, (int, long))
+def is_numeric(x):
+    return isinstance(x, (int, long))
 
-    def is_string(x):
-        return isinstance(x, (str, unicode))
+def is_string(x):
+    return isinstance(x, (str, unicode))
 
-    def encode_int32(v):
-        return zpad(int_to_big_endian(v), 32)
+def encode_int32(v):
+    return zpad(int_to_big_endian(v), 32)
 
-else:
-    def to_string(value):
-        if isinstance(value, bytes):
-            return value
-        if isinstance(value, str):
-            return bytes(value, 'utf-8')
-        if isinstance(value, int):
-            return bytes(str(value), 'utf-8')
+def encode_int8(v):
+    return struct.pack('B', v)
 
-    def is_numeric(x): return isinstance(x, int)
-
-    def is_string(x): return isinstance(x, bytes)
-
-    def encode_int32(v):
-        return v.to_bytes(32, byteorder='big')
-
-    def encode_int_len(v, length):
-        return v.to_bytes(length=length, byteorder='big')
-
-    def bytes_to_int(data):
-        return int.from_bytes(data, byteorder='big')
+def bytes_to_int(data):
+    return int(data.encode('hex'), 16)
 
 def sha3_256(x):
     return keccak.new(digest_bits=256, data=x).digest()
@@ -154,24 +138,30 @@ def ecsign(rawhash, key):
     v, r, s = ecdsa_raw_sign(rawhash, key)
     return v, r, s
 
+def privtoaddr(k):
+    k = normalize_key(k)
+    x, y = privtopub(k)
+    return sha3(encode_int32(x) + encode_int32(y))[12:]
+
 def random_privkey():
-    key = hex(random.SystemRandom.getrandbits(256))
+    key = hex(random.SystemRandom().getrandbits(256))
     key = key[2:-1].zfill(64)
-    return bytes.fromhex(key)
+    return key.decode('hex')
 
 def pubkey_to_address(pubkey):
     return sha3_256(pubkey)[-20:]
 
 def ip_to_bytes(addr):
     address, mask = addr.split('/') if '/' in addr else (addr, None)
-    b = b''.join([encode_int_len(int(x),1) for x in address.split('.')])
-    if mask is not None: b += encode_int_len(int(mask),1)
+    b = b''.join([encode_int8(int(x)) for x in address.split('.')])
+    if mask is not None: b += encode_int8(int(mask))
     return b
 
 
 def bytes_to_ip(b):
-    ip = str(b[0]) + '.' + str(b[1]) + '.' + str(b[2]) + '.' + str(b[3])
-    if len(b) == 5: ip += '/' + str(b[4])
+    ip = str(bytes_to_int(b[0])) + '.' + str(bytes_to_int(b[1])) + '.' + \
+         str(bytes_to_int(b[2])) + '.' + str(bytes_to_int(b[3]))
+    if len(b) == 5: ip += '/' + str(bytes_to_int(b[4]))
     return ip
 
 address = Binary.fixed_length(20, allow_empty=True)
