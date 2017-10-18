@@ -7,6 +7,7 @@ from db import RefcountDB
 import json
 import rlp
 from rlp.utils import encode_hex
+from balance import Balance
 
 
 def block_from_genesis_declaration(genesis_data, env):
@@ -22,17 +23,17 @@ def state_from_genesis_declaration(
         block = block_from_genesis_declaration(genesis_data, env)
 
     state = State(env=env)
-    #for addr, data in genesis_data["alloc"].items(): #TODO: puede ser util para inicializar los balances de las cuentas
-    #    addr = normalize_address(addr)
-    #    assert len(addr) == 20
-    #    if 'balance' in data:
-    #        state.set_balance(addr, parse_as_int(data['balance']))
-    #    if 'nonce' in data:
-    #        state.set_nonce(addr, parse_as_int(data['nonce']))
-    #get_consensus_strategy(state.config).initialize(state, block)
+    for addr, data in genesis_data["alloc"].items():
+        addr = normalize_address(addr)
+        assert len(addr) == 20
+        if 'balance' in data:
+            balance = Balance(data['balance']['own_ips'])
+            state.set_balance(addr, parse_as_int(data['balance']))
     if executing_on_head:
         state.executing_on_head = True
+
     state.commit(allow_empties=allow_empties)
+
     rdb = RefcountDB(state.db)
     block.header.state_root = state.trie.root_hash
     state.changed = {}
@@ -48,6 +49,8 @@ def mk_basic_state(alloc, header=None, env=None, executing_on_head=False):
         }
     h = BlockHeader(timestamp=parse_as_int(header['timestamp']), number=parse_as_int(header['number']))
     state.prev_headers = [h]
+    print("ALLOC")
+    print(alloc)
 
     for addr, data in alloc.items():
         addr = normalize_address(addr)
@@ -65,6 +68,8 @@ def mk_basic_state(alloc, header=None, env=None, executing_on_head=False):
 def mk_genesis_data(env, **kwargs):
     assert isinstance(env, Env)
 
+    print("kwargs")
+    print(kwargs)
     allowed_args = set([
         'start_alloc',
         'parent_hash',
@@ -81,6 +86,7 @@ def mk_genesis_data(env, **kwargs):
         "timestamp": kwargs.get('timestamp', 0),
         "extraData": kwargs.get('extra_data', encode_hex(env.config['GENESIS_EXTRA_DATA'])),
         "nonce": kwargs.get('nonce', encode_hex(env.config['GENESIS_NONCE'])),
+        "alloc": kwargs.get('start_alloc', env.config['GENESIS_INITIAL_ALLOC'])
     }
     return genesis_data
 
