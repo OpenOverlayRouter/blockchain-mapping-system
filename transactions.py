@@ -136,7 +136,6 @@ class Transaction(rlp.Serializable):
                 if self.r >= secpk1n or self.s >= secpk1n or self.r == 0 or self.s == 0:
                     raise InvalidTransaction("Invalid signature values!")
 
-                sighash = self.hash_message(sighash)
                 pub = ecrecover_to_pub(sighash, self.v, self.r, self.s)
                 if pub == b"\x00"*64:
                     raise InvalidTransaction(
@@ -161,8 +160,7 @@ class Transaction(rlp.Serializable):
             rlpdata = rlp.encode(rlp.infer_sedes(self).serialize(self)[
                                  :-3] + [network_id, b'', b''])
             rawhash = sha3(rlpdata)
-        
-        rawhash = self.hash_message(rawhash)
+
         key = normalize_key(key)
         self.v, self.r, self.s = ecsign(rawhash, key)
         if network_id is not None:
