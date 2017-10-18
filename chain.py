@@ -100,7 +100,6 @@ class Chain(object):
                 genesis, self.env, executing_on_head=True)
 
         initialize(self.state)
-
         if isinstance(self.state.prev_headers[0], FakeHeader):
             header = self.state.prev_headers[0].to_block_header()
         else:

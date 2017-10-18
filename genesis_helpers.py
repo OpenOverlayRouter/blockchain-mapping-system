@@ -77,7 +77,6 @@ def mk_genesis_data(env, **kwargs):
             "extraData": d["extraData"],
             "alloc": d["alloc"]
         }
-
     return genesis_data
 
 
