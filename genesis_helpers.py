@@ -28,7 +28,7 @@ def state_from_genesis_declaration(
         assert len(addr) == 20
         if 'balance' in data:
             balance = Balance(data['balance']['own_ips'])
-            state.set_balance(addr, parse_as_int(data['balance']))
+            state.set_balance(addr, balance)
     if executing_on_head:
         state.executing_on_head = True
 
@@ -65,16 +65,15 @@ def mk_basic_state(alloc, header=None, env=None, executing_on_head=False):
     state.commit()
     return state
 
-def mk_genesis_data(env, **kwargs):
+def mk_genesis_data(env):
     assert isinstance(env, Env)
 
-    with open('genesis.json') as json_data:
+    with open('../genesis.json') as json_data:
         d = json.load(json_data)
         genesis_data = {
             "parentHash": d["parentHash"],
             "coinbase": d["coinbase"],
             "timestamp": d["timestamp"],
-            "extraData": d["extraData"],
             "alloc": d["alloc"]
         }
     return genesis_data
