@@ -37,6 +37,7 @@ for tx in block.transactions:
 
 rand = randint(0, 20)
 block = chain.get_block_by_number(rand)
+print ("type of second block: " + str(type(block)))
 print ("nonces for block " + str(rand) + ": (" + str(len(block.transactions)) + " transactions in block)")
 for tx in block.transactions:
     print(tx.nonce)

@@ -94,19 +94,10 @@ class Chain(object):
             self.state = genesis
             self.env = self.state.env
             print('Initializing chain from provided state')
-        elif "extraData" in genesis:
-            print(genesis)
-            self.state = state_from_genesis_declaration(
-                genesis, self.env, executing_on_head=True)
-            print('Initializing chain from provided genesis declaration')
         elif isinstance(genesis, dict):
             print('Initializing chain from new state based on alloc')
-            self.state = mk_basic_state(genesis, {
-                "number": kwargs.get('number', 0),
-                "timestamp": kwargs.get('timestamp', 1467446877),
-                "hash": kwargs.get('prevhash', '00' * 32)
-                #TODO: add the rest of necessary fields for the genesis creation
-            }, env=self.env)
+            self.state = state_from_genesis_declaration(
+                genesis, self.env, executing_on_head=True)
 
         initialize(self.state)
 

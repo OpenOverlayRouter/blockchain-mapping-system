@@ -11,7 +11,7 @@ from balance import Balance
 
 
 def block_from_genesis_declaration(genesis_data, env):
-    h = BlockHeader(timestamp=parse_as_int(genesis_data["timestamp"]))
+    h = BlockHeader(timestamp=parse_as_int(genesis_data["timestamp"]), coinbase=parse_as_bin(genesis_data["coinbase"]), prevhash=parse_as_bin(genesis_data["parentHash"]))
     return Block(h, [])
 
 
@@ -68,26 +68,16 @@ def mk_basic_state(alloc, header=None, env=None, executing_on_head=False):
 def mk_genesis_data(env, **kwargs):
     assert isinstance(env, Env)
 
-    print("kwargs")
-    print(kwargs)
-    allowed_args = set([
-        'start_alloc',
-        'parent_hash',
-        'coinbase',
-        'timestamp',
-        'extra_data',
-        'nonce',
-    ])
-    assert set(kwargs.keys()).issubset(allowed_args)
+    with open('genesis.json') as json_data:
+        d = json.load(json_data)
+        genesis_data = {
+            "parentHash": d["parentHash"],
+            "coinbase": d["coinbase"],
+            "timestamp": d["timestamp"],
+            "extraData": d["extraData"],
+            "alloc": d["alloc"]
+        }
 
-    genesis_data = {
-        "parentHash": kwargs.get('parent_hash', encode_hex(env.config['GENESIS_PREVHASH'])),
-        "coinbase": kwargs.get('coinbase', encode_hex(env.config['GENESIS_COINBASE'])),
-        "timestamp": kwargs.get('timestamp', 0),
-        "extraData": kwargs.get('extra_data', encode_hex(env.config['GENESIS_EXTRA_DATA'])),
-        "nonce": kwargs.get('nonce', encode_hex(env.config['GENESIS_NONCE'])),
-        "alloc": kwargs.get('start_alloc', env.config['GENESIS_INITIAL_ALLOC'])
-    }
     return genesis_data
 
 
