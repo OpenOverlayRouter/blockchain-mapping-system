@@ -41,12 +41,12 @@ for iter in range(0,N):
     prevhash = b.hash
     chain.process_time_queue()
     print(b.number)
-
+"""
 for i in range(1,10):
     for tx in chain.get_block_by_number(i).transactions:
         print (tx.nonce)
         print(tx.to)
-        print(tx.value)
+        print(tx.value)*/
+"""
 
-
-print(chain.get_block_by_number(1).transactions[0].hash.encode("HEX"))
+#print(chain.get_block_by_number(1).transactions[0].hash.encode("HEX"))

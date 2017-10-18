@@ -95,6 +95,7 @@ class Chain(object):
             self.env = self.state.env
             print('Initializing chain from provided state')
         elif "extraData" in genesis:
+            print(genesis)
             self.state = state_from_genesis_declaration(
                 genesis, self.env, executing_on_head=True)
             print('Initializing chain from provided genesis declaration')
