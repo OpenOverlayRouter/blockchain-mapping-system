@@ -17,9 +17,9 @@ db = _EphemDB()
 chain = Chain(genesis=mk_genesis_data(env), env=env)
 prevhash = chain.head_hash
 prevnumber = chain.state.block_number
-
+print(chain.state.get_balance("7719818983cb546d1badee634621dad4214cba25").own_ips)
 N = 0
-
+"""
 for iter in range(0,N):
     prevnumber += 1
     transact = []
@@ -41,6 +41,7 @@ for iter in range(0,N):
     prevhash = b.hash
     chain.process_time_queue()
     print(b.number)
+"""
 """
 for i in range(1,10):
     for tx in chain.get_block_by_number(i).transactions:

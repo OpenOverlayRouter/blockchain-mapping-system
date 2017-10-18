@@ -78,8 +78,9 @@ class State():
         return o
 
     def get_balance(self, address):
-        return self.get_and_cache_account(
+        balance =  self.get_and_cache_account(
             utils.normalize_address(address)).balance
+        return utils.bin_to_object(balance)
 
     def get_nonce(self, address):
         return self.get_and_cache_account(utils.normalize_address(address)).nonce
@@ -90,9 +91,10 @@ class State():
         self.journal.append(lambda: setattr(acct, param, preval))
         setattr(acct, param, val)
 
-    def set_balance(self, address, value):
+    def set_balance(self, address, balance):
+        balance = utils.object_to_bin(balance)
         acct = self.get_and_cache_account(utils.normalize_address(address))
-        self.set_and_journal(acct, 'balance', value)
+        self.set_and_journal(acct, 'balance', balance)
         self.set_and_journal(acct, 'touched', True)
 
     def set_code(self, address, value):
@@ -147,6 +149,7 @@ class State():
                 acct.commit()
                 self.changed[addr] = True
                 if self.account_exists(addr) or allow_empties:
+                    rlp.encode(acct)
                     self.trie.update(addr, rlp.encode(acct))
                     if self.executing_on_head:
                         self.db.put(b'address:' + addr, rlp.encode(acct))

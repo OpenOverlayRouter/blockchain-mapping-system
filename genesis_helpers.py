@@ -8,6 +8,7 @@ import json
 import rlp
 from rlp.utils import encode_hex
 from balance import Balance
+import utils
 
 
 def block_from_genesis_declaration(genesis_data, env):
@@ -49,8 +50,6 @@ def mk_basic_state(alloc, header=None, env=None, executing_on_head=False):
         }
     h = BlockHeader(timestamp=parse_as_int(header['timestamp']), number=parse_as_int(header['number']))
     state.prev_headers = [h]
-    print("ALLOC")
-    print(alloc)
 
     for addr, data in alloc.items():
         addr = normalize_address(addr)

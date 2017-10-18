@@ -5,6 +5,7 @@ from rlp.sedes import big_endian_int, BigEndianInt, Binary
 from rlp.utils import decode_hex, ascii_chr, str_to_bytes, encode_hex
 from py_ecc.secp256k1 import privtopub, ecdsa_raw_sign, ecdsa_raw_recover
 import struct
+import pickle
 
 import random
 
@@ -157,6 +158,11 @@ def ip_to_bytes(addr):
     if mask is not None: b += encode_int8(int(mask))
     return b
 
+def object_to_bin(o):
+    return pickle.dumps(o)
+
+def bin_to_object(b):
+    return pickle.loads(b)
 
 def bytes_to_ip(b):
     ip = str(bytes_to_int(b[0])) + '.' + str(bytes_to_int(b[1])) + '.' + \

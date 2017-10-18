@@ -13,6 +13,7 @@ from config import Env
 from block import BlockHeader
 from utils import decode_hex, big_endian_to_int, encode_hex, parse_as_bin, parse_as_int, normalize_address, int_to_big_endian
 import utils
+import pickle
 import json
 import random
 from db import LevelDB
@@ -38,8 +39,10 @@ def encode_optimized(item):
 
 N = 500
 
-balance = Balance()
+balance = Balance("0.0.0.0/0")
+#balance.add_own_ips(get_rand_net())
 
+"""
 with open('../genesis.json') as data_file:
     data = json.load(data_file)
 cont = 0
@@ -82,7 +85,12 @@ state = State(env=env)
 state.set_balance("17961d633bcf20a7b029a7d94b7df4da2ec5427f", balance)
 print(state.get_balance("17961d633bcf20a7b029a7d94b7df4da2ec5427f").own_ips)
 print("ASJHDJASH")
+"""
+b = pickle.dumps(balance)
 
-rlpdata = rlp.encode(utils.to_string(balance))
+rlpdata = rlp.encode(b)
 print(rlpdata)
-print(rlp.decode(rlpdata))
+
+b = pickle.loads(rlp.decode(rlpdata))
+
+print(b.own_ips)
