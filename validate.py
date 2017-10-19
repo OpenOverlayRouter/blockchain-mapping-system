@@ -1,4 +1,4 @@
-from own_exceptions import InvalidNonce, UnsignedTransaction, InvalidNonce, InsufficientBalance, InvalidTransaction
+from own_exceptions import InvalidNonce, UnsignedTransaction, InvalidNonce, InsufficientBalance, InvalidTransaction, UncategorizedTransaction, InvalidCategory
 
 
 null_address = b'\xff' * 20
@@ -20,7 +20,22 @@ def validate_transaction(state, tx):
         raise InvalidNonce(rp(tx, 'nonce', tx.nonce, req_nonce))
 
     # (3) the sender account balance contains the value
-    balance = state.get_balance(tx.sender)
-    if not balance.in_own_ips(tx.ip_network):
-        raise InsufficientBalance(rp(tx, 'balance', balance, tx.ip_network))
+    if hasattr(tx, 'category'):
+        category = tx.category
+        if category < 0 or category > 3:
+            raise InvalidCategory(tx)
+        balance = state.get_balance(tx.sender)
+        value = tx.ip_network
+        if category == 1 or category == 2:
+            if not balance.in_own_ips(value):
+                raise InsufficientBalance(value)
+        elif category == 3:
+            balance.delegated_ips
+            #MapServer
+        elif category == 4:
+            balance.delegated_ips
+            #Locator
+    else:
+        raise UncategorizedTransaction(tx)
+
     return True

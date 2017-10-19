@@ -12,7 +12,9 @@ class Balance(rlp.Serializable):
     fields = [
         ('own_ips', IPSet),
         ('delegated_ips', {address, IPSet}),
-        ('received_ips', {address, IPSet})
+        ('received_ips', {address, IPSet}),
+        ('map_server', {address, IPSet}),
+        ('locator', {address, IPSet})
     ]
 
     def __init__(self, own_ips=IPSet(), delegated_ips={}, received_ips={}):
