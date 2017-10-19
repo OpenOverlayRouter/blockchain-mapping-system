@@ -53,7 +53,7 @@ class Account(rlp.Serializable):
     @classmethod
     def blank_account(cls, env, address, initial_nonce=0):
         env.db.put(BLANK_HASH, b'')
-        o = cls(initial_nonce, 0, env, address)
+        o = cls(initial_nonce, Balance(), env, address)
         o.existent_at_start = False
         return o
 

@@ -30,7 +30,6 @@ def validate_transaction(state, tx):
         balance = state.get_balance(tx.sender)
         value = tx.ip_network
         if category == 1 or category == 2:
-            print(balance.own_ips)
             if not balance.in_own_ips(value):
                 raise InsufficientBalance(value)
         elif category == 3:
@@ -42,4 +41,23 @@ def validate_transaction(state, tx):
     else:
         raise UncategorizedTransaction(tx)
 
+    return True
+
+def apply_transaction(state, tx):
+    validate_transaction(state, tx)
+    category = tx.category
+    if category == 1:
+        sender = tx.sender
+        to = tx.to
+        value = tx.ip_network
+
+        sender_balance = state.get_balance(sender)
+        sender_balance.remove_own_ips(value)
+        state.set_balance(sender,sender_balance)
+
+        to_balance = state.get_balance(to)
+        to_balance.add_own_ips(value)
+        state.set_balance(to,to_balance)
+
+        state.commit()
     return True
