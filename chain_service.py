@@ -14,6 +14,8 @@ from apply import validate_transaction
 import trie
 import state
 import rlp
+import copy
+from apply import apply_transaction
 
 class ChainService():
     """
@@ -40,7 +42,7 @@ class ChainService():
             print(e)
         self.transactions.append(tx)
 
-    # creates a block with the list of pending transactions, signs it and adds it to the chain
+    # creates a block with the list of pending transactions, creates its tries and returns it
     def create_block(self):
         self.chain.process_time_queue()
         self.chain.add_block(self.block)
@@ -49,18 +51,18 @@ class ChainService():
         self.block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber + 1))
         self.block.transactions = self.transactions
         self.create_tries(self.block)
-
+        return self.block
 
     # creates the tx_trie and state trie of a block
     def create_tries(self, block):
         t = trie.Trie(self.db)
-        s = self.chain.state
+        s = copy.deepcopy(self.chain.state)
         for index, tx in enumerate(block.transactions):
             t.update(rlp.encode(index), rlp.encode(tx))
-            s.increment_nonce(tx.sender)
-            
+            chain.apply_block(s, block, self.db)
+            apply_transaction(state, tx)
         block.header.tx_root = t.root_hash
-
+        block.header.state_root = s.trie.root_hash
 
     # gets the transaction in index i of the current block
     def get_transaction_i(self, transactionIndex):
