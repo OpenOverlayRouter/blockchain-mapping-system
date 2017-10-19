@@ -11,7 +11,9 @@ import datetime, threading
 from db import _EphemDB
 from utils import int_to_big_endian
 from validate import validate_transaction
-
+import trie
+import state
+import rlp
 
 class ChainService():
     """
@@ -23,9 +25,7 @@ class ChainService():
         self.env = Env(_EphemDB())
         self.db = self.env.db
         self.chain = chain.Chain(genesis=mk_genesis_data(self.env), env=self.env)
-        prevhash = self.chain.head_hash
-        prevnumber = self.chain.state.block_number
-        self.block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber+1))
+        self.transactions = []
         self.process_time_queue_periodically()
 
     def add_transaction(self, tx):
@@ -38,15 +38,29 @@ class ChainService():
             validate_transaction(self.chain.state, tx)
         except Exception as e:
             print(e)
-        self.block.transactions.append(tx)
+        self.transactions.append(tx)
 
-    # adds the current block to the chain and generates a new one
-    def add_block(self):
+    # creates a block with the list of pending transactions, signs it and adds it to the chain
+    def create_block(self):
         self.chain.process_time_queue()
         self.chain.add_block(self.block)
-        prevhash = self.block.header.hash
-        prevnumber = self.block.header.number
-        self.block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber+1))
+        prevhash = self.chain.head_hash
+        prevnumber = self.chain.state.block_number
+        self.block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber + 1))
+        self.block.transactions = self.transactions
+        self.create_tries(self.block)
+
+
+    # creates the tx_trie and state trie of a block
+    def create_tries(self, block):
+        t = trie.Trie(self.db)
+        s = self.chain.state
+        for index, tx in enumerate(block.transactions):
+            t.update(rlp.encode(index), rlp.encode(tx))
+            s.increment_nonce(tx.sender)
+            
+        block.header.tx_root = t.root_hash
+
 
     # gets the transaction in index i of the current block
     def get_transaction_i(self, transactionIndex):
