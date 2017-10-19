@@ -50,12 +50,12 @@ class ChainService():
         prevnumber = self.chain.state.block_number
         self.block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber + 1))
         self.block.transactions = self.transactions
-        self.create_tries(self.block)
+        self._create_tries(self.block)
         self.transactions = []
         return self.block
 
     # creates the tx_trie and state trie of a block
-    def create_tries(self, block):
+    def _create_tries(self, block):
         t = trie.Trie(self.db)
         s = copy.deepcopy(self.chain.state)
         for index, tx in enumerate(block.transactions):
@@ -65,11 +65,13 @@ class ChainService():
         block.header.tx_root = t.root_hash
         block.header.state_root = s.trie.root_hash
 
-    # adds the block to the chain
+    # adds the block to the chain and eliminates from the pending transactions those transactions present in the block
     def add_block(self, block):
+        assert isinstance(block, Block)
         self.chain.add_block(block)
         for tx in block.transactions:
-            
+            if tx in self.transactions:
+                self.transactions.remove(tx)
 
     # returns the transaction whose hash is 'tx'
     def get_transaction(self, tx):
