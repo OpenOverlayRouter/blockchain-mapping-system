@@ -17,6 +17,12 @@ class InvalidNonce(InvalidTransaction):
 class InsufficientBalance(InvalidTransaction):
     pass
 
+class UncategorizedTransaction(InvalidTransaction):
+    pass
+
+
+class InvalidCategory(InvalidTransaction):
+    pass
 
 class InsufficientStartGas(InvalidTransaction):
     pass
