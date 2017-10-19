@@ -16,13 +16,18 @@ class Balance(rlp.Serializable):
     ]
 
     def __init__(self, own_ips=IPSet(), delegated_ips={}, received_ips={}):
-        own_ips = IPSet(own_ips)
+        if(type (own_ips) is not IPSet):
+            print ("NOT")
+            own_ips = IPSet(own_ips)
+        else:
+            print ("YES")
         self.own_ips = own_ips
         self.delegated_ips = delegated_ips
         self.received_ips = received_ips
         super(Balance,self).__init__(own_ips,delegated_ips,received_ips)
 
     def add_own_ips(self, ips):
+        print(ips)
         self.own_ips.add(ips)
 
     def remove_own_ips(self, ips):

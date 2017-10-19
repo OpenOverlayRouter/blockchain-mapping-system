@@ -7,7 +7,8 @@ from securetrie import SecureTrie
 from trie import Trie
 from db import RefcountDB, BaseDB
 from balance import Balance
-import ipaddress
+import pickle
+from netaddr import IPSet
 
 import trie
 import utils
@@ -53,7 +54,8 @@ class Account(rlp.Serializable):
     @classmethod
     def blank_account(cls, env, address, initial_nonce=0):
         env.db.put(BLANK_HASH, b'')
-        o = cls(initial_nonce, Balance(), env, address)
+        balance = Balance(IPSet())
+        o = cls(initial_nonce, pickle.dumps(balance), env, address)
         o.existent_at_start = False
         return o
 

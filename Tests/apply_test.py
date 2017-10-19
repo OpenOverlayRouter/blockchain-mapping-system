@@ -4,7 +4,7 @@ from db import _EphemDB
 from config import Env
 from chain import Chain
 from genesis_helpers import mk_genesis_data
-from apply import validate_transaction
+from apply import validate_transaction, apply_transaction
 from keystore import Keystore
 import rlp
 import netaddr
@@ -18,12 +18,14 @@ chain = Chain(genesis=mk_genesis_data(env), env=env)
 state = chain.state
 address = "7719818983cb546d1badee634621dad4214cba25"
 ks = Keystore.load("./keystore/7719818983cb546d1badee634621dad4214cba25","TFG1234")
+
 print(state.trie.root_hash.encode('HEX'))
 balance = state.get_balance(address)
 balance.remove_own_ips(IPNetwork('192.168.0.1/24'))
 state.set_balance(address,balance)
 state.commit()
+
 print(state.trie.root_hash.encode('HEX'))
 tx = Transaction(0,1,'54450450e24286143a35686ad77a7c851ada01a0', '192.152.0.0/16')
 tx.sign(ks.privkey)
-validate_transaction(state,tx)
+apply_transaction(state,tx)

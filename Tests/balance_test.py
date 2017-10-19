@@ -39,7 +39,7 @@ def encode_optimized(item):
 
 N = 500
 
-balance = Balance("0.0.0.0/0")
+balance = Balance([])
 #balance.add_own_ips(get_rand_net())
 
 """
@@ -93,4 +93,5 @@ print(rlpdata)
 
 b = pickle.loads(rlp.decode(rlpdata))
 
+balance.add_own_ips('2.2.2.2/2')
 print(b.own_ips)
