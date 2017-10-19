@@ -10,7 +10,7 @@ from genesis_helpers import mk_genesis_data
 import datetime, threading
 from db import _EphemDB
 from utils import int_to_big_endian
-from validate import validate_transaction
+from apply import validate_transaction
 import trie
 import state
 import rlp

@@ -17,7 +17,13 @@ db = _EphemDB()
 chain = Chain(genesis=mk_genesis_data(env), env=env)
 prevhash = chain.head_hash
 prevnumber = chain.state.block_number
-print(chain.state.get_balance("7719818983cb546d1badee634621dad4214cba25").own_ips)
+address = "7719818983cb546d1badee634621dad4214cba25"
+print(chain.state.get_balance(address).own_ips)
+print (chain.state.get_nonce(address))
+chain.state.increment_nonce(address)
+print (chain.state.get_nonce(address))
+chain.state.commit()
+print (chain.state.get_nonce(address))
 N = 0
 """
 for iter in range(0,N):

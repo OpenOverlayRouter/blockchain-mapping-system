@@ -12,12 +12,11 @@ class Balance(rlp.Serializable):
     fields = [
         ('own_ips', IPSet),
         ('delegated_ips', {address, IPSet}),
-        ('received_ips', {address, IPSet}),
-        ('map_server', {address, IPSet}),
-        ('locator', {address, IPSet})
+        ('received_ips', {address, IPSet})
     ]
 
     def __init__(self, own_ips=IPSet(), delegated_ips={}, received_ips={}):
+        own_ips = IPSet(own_ips)
         self.own_ips = own_ips
         self.delegated_ips = delegated_ips
         self.received_ips = received_ips
@@ -56,6 +55,7 @@ class Balance(rlp.Serializable):
             self.received_ips.pop(n_address)
 
     def in_own_ips(self,ips):
+        print(ips)
         return self.own_ips.__contains__(ips)
 
     def in_delegated_ips(self,ips):
