@@ -51,6 +51,7 @@ class ChainService():
         self.block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber + 1))
         self.block.transactions = self.transactions
         self.create_tries(self.block)
+        self.transactions = []
         return self.block
 
     # creates the tx_trie and state trie of a block
@@ -64,13 +65,27 @@ class ChainService():
         block.header.tx_root = t.root_hash
         block.header.state_root = s.trie.root_hash
 
-    # gets the transaction in index i of the current block
-    def get_transaction_i(self, transactionIndex):
-        return self.block.transactions[transactionIndex]
+    # adds the block to the chain
+    def add_block(self, block):
+        self.chain.add_block(block)
+        for tx in block.transactions:
+            
 
+    # returns the transaction whose hash is 'tx'
+    def get_transaction(self, tx):
+        return self.chain.get_transaction(tx)
 
-    def get_block_in_position_i(self, position):
-        return self.chain.get_block_by_number(position)
+    # returns the block whose hash is 'block'
+    def get_block(self, block):
+        return self.chain.get_block(block)
+
+    # returns the block whose number is 'block'
+    def get_block_by_number(self, block):
+        return self.chain.get_block_by_number(block)
+
+    # returns the list of pending transactions (not yet included in a block)
+    def get_pending_transactions(self):
+        return self.transactions
 
     def process_time_queue_periodically(self):
         threading.Timer(120, self.chain.process_time_queue()).start()
