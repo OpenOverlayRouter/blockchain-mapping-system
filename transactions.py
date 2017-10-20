@@ -3,7 +3,7 @@ from rlp.sedes import big_endian_int, BigEndianInt, binary, raw
 
 from utils import (address, normalize_address, sha3, normalize_key, ecsign,
                    privtoaddr, ecrecover_to_pub, parse_as_bin, int_to_bytes,
-                   ip_to_bytes, bytes_to_ip, encode_hex)
+                   ip_to_bytes, bytes_to_ip, encode_hex, bytes_to_int)
 from own_exceptions import InvalidTransaction
 from netaddr import IPNetwork, IPAddress, AddrFormatError
 
@@ -16,6 +16,7 @@ class Transaction(rlp.Serializable):
         ('nonce', big_endian_int),
         ('category', big_endian_int),
         ('to', address),
+        ('vni', big_endian_int),
         ('value', binary),
         ('metadata', raw),
         ('time', big_endian_int),
@@ -25,7 +26,7 @@ class Transaction(rlp.Serializable):
     ]
     _sender = None
 
-    def __init__ (self, nonce, category, to, value, 
+    def __init__ (self, nonce, category, to, vni, value, 
                   metadata=b'', time=0, v=0, r=0, s=0):
 
         if category == 0 or category == 1:
@@ -57,25 +58,46 @@ class Transaction(rlp.Serializable):
             else:
                 raise InvalidTransaction("Invalid Metadata")
         elif category == 3:
-            if type(metadata) == list and metadata:
+            if type(metadata) == list and len(metadata) % 3 == 0:
                 _metadata = []
-                for elem in metadata:
+                i = 0
+                while i < len(metadata):
                     try:
-                        ip = IPAddress(elem)
+                        ip = IPAddress(metadata[i])
                         _metadata.append(ip_to_bytes(str(ip)))
+                        priority = metadata[i+1]
+                        if priority < 0 or priority > 255:
+                            raise InvalidTransaction("Invalid Metadata")
+                        _metadata.append(int_to_bytes(priority))
+                        weight = metadata[i+2]
+                        if weight < 0 or weight > 255:
+                            raise InvalidTransaction("Invalid Metadata")
+                        _metadata.append(int_to_bytes(weight))
                     except AddrFormatError:
-                        if len(elem) == 4:
+                        if len(metadata[i]) == 4:
                             try:
-                                ip = bytes_to_ip(elem)
+                                ip = bytes_to_ip(metadata[i])
                                 ip = IPAddress(ip)
                                 _metadata.append(ip_to_bytes(str(ip)))
+                                priority = bytes_to_int(metadata[i+1])
+                                if priority < 0 or priority > 255:
+                                    raise InvalidTransaction
+                                _metadata.append(int_to_bytes(priority))
+                                weight = bytes_to_int(metadata[i+2])
+                                if weight < 0 or weight > 255:
+                                    raise InvalidTransaction
+                                _metadata.append(int_to_bytes(weight))
                             except:
                                 raise InvalidTransaction("Invalid Metadata")
                         else:
                             raise InvalidTransaction("Invalid Metadata")
+                    finally:
+                        i += 3
                 metadata = _metadata
             else:
                 raise InvalidTransaction("Invalid Metadata")
+        else:
+            raise InvalidTransaction("Invalid Category")
         
         to = normalize_address(to, allow_blank=True)
 
@@ -97,7 +119,8 @@ class Transaction(rlp.Serializable):
             self).__init__(
             nonce, 
             category, 
-            to, 
+            to,
+            vni,
             value,
             metadata, 
             time, 
@@ -189,7 +212,15 @@ class Transaction(rlp.Serializable):
                 d[name] = [bytes_to_ip(v) if i%2 == 0 else encode_hex(v)
                            for i, v in enumerate(d[name])]
             elif name in ('metadata',) and self.category==3:
-                d[name] = map(bytes_to_ip,d[name])
+                _metadata = []
+                #print d[name]
+                i = 0
+                while i < len(d[name]):
+                    _metadata.append(bytes_to_ip(d[name][i]))
+                    _metadata.append(bytes_to_int(d[name][i+1]))
+                    _metadata.append(bytes_to_int(d[name][i+2]))
+                    i += 3
+                d[name] = _metadata
         d['sender'] = '0x' + encode_hex(self.sender)
         d['hash'] = '0x' + encode_hex(self.hash)
         return d
