@@ -19,10 +19,7 @@ class Balance(rlp.Serializable):
 
     def __init__(self, own_ips=IPSet(), delegated_ips={}, received_ips={}, map_server={}, locator={}):
         if(type (own_ips) is not IPSet):
-            print ("NOT")
             own_ips = IPSet(own_ips)
-        else:
-            print ("YES")
         self.own_ips = own_ips
         self.delegated_ips = delegated_ips
         self.received_ips = received_ips
@@ -31,7 +28,6 @@ class Balance(rlp.Serializable):
         super(Balance,self).__init__(own_ips,delegated_ips,received_ips,map_server,locator)
 
     def add_own_ips(self, ips):
-        print(ips)
         self.own_ips.add(ips)
 
     def remove_own_ips(self, ips):
@@ -73,7 +69,7 @@ class Balance(rlp.Serializable):
         for addr, set in self.delegated_ips.iteritems():
             joint = ips&set
             if len(joint) > 0:
-                addresses[addr] = joint
+                addresses[addr.encode('HEX')] = joint
         return addresses
 
     def in_received_ips(self,ips):
