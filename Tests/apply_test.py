@@ -26,6 +26,6 @@ state.set_balance(address,balance)
 state.commit()
 
 print(state.trie.root_hash.encode('HEX'))
-tx = Transaction(0,1,'54450450e24286143a35686ad77a7c851ada01a0', '192.152.0.0/16')
+tx = Transaction(0,1,'54450450e24286143a35686ad77a7c851ada01a0', 0, '192.152.0.0/16')
 tx.sign(ks.privkey)
-apply_transaction(state,tx)
+apply_transaction(state, tx)

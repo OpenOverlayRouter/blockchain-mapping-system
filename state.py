@@ -78,7 +78,7 @@ class State():
         return o
 
     def get_balance(self, address):
-        balance =  self.get_and_cache_account(
+        balance = self.get_and_cache_account(
             utils.normalize_address(address)).balance
         return utils.bin_to_object(balance)
 

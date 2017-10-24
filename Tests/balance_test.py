@@ -40,6 +40,8 @@ def encode_optimized(item):
 N = 500
 
 balance = Balance([])
+print("balance.to_dict()")
+print(balance.to_dict())
 #balance.add_own_ips(get_rand_net())
 
 """
