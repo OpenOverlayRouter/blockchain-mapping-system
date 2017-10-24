@@ -70,12 +70,12 @@ def apply_transaction(state, tx):
         value = tx.ip_network
 
         sender_balance = state.get_balance(sender)
-        sender_balance.remove_delegated_ips(value)
+        sender_balance.add_delegated_ips(value)
         state.set_balance(sender, sender_balance)
 
         to_balance = state.get_balance(to)
         print(to_balance.delegated_ips)
-        to_balance.add_delegated_ips(value)
+        to_balance.add_received_ips(value)
 
         print(value)
         state.set_balance(to, to_balance)

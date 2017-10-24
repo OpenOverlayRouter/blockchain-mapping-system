@@ -159,7 +159,7 @@ def ip_to_bytes(addr):
     return b
 
 def object_to_bin(o):
-    return pickle.dumps(o)
+    return pickle.dumps(o, pickle.HIGHEST_PROTOCOL)
 
 def bin_to_object(b):
     return pickle.loads(b)
