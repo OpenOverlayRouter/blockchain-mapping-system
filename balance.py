@@ -13,8 +13,8 @@ class Balance(rlp.Serializable):
         ('own_ips', IPSet),
         ('delegated_ips', {address, IPSet}),
         ('received_ips', {address, IPSet}),
-        ('map_server', {IPAddress, address}),
-        ('locator', {address, []})
+        ('map_server', {IPSet, address}),
+        ('locator', {address, list})
     ]
 
     def __init__(self, own_ips=IPSet(), delegated_ips={}, received_ips={}, map_server={}, locator={}):
@@ -28,7 +28,7 @@ class Balance(rlp.Serializable):
         self.received_ips = received_ips
         self.map_server = map_server
         self.locator = locator
-        super(Balance,self).__init__(own_ips,delegated_ips,received_ips)
+        super(Balance,self).__init__(own_ips,delegated_ips,received_ips,map_server,locator)
 
     def add_own_ips(self, ips):
         print(ips)
@@ -87,4 +87,5 @@ class Balance(rlp.Serializable):
         return self.map_server
 
     def set_locator(self, locator):
+        self.locator = locator
 
