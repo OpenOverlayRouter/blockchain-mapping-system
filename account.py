@@ -9,6 +9,7 @@ from db import RefcountDB, BaseDB
 from balance import Balance
 import pickle
 from netaddr import IPSet
+from utils import object_to_bin
 
 import trie
 import utils
@@ -55,7 +56,7 @@ class Account(rlp.Serializable):
     def blank_account(cls, env, address, initial_nonce=0):
         env.db.put(BLANK_HASH, b'')
         balance = Balance(IPSet())
-        o = cls(initial_nonce, pickle.dumps(balance), env, address)
+        o = cls(initial_nonce, object_to_bin(balance), env, address)
         o.existent_at_start = False
         return o
 

@@ -159,10 +159,12 @@ def ip_to_bytes(addr):
     return b
 
 def object_to_bin(o):
-    return pickle.dumps(o, pickle.HIGHEST_PROTOCOL)
+    return pickle.dumps(o,pickle.HIGHEST_PROTOCOL).encode('hex')
 
 def bin_to_object(b):
-    return pickle.loads(b)
+    print("BALANCE")
+    print(b)
+    return pickle.loads(b.decode('hex'))
 
 def bytes_to_ip(b):
     ip = str(bytes_to_int(b[0])) + '.' + str(bytes_to_int(b[1])) + '.' + \
