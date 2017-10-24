@@ -79,6 +79,7 @@ class Balance(rlp.Serializable):
         return False
 
     def set_map_server(self, map_server):
+        self.map_server = {}
         for ip, ms in map_server:
             self.map_server[ip] = ms
 
@@ -86,5 +87,9 @@ class Balance(rlp.Serializable):
         return self.map_server
 
     def set_locator(self, locator):
-        self.locator = locator
+        self.locator = {}
+        for ip, list in locator:
+            self.locator[ip] = list
 
+    def get_locator(self):
+        return self.locator
