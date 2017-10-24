@@ -42,7 +42,7 @@ class Balance(rlp.Serializable):
 
     def remove_delegated_ips(self, address, ips):
         n_address = normalize_address(address)
-        self.delegated_ips[n_address].remove(ips)
+        self.delegated_ips[n_address] = self.delegated_ips[n_address] - ips
         if len(self.delegated_ips[n_address]) == 0:
             self.delegated_ips.pop(n_address)
 
