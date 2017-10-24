@@ -12,10 +12,12 @@ class Balance(rlp.Serializable):
     fields = [
         ('own_ips', IPSet),
         ('delegated_ips', {address, IPSet}),
-        ('received_ips', {address, IPSet})
+        ('received_ips', {address, IPSet}),
+        ('map_server', {IPAddress, address}),
+        ('locator', {address, []})
     ]
 
-    def __init__(self, own_ips=IPSet(), delegated_ips={}, received_ips={}):
+    def __init__(self, own_ips=IPSet(), delegated_ips={}, received_ips={}, map_server={}, locator={}):
         if(type (own_ips) is not IPSet):
             print ("NOT")
             own_ips = IPSet(own_ips)
@@ -24,6 +26,8 @@ class Balance(rlp.Serializable):
         self.own_ips = own_ips
         self.delegated_ips = delegated_ips
         self.received_ips = received_ips
+        self.map_server = map_server
+        self.locator = locator
         super(Balance,self).__init__(own_ips,delegated_ips,received_ips)
 
     def add_own_ips(self, ips):
@@ -74,4 +78,13 @@ class Balance(rlp.Serializable):
             if set.__contains__(ips):
                 return True
         return False
+
+    def set_map_server(self, map_server):
+        for ip, ms in map_server:
+            self.map_server[ip] = ms
+
+    def get_map_server(self):
+        return self.map_server
+
+    def set_locator(self, locator):
 
