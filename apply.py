@@ -46,7 +46,7 @@ def validate_transaction(state, tx):
 def apply_transaction(state, tx):
     validate_transaction(state, tx)
     category = tx.category
-    if category == 1:
+    if category == 0:  # allocate
         sender = tx.sender
         to = tx.to
         value = tx.ip_network
@@ -56,9 +56,50 @@ def apply_transaction(state, tx):
         state.set_balance(sender,sender_balance)
 
         to_balance = state.get_balance(to)
-        print(to_balance.delegated_ips)
+        print(to_balance.own_ips)
         to_balance.add_own_ips(value)
+
+        print(value)
         state.set_balance(to,to_balance)
 
         state.commit()
+
+    if category == 1:  # delegate
+        sender = tx.sender
+        to = tx.to
+        value = tx.ip_network
+
+        sender_balance = state.get_balance(sender)
+        sender_balance.remove_delegated_ips(value)
+        state.set_balance(sender, sender_balance)
+
+        to_balance = state.get_balance(to)
+        print(to_balance.delegated_ips)
+        to_balance.add_delegated_ips(value)
+
+        print(value)
+        state.set_balance(to, to_balance)
+
+        state.commit()
+
+    if category == 2:  # MapServer
+        sender = tx.sender
+        value = tx.metadata
+
+        sender_balance = state.get_balance(sender)
+        sender_balance.set_map_server(value)
+        state.set_balance(sender, sender_balance)
+
+        state.commit()
+
+    if category == 3:  # Locator
+        sender = tx.sender
+        value = tx.metadata
+
+        sender_balance = state.get_balance(sender)
+        sender_balance.set_locator(value)
+        state.set_balance(sender, sender_balance)
+
+        state.commit()
+
     return True
