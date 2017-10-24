@@ -17,7 +17,7 @@ bal.add_delegated_ips(address2, ip3)
 print(bal.delegated_ips)
 
 print "checking address 192.168.0.0/25"
-print bal.affected_delegated_ips(IPNetwork('192.168.0.0/25'))
+print bal.affected_delegated_ips(IPNetwork('0.0.0.0/0'))
 
 print "checking address 192.168.0.0/24"
 print bal.affected_delegated_ips(IPNetwork('192.168.0.0/24'))

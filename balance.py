@@ -55,7 +55,7 @@ class Balance(rlp.Serializable):
 
     def remove_received_ips(self, address, ips):
         n_address = normalize_address(address)
-        self.received_ips[n_address].remove(ips)
+        self.received_ips[n_address] = self.received_ips[n_address] - ips
         if len(self.received_ips[n_address]) == 0:
             self.received_ips.pop(n_address)
 
