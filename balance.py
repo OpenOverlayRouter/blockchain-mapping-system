@@ -67,11 +67,15 @@ class Balance(rlp.Serializable):
         print(ips)
         return self.own_ips.__contains__(ips)
 
-    def in_delegated_ips(self,ips):
-        for set in self.delegated_ips.itervalues():
+    def in_delegated_ips(self, ips):
+        ips = IPSet(ips)
+        addresses = []
+        for addr, set in self.delegated_ips:
             if set.__contains__(ips):
-                return True
-        return False
+                addresses.add(addr)
+            elif ips.__contains__(set):
+                addresses.add(addr)
+        return addresses
 
     def in_received_ips(self,ips):
         for set in self.received_ips.itervalues():
