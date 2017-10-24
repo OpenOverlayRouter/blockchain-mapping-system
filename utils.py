@@ -162,8 +162,6 @@ def object_to_bin(o):
     return pickle.dumps(o,pickle.HIGHEST_PROTOCOL).encode('hex')
 
 def bin_to_object(b):
-    print("BALANCE")
-    print(b)
     return pickle.loads(b.decode('hex'))
 
 def bytes_to_ip(b):

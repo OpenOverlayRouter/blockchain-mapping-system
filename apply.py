@@ -43,6 +43,7 @@ def validate_transaction(state, tx):
 
     return True
 
+
 def apply_transaction(state, tx):
     validate_transaction(state, tx)
     category = tx.category
@@ -52,37 +53,47 @@ def apply_transaction(state, tx):
         value = tx.ip_network
 
         sender_balance = state.get_balance(sender)
-        sender_balance.remove_own_ips(value)
-        state.set_balance(sender,sender_balance)
+
+        affected = sender_balance.affected_delegated_ips(value)
+        for add, ips in affected.iteritems():
+            sender_balance.remove_delegated_ips(add, ips)
+            received_balance = state.get_balance(add)
+            received_balance.remove_received_ips(sender, ips)
+            state.set_balance(add, received_balance)
 
         to_balance = state.get_balance(to)
-        print(to_balance.own_ips)
+        sender_balance.remove_own_ips(value)
         to_balance.add_own_ips(value)
 
-        print(value)
-        state.set_balance(to,to_balance)
+        state.set_balance(to, to_balance)
+        state.set_balance(sender, sender_balance)
 
         state.commit()
 
-    if category == 1:  # delegate
+    elif category == 1:  # delegate
         sender = tx.sender
         to = tx.to
         value = tx.ip_network
 
         sender_balance = state.get_balance(sender)
-        sender_balance.add_delegated_ips(value)
-        state.set_balance(sender, sender_balance)
+
+        affected = sender_balance.affected_delegated_ips(value)
+        for add, ips in affected.iteritems():
+            sender_balance.remove_delegated_ips(add, ips)
+            received_balance = state.get_balance(add)
+            received_balance.remove_received_ips(sender, ips)
+            state.set_balance(add, received_balance)
 
         to_balance = state.get_balance(to)
-        print(to_balance.delegated_ips)
-        to_balance.add_received_ips(value)
+        to_balance.add_received_ips(sender, value)
+        sender_balance.add_delegated_ips(to, value)
 
-        print(value)
         state.set_balance(to, to_balance)
+        state.set_balance(sender, sender_balance)
 
         state.commit()
 
-    if category == 2:  # MapServer
+    elif category == 2:  # MapServer
         sender = tx.sender
         value = tx.metadata
 
@@ -92,7 +103,7 @@ def apply_transaction(state, tx):
 
         state.commit()
 
-    if category == 3:  # Locator
+    elif category == 3:  # Locator
         sender = tx.sender
         value = tx.metadata
 
