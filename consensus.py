@@ -11,12 +11,17 @@ def get_current_timestamp():
 	now = curDate+" "+curTime
 	return time.mktime(datetime.datetime.strptime(now, "%m/%d/%y %H:%M:%S").timetuple())
 
-last_block_number = get_last_block_number()
-json_block = get_block_by_number(last_block_number)
-print "Ethereum Hash: ",get_hash_from_json_block(json_block)
+def get_random_hash():
+	# Get Ethereum hash
+	last_block_number = get_last_block_number()
+	json_block = get_block_by_number(last_block_number)
+	eth_hash = get_hash_from_json_block(json_block)
 
+	# Get Nist hash
+	timestamp = get_current_timestamp()
+	nist_hash = get_hash_from_NIST(int(timestamp))
+	nist_hash = hex(int(nist_hash.replace('L', '').zfill(8), 16))[:-1]
 
-timestamp = get_current_timestamp()
-hash = get_hash_from_NIST(int(timestamp))
-hash = hex(int(hash.replace('L', '').zfill(8), 16))
-print "NIST Hash: ",hash[:-1]
+	return int(eth_hash,0)^int(nist_hash,0)
+
+print get_random_hash()
