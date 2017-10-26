@@ -49,23 +49,38 @@ class ChainService():
 
     # creates a block with the list of pending transactions, creates its tries and returns it
     def create_block(self, coinbase):
+        print("1")
         self.chain.process_time_queue()
+        print("2")
         prevhash = self.chain.head_hash
+        print("3")
         prevnumber = self.chain.state.block_number
+        print("4")
         coinbase = normalize_address(coinbase)
+        print("5")
         block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber + 1, coinbase=coinbase))
+        print("6")
         block.transactions = self.transactions
+        print("7")
         self._create_tries(block)
+        print("8")
         self.transactions = []
+        print("9")
         return block
 
     # creates the tx_trie and state trie of a block
     def _create_tries(self, block):
-        t = trie.Trie(self.db)
+        t = trie.Trie(_EphemDB())
+        print("7.1")
         s = copy.deepcopy(self.chain.state)
+        s.db = _EphemDB()
+        print("7.2")
         for index, tx in enumerate(block.transactions):
+            print("7.3")
             t.update(rlp.encode(index), rlp.encode(tx))
+            print("7.4")
             apply_transaction(s, tx)
+            print("7.5")
         block.header.tx_root = t.root_hash
         block.header.state_root = s.trie.root_hash
 

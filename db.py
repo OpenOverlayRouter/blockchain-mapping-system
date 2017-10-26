@@ -1,5 +1,5 @@
 import utils
-#import leveldb
+import leveldb
 from rlp.utils import str_to_bytes
 
 compress = decompress = lambda x: x
@@ -26,6 +26,7 @@ class _EphemDB(BaseDB):
         del self.db[key]
 
     def commit(self):
+        print("_EphemDB()")
         pass
 
     def _has_key(self, key):
@@ -60,6 +61,7 @@ class ListeningDB(BaseDB):
         self.parent.put(key, value)
 
     def commit(self):
+        print("ListeningDB")
         pass
 
     def delete(self, key):
@@ -100,6 +102,7 @@ class OverlayDB(BaseDB):
         self.overlay[key] = None
 
     def commit(self):
+        print("OverlayDB")
         pass
 
     def _has_key(self, key):
@@ -164,6 +167,7 @@ class RefcountDB(BaseDB):
             self.db.put(key, sub1(existing[:4]) + existing[4:])
 
     def commit(self):
+        print("RefcountDB")
         pass
 
     def _has_key(self, key):
@@ -219,6 +223,7 @@ class LevelDB(BaseDB):
         self.uncommitted[key] = value
 
     def commit(self):
+        print("LevelDB")
         batch = leveldb.WriteBatch()
         for k, v in self.uncommitted.items():
             if v is None:
