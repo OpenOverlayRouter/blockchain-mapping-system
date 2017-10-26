@@ -53,8 +53,9 @@ chain.add_transaction(tx1)
 chain.add_transaction(tx2)
 chain.add_transaction(tx3)
 chain.add_transaction(tx4)
+chain.add_transaction(tx5)
 
-block = chain.create_block()
+block = chain.create_block(add1)
 chain.add_block(block)
 
 print("ADDRESS1")

@@ -52,6 +52,7 @@ class ChainService():
         self.chain.process_time_queue()
         prevhash = self.chain.head_hash
         prevnumber = self.chain.state.block_number
+        coinbase = normalize_address(coinbase)
         block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber + 1, coinbase=coinbase))
         block.transactions = self.transactions
         self._create_tries(block)
