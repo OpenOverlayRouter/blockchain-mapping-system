@@ -329,6 +329,21 @@ class State():
         return (self.trie.root_hash, len(self.journal), {
             k: copy.copy(getattr(self, k)) for k in STATE_DEFAULTS})
 
+    def revert(self, snapshot):
+        h, L, auxvars = snapshot
+        while len(self.journal) > L:
+            try:
+                lastitem = self.journal.pop()
+                lastitem()
+            except Exception as e:
+                print(e)
+        if h != self.trie.root_hash:
+            assert L == 0
+            self.trie.root_hash = h
+            self.cache = {}
+        for k in STATE_DEFAULTS:
+            setattr(self, k, copy.copy(auxvars[k]))
+
 def prev_header_to_dict(h):
     return {
         "hash": '0x' + encode_hex(h.hash),
