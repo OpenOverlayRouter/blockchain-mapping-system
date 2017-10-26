@@ -67,8 +67,8 @@ def apply_transaction(state, tx):
 
         state.set_balance(to, to_balance)
         state.set_balance(sender, sender_balance)
+        state.increment_nonce(sender)
 
-        state.commit()
 
     elif category == 1:  # delegate
         sender = tx.sender
@@ -90,8 +90,8 @@ def apply_transaction(state, tx):
 
         state.set_balance(to, to_balance)
         state.set_balance(sender, sender_balance)
+        state.increment_nonce(sender)
 
-        state.commit()
 
     elif category == 2:  # MapServer
         sender = tx.sender
@@ -101,7 +101,6 @@ def apply_transaction(state, tx):
         sender_balance.set_map_server(value)
         state.set_balance(sender, sender_balance)
 
-        state.commit()
 
     elif category == 3:  # Locator
         sender = tx.sender
@@ -111,6 +110,7 @@ def apply_transaction(state, tx):
         sender_balance.set_locator(value)
         state.set_balance(sender, sender_balance)
 
-        state.commit()
+
+    state.commit()
 
     return True
