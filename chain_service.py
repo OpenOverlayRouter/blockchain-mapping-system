@@ -59,8 +59,7 @@ class ChainService():
         s = copy.deepcopy(self.chain.state)
         for index, tx in enumerate(block.transactions):
             t.update(rlp.encode(index), rlp.encode(tx))
-            chain.apply_block(s, block)
-            apply_transaction(state, tx)
+            apply_transaction(s, tx)
         block.header.tx_root = t.root_hash
         block.header.state_root = s.trie.root_hash
 

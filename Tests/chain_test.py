@@ -57,5 +57,22 @@ chain.add_transaction(tx4)
 block = chain.create_block()
 chain.add_block(block)
 
+print("ADDRESS1")
+print(chain.get_own_ips(add1))
+print(chain.get_delegated_ips(add1))
+print(chain.get_received_ips(add1))
+
+print("--------------------------")
+print("ADDRESS2")
+print(chain.get_own_ips(add2))
+print(chain.get_delegated_ips(add2))
+print(chain.get_received_ips(add2))
+
+print("--------------------------")
+print("ADDRESS3")
+print(chain.get_own_ips(add3))
+print(chain.get_delegated_ips(add3))
+print(chain.get_received_ips(add3))
+
 
 
