@@ -27,7 +27,7 @@ class Balance(rlp.Serializable):
         super(Balance,self).__init__(own_ips,delegated_ips,received_ips)
 
     def add_own_ips(self, ips):
-        print(ips)
+        len(self.own_ips)
         self.own_ips.add(ips)
 
     def remove_own_ips(self, ips):

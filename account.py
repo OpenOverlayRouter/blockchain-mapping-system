@@ -55,6 +55,8 @@ class Account(rlp.Serializable):
     def blank_account(cls, env, address, initial_nonce=0):
         env.db.put(BLANK_HASH, b'')
         balance = Balance(IPSet())
+        print ("balance.own_ips")
+        print (balance.own_ips)
         o = cls(initial_nonce, pickle.dumps(balance), env, address)
         o.existent_at_start = False
         return o

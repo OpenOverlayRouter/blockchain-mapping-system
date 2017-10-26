@@ -56,7 +56,7 @@ def apply_transaction(state, tx):
         state.set_balance(sender,sender_balance)
 
         to_balance = state.get_balance(to)
-        print(to_balance.delegated_ips)
+        print(to_balance.add_own_ips)
         to_balance.add_own_ips(value)
         state.set_balance(to,to_balance)
 
