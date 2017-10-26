@@ -17,6 +17,7 @@ import rlp
 import copy
 from apply import apply_transaction
 from utils import normalize_address
+from own_exceptions import UnsignedTransaction
 
 class ChainService():
     """
@@ -37,17 +38,21 @@ class ChainService():
         try:
             # Transaction validation for broadcasting. Transaction is validated
             # against the current head candidate.
-            validate_transaction(self.chain.state, tx)
+            if not tx.sender:  # sender is set and validated on Transaction initialization
+                raise UnsignedTransaction(tx)
+            else:
+                if tx.sender == null_address:
+                    raise UnsignedTransaction(tx)
         except Exception as e:
             print(e)
         self.transactions.append(tx)
 
     # creates a block with the list of pending transactions, creates its tries and returns it
-    def create_block(self):
+    def create_block(self, coinbase):
         self.chain.process_time_queue()
         prevhash = self.chain.head_hash
         prevnumber = self.chain.state.block_number
-        block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber + 1))
+        block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber + 1, coinbase=coinbase))
         block.transactions = self.transactions
         self._create_tries(block)
         self.transactions = []
