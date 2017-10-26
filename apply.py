@@ -25,18 +25,21 @@ def validate_transaction(state, tx):
     # (3) the sender account balance contains the value
     if hasattr(tx, 'category'):
         category = tx.category
+
         if category < 0 or category > 3:
             raise InvalidCategory(category)
+
         balance = state.get_balance(tx.sender)
         value = tx.ip_network
+
         if category == 1 or category == 2:
             if not balance.in_own_ips(value):
                 raise InsufficientBalance(value)
         elif category == 3:
-            balance.delegated_ips
+            pass
             #MapServer
         elif category == 4:
-            balance.delegated_ips
+            pass
             #Locator
     else:
         raise UncategorizedTransaction(tx)
@@ -45,8 +48,10 @@ def validate_transaction(state, tx):
 
 
 def apply_transaction(state, tx):
+
     validate_transaction(state, tx)
     category = tx.category
+
     if category == 0:  # allocate
         sender = tx.sender
         to = tx.to
@@ -68,7 +73,6 @@ def apply_transaction(state, tx):
         state.set_balance(to, to_balance)
         state.set_balance(sender, sender_balance)
         state.increment_nonce(sender)
-
 
     elif category == 1:  # delegate
         sender = tx.sender
@@ -92,7 +96,6 @@ def apply_transaction(state, tx):
         state.set_balance(sender, sender_balance)
         state.increment_nonce(sender)
 
-
     elif category == 2:  # MapServer
         sender = tx.sender
         value = tx.metadata
@@ -101,7 +104,6 @@ def apply_transaction(state, tx):
         sender_balance.set_map_server(value)
         state.set_balance(sender, sender_balance)
 
-
     elif category == 3:  # Locator
         sender = tx.sender
         value = tx.metadata
@@ -109,7 +111,6 @@ def apply_transaction(state, tx):
         sender_balance = state.get_balance(sender)
         sender_balance.set_locator(value)
         state.set_balance(sender, sender_balance)
-
 
     state.commit()
 
