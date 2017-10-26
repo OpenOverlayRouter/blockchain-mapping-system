@@ -78,7 +78,7 @@ class State():
         return o
 
     def get_balance(self, address):
-        balance =  self.get_and_cache_account(
+        balance = self.get_and_cache_account(
             utils.normalize_address(address)).balance
         return utils.bin_to_object(balance)
 
@@ -237,20 +237,10 @@ class State():
                 if len(addr) == 40:
                     addr = decode_hex(addr)
                 assert len(addr) == 20
-                if 'wei' in data:
-                    state.set_balance(addr, parse_as_int(data['wei']))
                 if 'balance' in data:
                     state.set_balance(addr, parse_as_int(data['balance']))
-                if 'code' in data:
-                    state.set_code(addr, parse_as_bin(data['code']))
                 if 'nonce' in data:
                     state.set_nonce(addr, parse_as_int(data['nonce']))
-                if 'storage' in data:
-                    for k, v in data['storage'].items():
-                        state.set_storage_data(
-                            addr,
-                            big_endian_to_int(parse_as_bin(k)),
-                            big_endian_to_int(parse_as_bin(v)))
         elif "state_root" in snapshot_data:
             state.trie.root_hash = parse_as_bin(snapshot_data["state_root"])
         else:
@@ -271,16 +261,6 @@ class State():
                 else:
                     headers = default
                 setattr(state, k, headers)
-            elif k == 'recent_uncles':
-                if k in snapshot_data:
-                    uncles = {}
-                    for height, _uncles in v.items():
-                        uncles[int(height)] = []
-                        for uncle in _uncles:
-                            uncles[int(height)].append(parse_as_bin(uncle))
-                else:
-                    uncles = default
-                setattr(state, k, uncles)
         if executing_on_head:
             state.executing_on_head = True
         state.commit()
@@ -328,6 +308,21 @@ class State():
     def snapshot(self):
         return (self.trie.root_hash, len(self.journal), {
             k: copy.copy(getattr(self, k)) for k in STATE_DEFAULTS})
+
+    def revert(self, snapshot):
+        h, L, auxvars = snapshot
+        while len(self.journal) > L:
+            try:
+                lastitem = self.journal.pop()
+                lastitem()
+            except Exception as e:
+                print(e)
+        if h != self.trie.root_hash:
+            assert L == 0
+            self.trie.root_hash = h
+            self.cache = {}
+        for k in STATE_DEFAULTS:
+            setattr(self, k, copy.copy(auxvars[k]))
 
 def prev_header_to_dict(h):
     return {

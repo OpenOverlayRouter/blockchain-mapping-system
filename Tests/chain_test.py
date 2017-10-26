@@ -11,37 +11,69 @@ import state
 from utils_test import get_rand_tx
 from db import LevelDB,_EphemDB
 import time
+from transactions import Transaction
+import copy
+from db import _EphemDB
+from config import Env
+from chain import Chain
+from genesis_helpers import mk_genesis_data
+from apply import validate_transaction, apply_transaction
+from keystore import Keystore
+import rlp
+import netaddr
+from netaddr import IPNetwork, IPAddress, IPSet
+from utils import address, normalize_address
+from chain_service import ChainService
 
-env = Env(LevelDB('./chain'))
 db = _EphemDB()
-chain = Chain(genesis=mk_genesis_data(env), env=env)
-prevhash = chain.head_hash
-prevnumber = chain.state.block_number
+env = Env(db)
 
-N = 0
+add1 = "094a2c9f5b46416b9b9bd9f1efa1f3a73d46cec2"
+add2 = "7719818983cb546d1badee634621dad4214cba25"
+add3 = "a3e04410f475b813c01ca77ff12cb277991e62d2"
 
-for iter in range(0,N):
-    prevnumber += 1
-    transact = []
-    for i in range(0,150):
-        transact.append(get_rand_tx())
-    print(transact[0].hash.encode("HEX"))
-    b = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber))
-    time.sleep(1)
+ks1 = Keystore.load("./keystore/094a2c9f5b46416b9b9bd9f1efa1f3a73d46cec2","TFG1234")
+ks2 = Keystore.load("./keystore/7719818983cb546d1badee634621dad4214cba25","TFG1234")
+ks3 = Keystore.load("./keystore/a3e04410f475b813c01ca77ff12cb277991e62d2","TFG1234")
 
-    t = trie.Trie(db)
-    s = state.State(env=env)
-    for index, tx in enumerate(transact):
-        b.transactions.append(tx)
-        t.update(rlp.encode(index), rlp.encode(tx))
+tx1 = Transaction(0, 0, add2, 0, '192.152.0.0/12')
+tx1.sign(ks1.privkey)
+tx2 = Transaction(0, 0, add3, 0, '192.152.0.0/16')
+tx2.sign(ks2.privkey)
+tx3 = Transaction(0, 1, add1, 0, '192.152.0.0/24')
+tx3.sign(ks3.privkey)
+tx4 = Transaction(1, 1, add2, 0, '192.152.0.0/25')
+tx4.sign(ks3.privkey)
+tx5 = Transaction(2, 0, add1, 0, '192.152.0.0/26')
+tx5.sign(ks3.privkey)
 
-    b.header.tx_root = t.root_hash
+chain = ChainService(env)
 
-    chain.add_block(b)
-    prevhash = b.hash
-    chain.process_time_queue()
-    print(b.number)
+chain.add_transaction(tx1)
+chain.add_transaction(tx2)
+chain.add_transaction(tx3)
+chain.add_transaction(tx4)
+chain.add_transaction(tx5)
 
-print(chain.get_tx_position("2dde7a636fe93a13aacdc73a46745e84d7319da3754cce3141a14943ce9cbe96"))
+block = chain.create_block(add1)
+chain.add_block(block)
 
-print(chain.get_block_by_number(1).transactions[0].hash.encode("HEX"))
+print("ADDRESS1")
+print(chain.get_own_ips(add1))
+print(chain.get_delegated_ips(add1))
+print(chain.get_received_ips(add1))
+
+print("--------------------------")
+print("ADDRESS2")
+print(chain.get_own_ips(add2))
+print(chain.get_delegated_ips(add2))
+print(chain.get_received_ips(add2))
+
+print("--------------------------")
+print("ADDRESS3")
+print(chain.get_own_ips(add3))
+print(chain.get_delegated_ips(add3))
+print(chain.get_received_ips(add3))
+
+
+

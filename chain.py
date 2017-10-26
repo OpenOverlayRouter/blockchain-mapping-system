@@ -10,69 +10,9 @@ from state import State, dict_to_prev_header
 from block import Block, BlockHeader, FakeHeader
 from genesis_helpers import state_from_genesis_declaration, mk_basic_state, initialize, initialize_genesis_keys
 from db import EphemDB
+from apply import apply_block, update_block_env_variables
 
 config_string = ':info'  # ,eth.chain:debug'
-
-
-# Update block variables into the state
-def update_block_env_variables(state, block):
-    state.timestamp = block.header.timestamp
-    state.block_number = block.header.number
-    state.block_coinbase = block.header.coinbase
-
-
-def validate_header(state, header):
-    parent = state.prev_headers[0]
-    if parent:
-        if header.prevhash != parent.hash:
-            raise ValueError("Block's prevhash and parent's hash do not match: block prevhash %s parent hash %s" %
-                             (encode_hex(header.prevhash), encode_hex(parent.hash)))
-        if header.number != parent.number + 1:
-            raise ValueError(
-                "Block's number is not the successor of its parent number")
-        if header.timestamp <= parent.timestamp:
-            raise ValueError("Timestamp equal to or before parent")
-        if header.timestamp >= 2**256:
-            raise ValueError("Timestamp waaaaaaaaaaayy too large")
-    return True
-
-
-# Make the root of a receipt tree
-def mk_transaction_sha(receipts):
-    t = trie.Trie(EphemDB())
-    for i, receipt in enumerate(receipts):
-        t.update(rlp.encode(i), rlp.encode(receipt))
-    return t.root_hash
-
-
-# Validate that the transaction list root is correct
-def validate_transaction_tree(state, block):
-    if block.header.tx_root != mk_transaction_sha(block.transactions):
-        print(trie.BLANK_ROOT.encode("HEX"))
-        print(str(block.header.tx_root).encode("HEX"))
-        print(mk_transaction_sha(block.transactions).encode("HEX"))
-        raise ValueError("Transaction root mismatch: header %s computed %s, %d transactions" %
-                         (encode_hex(str(block.header.tx_root)), encode_hex(str(mk_transaction_sha(block.transactions))),
-                          len(block.transactions)))
-    return True
-
-
-# Applies the block-level state transition function
-def apply_block(state, block, db):
-    # Pre-processing and verification
-    snapshot = state.snapshot()
-    try:
-        # Basic validation
-        assert validate_header(state, block.header)
-        assert validate_transaction_tree(state, block)
-        # Process transactions
-        #for tx in block.transactions:
-            #apply_transaction(state, tx) #TODO: adaptar esta funcion
-        # Post-finalize (ie. add the block header to the state for now)
-        state.add_block_header(block.header)
-    except (ValueError, AssertionError) as e:
-        raise e
-    return state
 
 
 class Chain(object):
@@ -263,7 +203,7 @@ class Chain(object):
             self.state.deletes = []
             self.state.changed = {}
             #try:
-            apply_block(self.state, block, self.env.db)
+            apply_block(self.state, block)
             #except (Exception):
                 #print ("exception found int add_block (apply_block failed), returning False")
                 #return False
@@ -285,7 +225,7 @@ class Chain(object):
         elif block.header.prevhash in self.env.db:
             temp_state = self.mk_poststate_of_blockhash(block.header.prevhash)
             try:
-                apply_block(temp_state, block, self.env.db)
+                apply_block(temp_state, block)
             except (Exception):
                 print ("exception found int add_block (apply_block in line 275 failed), returning False")
                 return False

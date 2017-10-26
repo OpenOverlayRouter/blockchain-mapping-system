@@ -6,10 +6,6 @@ import copy
 
 
 default_config = dict(
-    # Genesis block difficulty
-    GENESIS_DIFFICULTY=131072,
-    # Genesis block gas limit
-    GENESIS_GAS_LIMIT=3141592,
     # Genesis block prevhash, coinbase, nonce
     GENESIS_PREVHASH=b'\x00' * 32,
     GENESIS_COINBASE=b'\x00' * 20,
@@ -18,9 +14,6 @@ default_config = dict(
     GENESIS_TIMESTAMP=0,
     GENESIS_EXTRA_DATA=b'',
     GENESIS_INITIAL_ALLOC={},
-    # Minimum gas limit
-    MIN_GAS_LIMIT=5000,
-    MAX_GAS_LIMIT=2 ** 63 - 1,
     # Gas limit adjustment algo:
     # block.gas_limit=block.parent.gas_limit * 1023/1024 +
     #                   (block.gas_used * 6 / 5) / 1024

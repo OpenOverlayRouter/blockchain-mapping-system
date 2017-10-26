@@ -87,6 +87,7 @@ def initialize_genesis_keys(state, genesis):
     db = state.db
     db.put('GENESIS_NUMBER', str(genesis.header.number))
     db.put('GENESIS_HASH', str(genesis.header.hash))
+    print(state.to_snapshot())
     db.put('GENESIS_STATE', json.dumps(state.to_snapshot()))
     db.put('GENESIS_RLP', rlp.encode(genesis))
     db.put(b'block:0', genesis.header.hash)

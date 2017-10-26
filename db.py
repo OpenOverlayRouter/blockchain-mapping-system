@@ -1,5 +1,5 @@
 import utils
-import leveldb
+#import leveldb
 from rlp.utils import str_to_bytes
 
 compress = decompress = lambda x: x
