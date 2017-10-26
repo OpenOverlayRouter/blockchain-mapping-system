@@ -10,6 +10,7 @@ from state import State, dict_to_prev_header
 from block import Block, BlockHeader, FakeHeader
 from genesis_helpers import state_from_genesis_declaration, mk_basic_state, initialize, initialize_genesis_keys
 from db import EphemDB
+from apply import apply_transaction
 
 config_string = ':info'  # ,eth.chain:debug'
 
@@ -58,7 +59,7 @@ def validate_transaction_tree(state, block):
 
 
 # Applies the block-level state transition function
-def apply_block(state, block, db):
+def apply_block(state, block):
     # Pre-processing and verification
     snapshot = state.snapshot()
     try:
@@ -66,11 +67,12 @@ def apply_block(state, block, db):
         assert validate_header(state, block.header)
         assert validate_transaction_tree(state, block)
         # Process transactions
-        #for tx in block.transactions:
-            #apply_transaction(state, tx) #TODO: adaptar esta funcion
+        for tx in block.transactions:
+            apply_transaction(state, tx)
         # Post-finalize (ie. add the block header to the state for now)
         state.add_block_header(block.header)
     except (ValueError, AssertionError) as e:
+        state.revert(snapshot)
         raise e
     return state
 
@@ -263,7 +265,7 @@ class Chain(object):
             self.state.deletes = []
             self.state.changed = {}
             #try:
-            apply_block(self.state, block, self.env.db)
+            apply_block(self.state, block)
             #except (Exception):
                 #print ("exception found int add_block (apply_block failed), returning False")
                 #return False
@@ -285,7 +287,7 @@ class Chain(object):
         elif block.header.prevhash in self.env.db:
             temp_state = self.mk_poststate_of_blockhash(block.header.prevhash)
             try:
-                apply_block(temp_state, block, self.env.db)
+                apply_block(temp_state, block)
             except (Exception):
                 print ("exception found int add_block (apply_block in line 275 failed), returning False")
                 return False
