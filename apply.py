@@ -11,7 +11,7 @@ def rp(tx, what, actual, target):
     return '%r: %r actual:%r target:%r' % (tx, what, actual, target)
 
 
-# Validate the transaction and check that it is correct 
+# Validate the transaction and check that it is correct
 def validate_transaction(state, tx):
     # (1) The transaction signature is valid;
     if not tx.sender:  # sender is set and validated on Transaction initialization
