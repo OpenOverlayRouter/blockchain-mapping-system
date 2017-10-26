@@ -20,14 +20,12 @@ class _EphemDB(BaseDB):
         return self.db[key]
 
     def put(self, key, value):
-        print("_EphemDB()")
         self.db[key] = value
 
     def delete(self, key):
         del self.db[key]
 
     def commit(self):
-        print("_EphemDB()")
         pass
 
     def _has_key(self, key):
@@ -62,7 +60,6 @@ class ListeningDB(BaseDB):
         self.parent.put(key, value)
 
     def commit(self):
-        print("ListeningDB")
         pass
 
     def delete(self, key):
@@ -103,7 +100,6 @@ class OverlayDB(BaseDB):
         self.overlay[key] = None
 
     def commit(self):
-        print("OverlayDB")
         pass
 
     def _has_key(self, key):
@@ -149,17 +145,10 @@ class RefcountDB(BaseDB):
             return 0
 
     def put(self, key, value):
-        print("RefcountDB1")
         try:
-
-            print("RefcountDB2")
-            print(self.db)
             existing = self.db.get(key)
-            print("RefcountDB3")
             assert existing[4:] == value
-            print("RefcountDB4")
             self.db.put(key, add1(existing[:4]) + value)
-            print("RefcountDB5")
             # print('putin', key, utils.big_endian_to_int(existing[:4]) + 1)
         except KeyError:
             self.db.put(key, b'\x00\x00\x00\x01' + value)
@@ -175,7 +164,6 @@ class RefcountDB(BaseDB):
             self.db.put(key, sub1(existing[:4]) + existing[4:])
 
     def commit(self):
-        print("RefcountDB")
         pass
 
     def _has_key(self, key):
@@ -231,7 +219,6 @@ class LevelDB(BaseDB):
         self.uncommitted[key] = value
 
     def commit(self):
-        print("LevelDB")
         batch = leveldb.WriteBatch()
         for k, v in self.uncommitted.items():
             if v is None:

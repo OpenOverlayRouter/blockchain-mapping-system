@@ -28,8 +28,6 @@ STATE_DEFAULTS = {
 class State():
     def __init__(self, root=b'', env=Env(), executing_on_head=False, **kwargs):
         self.env = env
-        print("SECURE TRIE DB")
-        print(self.db)
         self.trie = SecureTrie(Trie(RefcountDB(self.db), root))
         self.txindex = STATE_DEFAULTS['txindex']
         self.block_number = STATE_DEFAULTS['block_number']
@@ -146,18 +144,13 @@ class State():
         return self.get_and_cache_account(utils.normalize_address(address)).to_dict()
 
     def commit(self, allow_empties=False):
-        print("1")
         for addr, acct in self.cache.items():
             if acct.touched or acct.deleted:
                 acct.commit()
-                print("2")
                 self.changed[addr] = True
-                print("3")
                 if self.account_exists(addr) or allow_empties:
                     rlp.encode(acct)
-                    print("4")
                     self.trie.update(addr, rlp.encode(acct))
-                    print("5")
                     if self.executing_on_head:
                         self.db.put(b'address:' + addr, rlp.encode(acct))
                 else:
@@ -167,7 +160,6 @@ class State():
                             self.db.delete(b'address:' + addr)
                         except KeyError:
                             pass
-                print("3")
         self.trie.deletes = []
         self.cache = {}
         self.journal = []

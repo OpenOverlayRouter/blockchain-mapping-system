@@ -60,7 +60,6 @@ class Balance(rlp.Serializable):
             self.received_ips.pop(n_address)
 
     def in_own_ips(self,ips):
-        print(ips)
         return self.own_ips.__contains__(ips)
 
     def affected_delegated_ips(self, ips):

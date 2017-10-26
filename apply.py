@@ -53,9 +53,7 @@ def validate_transaction(state, tx):
 
 # Applies the transaction to the state
 def apply_transaction(state, tx):
-    print("7.4.1")
     validate_transaction(state, tx)
-    print("7.4.2")
     category = tx.category
 
     if category == 0:  # allocate
@@ -65,14 +63,13 @@ def apply_transaction(state, tx):
 
         sender_balance = state.get_balance(sender)
 
-        print("7.4.3")
         affected = sender_balance.affected_delegated_ips(value)
         for add, ips in affected.iteritems():
             sender_balance.remove_delegated_ips(add, ips)
             received_balance = state.get_balance(add)
             received_balance.remove_received_ips(sender, ips)
             state.set_balance(add, received_balance)
-        print("7.4.4")
+
         to_balance = state.get_balance(to)
         sender_balance.remove_own_ips(value)
         to_balance.add_own_ips(value)
@@ -80,7 +77,6 @@ def apply_transaction(state, tx):
         state.set_balance(to, to_balance)
         state.set_balance(sender, sender_balance)
         state.increment_nonce(sender)
-        print("7.4.5")
 
 
     elif category == 1:  # delegate
@@ -120,9 +116,7 @@ def apply_transaction(state, tx):
         sender_balance = state.get_balance(sender)
         sender_balance.set_locator(value)
         state.set_balance(sender, sender_balance)
-    print("7.4.6")
     state.commit()
-    print("7.4.7")
     return True
 
 
@@ -144,9 +138,6 @@ def mk_transaction_sha(receipts):
 # Validate that the transaction list root is correct
 def validate_transaction_tree(state, block):
     if block.header.tx_root != mk_transaction_sha(block.transactions):
-        print(trie.BLANK_ROOT.encode("HEX"))
-        print(str(block.header.tx_root).encode("HEX"))
-        print(mk_transaction_sha(block.transactions).encode("HEX"))
         raise ValueError("Transaction root mismatch: header %s computed %s, %d transactions" %
                          (encode_hex(str(block.header.tx_root)), encode_hex(str(mk_transaction_sha(block.transactions))),
                           len(block.transactions)))

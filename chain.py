@@ -188,7 +188,6 @@ class Chain(object):
     def add_block(self, block):
         now = self.localtime
         # Are we receiving the block too early?
-        print(block.header.timestamp, now)
         if block.header.timestamp > now:
             i = 0
             while i < len(
@@ -197,8 +196,6 @@ class Chain(object):
             self.time_queue.insert(i, block)
             return False
         # Is the block being added to the head?
-        print("ADD_BLOCK")
-        print(block.header.prevhash,self.head_hash)
         if block.header.prevhash == self.head_hash:
             self.state.deletes = []
             self.state.changed = {}
@@ -208,13 +205,9 @@ class Chain(object):
                 #print ("exception found int add_block (apply_block failed), returning False")
                 #return False
             self.db.put(b'block:%d' % block.header.number, block.header.hash)
-            print("PUT")
             # side effect: put 'score:' cache in db
             self.head_hash = block.header.hash
             for i, tx in enumerate(block.transactions):
-                print('txindex:' + tx.hash.encode("HEX"))
-                print(b'txindex:' +
-                            tx.hash)
                 self.db.put(b'txindex:' +
                             tx.hash, rlp.encode([block.number, i]))
             assert self.get_blockhash_by_number(
@@ -227,7 +220,7 @@ class Chain(object):
             try:
                 apply_block(temp_state, block)
             except (Exception):
-                print ("exception found int add_block (apply_block in line 275 failed), returning False")
+                print ("exception found int add_block (apply_block in line 223 failed), returning False")
                 return False
             changed = temp_state.changed
         # Block has no parent yet
