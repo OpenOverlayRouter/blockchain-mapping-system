@@ -20,6 +20,7 @@ class _EphemDB(BaseDB):
         return self.db[key]
 
     def put(self, key, value):
+        print("_EphemDB()")
         self.db[key] = value
 
     def delete(self, key):
@@ -148,10 +149,17 @@ class RefcountDB(BaseDB):
             return 0
 
     def put(self, key, value):
+        print("RefcountDB1")
         try:
+
+            print("RefcountDB2")
+            print(self.db)
             existing = self.db.get(key)
+            print("RefcountDB3")
             assert existing[4:] == value
+            print("RefcountDB4")
             self.db.put(key, add1(existing[:4]) + value)
+            print("RefcountDB5")
             # print('putin', key, utils.big_endian_to_int(existing[:4]) + 1)
         except KeyError:
             self.db.put(key, b'\x00\x00\x00\x01' + value)

@@ -72,8 +72,10 @@ class ChainService():
     def _create_tries(self, block):
         t = trie.Trie(_EphemDB())
         print("7.1")
-        s = copy.deepcopy(self.chain.state)
-        s.db = _EphemDB()
+        snapshot = self.chain.state.to_snapshot()
+        s = state.State().from_snapshot(snapshot, Env(_EphemDB()))
+        print("s.db")
+        print(s.db)
         print("7.2")
         for index, tx in enumerate(block.transactions):
             print("7.3")
