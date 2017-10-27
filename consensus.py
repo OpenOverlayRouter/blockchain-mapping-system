@@ -16,12 +16,22 @@ def get_random_hash():
 	last_block_number = get_last_block_number()
 	json_block = get_block_by_number(last_block_number)
 	eth_hash = get_hash_from_json_block(json_block)
+	eth_hash_bits = from_hex_to_bits(eth_hash,256)
 
 	# Get Nist hash
 	timestamp = get_current_timestamp()
 	nist_hash = get_hash_from_NIST(int(timestamp))
 	nist_hash = hex(int(nist_hash.replace('L', '').zfill(8), 16))[:-1]
+	nist_hash_bits = from_hex_to_bits(nist_hash,512)
 
-	return int(eth_hash,0)^int(nist_hash,0)
+	xor = long(eth_hash_bits,2)^long(nist_hash_bits,2)
+	return from_long_to_bits(xor)
 
-print get_random_hash()
+def from_hex_to_bits(h,nbits):
+	return bin(int(h,16))[2:].zfill(nbits)
+
+def from_long_to_bits(l):
+	return "{0:b}".format(l)
+
+res = get_random_hash()
+print res
