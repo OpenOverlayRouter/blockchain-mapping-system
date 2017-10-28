@@ -2,6 +2,9 @@ import time
 import datetime
 from ethapi import *
 
+IPv4_PREFIX_LENGTH = 32
+IPv6_PREFIX_LENGTH = 128
+
 def get_hash_from_json_block(json_block):
 	return json_block['result']['hash']
 
@@ -31,7 +34,45 @@ def from_hex_to_bits(h,nbits):
 	return bin(int(h,16))[2:].zfill(nbits)
 
 def from_long_to_bits(l):
-	return "{0:b}".format(l)
+	res = "{0:b}".format(l)
+	while len(res) < 512:
+		res = "0"+res
+	return res
 
-res = get_random_hash()
-print res
+def which_protocol():
+	if 0:
+		return "IPv6"
+	else:
+		return "IPv4"
+
+def consensus_for_IPv6(hash):
+	ngroup = len(hash)/IPv6_PREFIX_LENGTH
+	address = []
+	for i in range (0,len(hash),IPv6_PREFIX_LENGTH):
+		ini_xor = int(hash[i],2)
+		for j in range (i+1,i+IPv6_PREFIX_LENGTH):
+			ini_xor = ini_xor^int(hash[j],2)
+		address.append(ini_xor)
+
+	return address
+
+def consensus_for_IPv4(hash):
+	ngroup = len(hash)/IPv4_PREFIX_LENGTH
+	address = []
+	for i in range (0,len(hash),IPv4_PREFIX_LENGTH):
+		ini_xor = int(hash[i],2)
+		for j in range (i+1,i+IPv4_PREFIX_LENGTH):
+			ini_xor = ini_xor^int(hash[j],2)
+		address.append(ini_xor)
+
+	return address
+
+def who_signs():
+	protocol = which_protocol()
+	hash = get_random_hash()
+	if protocol == "IPv6":
+		return consensus_for_IPv6(hash)
+	else:
+		return consensus_for_IPv4(hash)
+
+print (who_signs())
