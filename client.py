@@ -1,6 +1,7 @@
 import socket
 import struct
 
+
 # this class must be used to send a message to the server
 class Client():
     def __init__(self):

@@ -30,7 +30,6 @@ def init_consensus():
     # P2P initialization
     return 0
 
-
 def recvall(sock, n):
     # Helper function to recv n bytes or return None if EOF is hit
     data = b''
@@ -40,6 +39,7 @@ def recvall(sock, n):
             return None
         data += packet
     return data
+
 
 class Server():
     def __init__(self):
@@ -94,10 +94,5 @@ class Server():
                 del message_queues[s]
 
 
-
 def main():
-    server = Server()
-    client2 = Client()
-    client3 = Client()
-
-main()
+    pass

@@ -79,7 +79,7 @@ class Balance(rlp.Serializable):
 
     def set_map_server(self, map_server):
         self.map_server = {}
-        for ip, ms in map_server:
+        for ip, ms in zip(map_server[0::2], map_server[1::2]):
             self.map_server[ip] = ms
 
     def get_map_server(self):
@@ -87,8 +87,21 @@ class Balance(rlp.Serializable):
 
     def set_locator(self, locator):
         self.locator = {}
-        for ip, list in locator:
-            self.locator[ip] = list
+        priority = ''
+        weight = ''
+        ip = ''
+        for i in range (0, len(locator)):
+            if i%4 == 1:
+                ip = locator[i]
+            elif i%4 == 2:
+                priority = locator[i]
+            elif i%4 == 3:
+                weight = locator[i]
+            elif i%4 == 0 and i > 0:
+                l = []
+                l.append(priority)
+                l.append(weight)
+                self.locator[ip] = l
 
     def get_locator(self):
         return self.locator
