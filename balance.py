@@ -63,6 +63,7 @@ class Balance(rlp.Serializable):
         return self.own_ips.__contains__(ips)
 
     def affected_delegated_ips(self, ips):
+        print(ips)
         ips = IPSet(ips)
         addresses = {}
         for addr, set in self.delegated_ips.iteritems():

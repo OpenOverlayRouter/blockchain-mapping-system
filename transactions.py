@@ -6,6 +6,7 @@ from utils import (address, normalize_address, sha3, normalize_key, ecsign,
                    encode_hex, bytes_to_int, encode_int8)
 from own_exceptions import InvalidTransaction
 from ipaddr import IPv4Network, IPv6Network, IPv4Address, IPv6Address, Bytes
+from netaddr import IPNetwork, IPAddress, IPSet
 
 secpk1n = 115792089237316195423570985008687907852837564279074904382605163141518161494337
 null_address = b'\xff' * 20
@@ -257,7 +258,7 @@ class Transaction(rlp.Serializable):
         else:
             ip = IPv6Address(Bytes(self.value[:16]))
             ipnet = IPv6Network(str(ip) + '/' + str(bytes_to_int(self.value[16])))
-        return str(ipnet)
+        return IPNetwork(str(ipnet))
 
     def to_dict(self):
         d = {}

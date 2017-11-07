@@ -8,6 +8,7 @@ import chain_service
 from config import Env
 from db import LevelDB
 from chain_service import ChainService
+import asyncore, socket
 
 inputs = []
 outputs = []
@@ -25,8 +26,34 @@ def init_p2p():
 
 
 def init_consensus():
-    # P2P initialization
+    # Consensus initialization
     return 0
+
+def init_lisp():
+    # LISP initialization
+    return 0
+
+class Server(asyncore.dispatcher):
+    def __init__(self, host, port):
+        asyncore.dispatcher.__init__(self)
+        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.bind(('', port))
+        self.listen(1)
+
+    def handle_accept(self):
+        # when we get a client connection start a dispatcher for that
+        # client
+        socket, address = self.accept()
+        print 'Connection by', address
+        EchoHandler(socket)
+
+class EchoHandler(asyncore.dispatcher_with_send):
+    # dispatcher_with_send extends the basic dispatcher to have an output
+    # buffer that it writes whenever there's content
+    def handle_read(self):
+        self.out_buffer = self.recv(1024)
+        if not self.out_buffer:
+            self.close()
 
 
 def main():
@@ -37,21 +64,5 @@ def main():
     p2p.sync_chain()
     lisp = init_lisp()
 
-    while not end:
-        object = select()
-        if (isinstance(object, Block)):
-            try:
-                chain.add_block(object)
-            except as e:
-                print("error adding block")
-                print(e)
-        elif (isinstance(object, Transaction)):
-            try:
-                chain.add_transaction(object)
-            except as e:
-                print("error adding transaction to pending list")
-                print(e)
-        elif (isinstance(object, Alocate):  # TODO: completar User_req
-            try:
-                User_req.create_transaction()
-                create_tx(User_req)
+    s = Server('', 5007)
+    asyncore.loop()
