@@ -8,7 +8,8 @@ import chain_service
 from config import Env
 from db import LevelDB
 from chain_service import ChainService
-import asyncore, socket
+import select, socket, sys, Queue
+import struct
 
 inputs = []
 outputs = []
@@ -26,43 +27,72 @@ def init_p2p():
 
 
 def init_consensus():
-    # Consensus initialization
+    # P2P initialization
     return 0
 
-def init_lisp():
-    # LISP initialization
-    return 0
+def recvall(sock, n):
+    # Helper function to recv n bytes or return None if EOF is hit
+    data = b''
+    while len(data) < n:
+        packet = sock.recv(n - len(data))
+        if not packet:
+            return None
+        data += packet
+    return data
 
-class Server(asyncore.dispatcher):
-    def __init__(self, host, port):
-        asyncore.dispatcher.__init__(self)
-        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.bind(('', port))
-        self.listen(1)
 
-    def handle_accept(self):
-        # when we get a client connection start a dispatcher for that
-        # client
-        socket, address = self.accept()
-        print 'Connection by', address
-        EchoHandler(socket)
+class Server():
+    def __init__(self):
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.setblocking(0)
+        server.bind(('localhost', 50000))
+        server.listen(5)
+        inputs = [server]
+        outputs = []
+        message_queues = {}
+        while inputs:
+            readable, writable, exceptional = select.select(
+                inputs, outputs, inputs)
+            for s in readable:
+                if s is server:
+                    connection, client_address = s.accept()
+                    connection.setblocking(0)
+                    inputs.append(connection)
+                    message_queues[connection] = Queue.Queue()
+                else:
+                    # this method reads the amount of bytes indicated by the first 4 bytes of the buffer
+                    raw_msglen = recvall(s, 4) # size of data to read
+                    if not raw_msglen:
+                        print ("error while reading")
+                    msglen = struct.unpack('>I', raw_msglen)[0]
+                    data = recvall(s, msglen) # read the amount of data indicated by the first 4 bytes
+                    print("lo leido es " + str(data))
+                    if data:
+                        message_queues[s].put(data)
+                        if s not in outputs:
+                            outputs.append(s)
+                    else:
+                        if s in outputs:
+                            outputs.remove(s)
+                        inputs.remove(s)
+                        s.close()
+                        del message_queues[s]
 
-class EchoHandler(asyncore.dispatcher_with_send):
-    # dispatcher_with_send extends the basic dispatcher to have an output
-    # buffer that it writes whenever there's content
-    def handle_read(self):
-        self.out_buffer = self.recv(1024)
-        if not self.out_buffer:
-            self.close()
+            for s in writable:
+                try:
+                    next_msg = message_queues[s].get_nowait()
+                except Queue.Empty:
+                    outputs.remove(s)
+                else:
+                    s.send(next_msg)
+
+            for s in exceptional:
+                inputs.remove(s)
+                if s in outputs:
+                    outputs.remove(s)
+                s.close()
+                del message_queues[s]
 
 
 def main():
-    end = 0
-    chain = init_chain()
-    p2p = init_p2p()
-    consensus = init_consensus()
-    p2p.sync_chain()
-    lisp = init_lisp()
-
-    s = Server('', 5007)
-    asyncore.loop()
+    pass
