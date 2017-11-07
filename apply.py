@@ -108,14 +108,16 @@ def apply_transaction(state, tx):
         sender_balance = state.get_balance(sender)
         sender_balance.set_map_server(value)
         state.set_balance(sender, sender_balance)
+        state.increment_nonce(sender)
 
     elif category == 3:  # Locator
         sender = tx.sender
         value = tx.metadata
-
+        print(value)
         sender_balance = state.get_balance(sender)
         sender_balance.set_locator(value)
         state.set_balance(sender, sender_balance)
+        state.increment_nonce(sender)
     state.commit()
     return True
 
