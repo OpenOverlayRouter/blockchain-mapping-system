@@ -5,6 +5,8 @@ from netaddr import IPNetwork, IPAddress, IPSet
 from utils import address, normalize_address
 import random
 import json
+from ipaddr import IPv4Network, IPv6Network, IPv4Address, IPv6Address, Bytes
+from utils import bytes_to_int
 
 
 
@@ -80,10 +82,11 @@ class Balance(rlp.Serializable):
 
     def set_map_server(self, map_server):
         self.map_server = {}
-        ip = ''
+
         for i in range (0, len(map_server)):
             if i%3 == 1:
                 ip = map_server[i]
+
             elif i%3 == 2:
                 address = map_server[i]
             elif i%3 == 0 and i > 0:
@@ -101,9 +104,9 @@ class Balance(rlp.Serializable):
             if i%4 == 1:
                 ip = locator[i]
             elif i%4 == 2:
-                priority = locator[i]
+                priority = bytes_to_int(locator[i])
             elif i%4 == 3:
-                weight = locator[i]
+                weight = bytes_to_int(locator[i])
             elif i%4 == 0 and i > 0:
                 l = []
                 l.append(priority)

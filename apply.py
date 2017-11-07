@@ -36,13 +36,17 @@ def validate_transaction(state, tx):
         balance = state.get_balance(tx.sender)
         value = tx.ip_network
 
-        if category == 1 or category == 2:
+        if category == 0 or category == 1:
             if not balance.in_own_ips(value):
+                print(category)
+                print(value)
                 raise InsufficientBalance(value)
-        elif category == 3:
+        elif category == 2:
+            print("3")
             pass
             #MapServer
-        elif category == 4:
+        elif category == 3:
+            print("4")
             pass
             #Locator
     else:
