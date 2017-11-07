@@ -189,8 +189,6 @@ class State():
                 acct.nonce = int(account['nonce'])
             if account['balance']:
                 acct.balance = int(account['balance'])
-            if account['code']:
-                acct.code = decode_hex(account['code'])
             state.update(decode_hex(addr), rlp.encode(acct))
             count += 1
         db.commit()
