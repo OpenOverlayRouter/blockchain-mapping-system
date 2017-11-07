@@ -79,8 +79,14 @@ class Balance(rlp.Serializable):
 
     def set_map_server(self, map_server):
         self.map_server = {}
-        for ip, ms in zip(map_server[0::2], map_server[1::2]):
-            self.map_server[ip] = ms
+        ip = ''
+        for i in range (0, len(map_server)):
+            if i%3 == 1:
+                ip = map_server[i]
+            elif i%3 == 2:
+                address = map_server[i]
+            elif i%3 == 0 and i > 0:
+                self.map_server[ip] = address
 
     def get_map_server(self):
         return self.map_server
