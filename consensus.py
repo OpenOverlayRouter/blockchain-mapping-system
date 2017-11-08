@@ -1,5 +1,6 @@
 import time
 import datetime
+import ipaddress
 from ethapi import *
 
 IPv4_PREFIX_LENGTH = 32
@@ -40,30 +41,35 @@ def from_long_to_bits(l):
 	return res
 
 def which_protocol():
-	if 0:
+	if 1:
 		return "IPv6"
 	else:
 		return "IPv4"
 
+def formalize_IP(IP_bit_list):
+	ip = int(IP_bit_list,2)
+	return ipaddress.ip_address(ip)
+
+
 def consensus_for_IPv6(hash):
 	ngroup = len(hash)/IPv6_PREFIX_LENGTH
-	address = []
-	for i in range (0,len(hash),IPv6_PREFIX_LENGTH):
+	address = ""
+	for i in range (0,len(hash),ngroup):
 		ini_xor = int(hash[i],2)
-		for j in range (i+1,i+IPv6_PREFIX_LENGTH):
+		for j in range (i+1,i+ngroup):
 			ini_xor = ini_xor^int(hash[j],2)
-		address.append(ini_xor)
+		address = address+str(ini_xor)
 
 	return address
 
 def consensus_for_IPv4(hash):
 	ngroup = len(hash)/IPv4_PREFIX_LENGTH
-	address = []
-	for i in range (0,len(hash),IPv4_PREFIX_LENGTH):
+	address = ""
+	for i in range (0,len(hash),ngroup):
 		ini_xor = int(hash[i],2)
-		for j in range (i+1,i+IPv4_PREFIX_LENGTH):
+		for j in range (i,i+ngroup):
 			ini_xor = ini_xor^int(hash[j],2)
-		address.append(ini_xor)
+		address = address+str(ini_xor)
 
 	return address
 
@@ -71,8 +77,7 @@ def who_signs():
 	protocol = which_protocol()
 	hash = get_random_hash()
 	if protocol == "IPv6":
-		return consensus_for_IPv6(hash)
+		return formalize_IP(consensus_for_IPv6(hash))
 	else:
-		return consensus_for_IPv4(hash)
-
+		return formalize_IP(consensus_for_IPv4(hash))
 print (who_signs())
