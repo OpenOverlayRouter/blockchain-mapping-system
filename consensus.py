@@ -2,6 +2,8 @@ import time
 import datetime
 import ipaddress
 from ethapi import *
+from db import LevelDB # Remove when main is finished
+from config import EV # Remove when main is finished
 
 IPv4_PREFIX_LENGTH = 32
 IPv6_PREFIX_LENGTH = 128
@@ -80,4 +82,13 @@ def who_signs():
 		return formalize_IP(consensus_for_IPv6(hash))
 	else:
 		return formalize_IP(consensus_for_IPv4(hash))
+
 print (who_signs())
+
+
+
+db = LevelDB("./chain")
+env = Env(db)
+chain = ChainService(env)
+
+print chain.get_block_by_number(0)
