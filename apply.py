@@ -36,13 +36,17 @@ def validate_transaction(state, tx):
         balance = state.get_balance(tx.sender)
         value = tx.ip_network
 
-        if category == 1 or category == 2:
+        if category == 0 or category == 1:
             if not balance.in_own_ips(value):
+                print(category)
+                print(value)
                 raise InsufficientBalance(value)
-        elif category == 3:
+        elif category == 2:
+            print("3")
             pass
             #MapServer
-        elif category == 4:
+        elif category == 3:
+            print("4")
             pass
             #Locator
     else:
@@ -53,7 +57,6 @@ def validate_transaction(state, tx):
 
 # Applies the transaction to the state
 def apply_transaction(state, tx):
-
     validate_transaction(state, tx)
     category = tx.category
 
@@ -78,6 +81,7 @@ def apply_transaction(state, tx):
         state.set_balance(to, to_balance)
         state.set_balance(sender, sender_balance)
         state.increment_nonce(sender)
+
 
     elif category == 1:  # delegate
         sender = tx.sender
@@ -108,17 +112,17 @@ def apply_transaction(state, tx):
         sender_balance = state.get_balance(sender)
         sender_balance.set_map_server(value)
         state.set_balance(sender, sender_balance)
+        state.increment_nonce(sender)
 
     elif category == 3:  # Locator
         sender = tx.sender
         value = tx.metadata
-
+        print(value)
         sender_balance = state.get_balance(sender)
         sender_balance.set_locator(value)
         state.set_balance(sender, sender_balance)
-
+        state.increment_nonce(sender)
     state.commit()
-
     return True
 
 
@@ -140,9 +144,6 @@ def mk_transaction_sha(receipts):
 # Validate that the transaction list root is correct
 def validate_transaction_tree(state, block):
     if block.header.tx_root != mk_transaction_sha(block.transactions):
-        print(trie.BLANK_ROOT.encode("HEX"))
-        print(str(block.header.tx_root).encode("HEX"))
-        print(mk_transaction_sha(block.transactions).encode("HEX"))
         raise ValueError("Transaction root mismatch: header %s computed %s, %d transactions" %
                          (encode_hex(str(block.header.tx_root)), encode_hex(str(mk_transaction_sha(block.transactions))),
                           len(block.transactions)))

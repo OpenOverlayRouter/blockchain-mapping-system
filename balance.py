@@ -5,6 +5,8 @@ from netaddr import IPNetwork, IPAddress, IPSet
 from utils import address, normalize_address
 import random
 import json
+from ipaddr import IPv4Network, IPv6Network, IPv4Address, IPv6Address, Bytes
+from utils import bytes_to_int
 
 
 
@@ -60,10 +62,10 @@ class Balance(rlp.Serializable):
             self.received_ips.pop(n_address)
 
     def in_own_ips(self,ips):
-        print(ips)
         return self.own_ips.__contains__(ips)
 
     def affected_delegated_ips(self, ips):
+        print(ips)
         ips = IPSet(ips)
         addresses = {}
         for addr, set in self.delegated_ips.iteritems():
@@ -80,16 +82,36 @@ class Balance(rlp.Serializable):
 
     def set_map_server(self, map_server):
         self.map_server = {}
-        for ip, ms in map_server:
-            self.map_server[ip] = ms
+
+        for i in range (0, len(map_server)):
+            if i%3 == 1:
+                ip = map_server[i]
+
+            elif i%3 == 2:
+                address = map_server[i]
+            elif i%3 == 0 and i > 0:
+                self.map_server[ip] = address
 
     def get_map_server(self):
         return self.map_server
 
     def set_locator(self, locator):
         self.locator = {}
-        for ip, list in locator:
-            self.locator[ip] = list
+        priority = ''
+        weight = ''
+        ip = ''
+        for i in range (0, len(locator)):
+            if i%4 == 1:
+                ip = locator[i]
+            elif i%4 == 2:
+                priority = bytes_to_int(locator[i])
+            elif i%4 == 3:
+                weight = bytes_to_int(locator[i])
+            elif i%4 == 0 and i > 0:
+                l = []
+                l.append(priority)
+                l.append(weight)
+                self.locator[ip] = l
 
     def get_locator(self):
         return self.locator

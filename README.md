@@ -10,6 +10,8 @@
 
 **netaddr:** *IP library* (tested v0.7.19)
 
+**ipaddr:** *Google's IP address manipulation library* (tested v2.2.0)
+
 **leveldb:** *Database library* (tested v0.194)
 
 **bitcoin:** *Keystore and bitcoin utils* (tested 1.1.42)

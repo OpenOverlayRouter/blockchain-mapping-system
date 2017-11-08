@@ -23,7 +23,7 @@ add3 = "a3e04410f475b813c01ca77ff12cb277991e62d2"
 ks1 = Keystore.load("./keystore/094a2c9f5b46416b9b9bd9f1efa1f3a73d46cec2","TFG1234")
 ks2 = Keystore.load("./keystore/7719818983cb546d1badee634621dad4214cba25","TFG1234")
 ks3 = Keystore.load("./keystore/a3e04410f475b813c01ca77ff12cb277991e62d2","TFG1234")
-
+"""
 tx1 = Transaction(0,0,add2, 0, '192.152.0.0/12')
 tx1.sign(ks1.privkey)
 tx2 = Transaction(0,0,add3, 0, '192.152.0.0/16')
@@ -40,7 +40,7 @@ apply_transaction(state, tx2)
 apply_transaction(state, tx3)
 apply_transaction(state, tx4)
 apply_transaction(state, tx5)
-
+"""
 print("ADDRESS1")
 print(state.get_balance(add1).own_ips)
 print(state.get_balance(add1).delegated_ips)

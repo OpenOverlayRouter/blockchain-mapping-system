@@ -152,23 +152,12 @@ def random_privkey():
 def pubkey_to_address(pubkey):
     return sha3_256(pubkey)[-20:]
 
-def ip_to_bytes(addr):
-    address, mask = addr.split('/') if '/' in addr else (addr, None)
-    b = b''.join([encode_int8(int(x)) for x in address.split('.')])
-    if mask is not None: b += encode_int8(int(mask))
-    return b
-
 def object_to_bin(o):
     return pickle.dumps(o,pickle.HIGHEST_PROTOCOL).encode('hex')
 
 def bin_to_object(b):
     return pickle.loads(b.decode('hex'))
 
-def bytes_to_ip(b):
-    ip = str(bytes_to_int(b[0])) + '.' + str(bytes_to_int(b[1])) + '.' + \
-         str(bytes_to_int(b[2])) + '.' + str(bytes_to_int(b[3]))
-    if len(b) == 5: ip += '/' + str(bytes_to_int(b[4]))
-    return ip
 
 address = Binary.fixed_length(20, allow_empty=True)
 int20 = BigEndianInt(20)

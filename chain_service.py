@@ -60,8 +60,9 @@ class ChainService():
 
     # creates the tx_trie and state trie of a block
     def _create_tries(self, block):
-        t = trie.Trie(self.db)
-        s = copy.deepcopy(self.chain.state)
+        t = trie.Trie(_EphemDB())
+        snapshot = self.chain.state.to_snapshot()
+        s = state.State().from_snapshot(snapshot, Env(_EphemDB()))
         for index, tx in enumerate(block.transactions):
             t.update(rlp.encode(index), rlp.encode(tx))
             apply_transaction(s, tx)

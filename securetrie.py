@@ -9,7 +9,8 @@ class SecureTrie(object):
 
     def update(self, k, v):
         h = utils.sha3(k)
-        self.db.put(h, utils.str_to_bytes(k))
+        bytes = utils.str_to_bytes(k)
+        self.db.put(h, bytes)
         self.trie.update(h, v)
 
     def get(self, k):

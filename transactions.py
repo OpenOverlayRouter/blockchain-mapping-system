@@ -3,9 +3,10 @@ from rlp.sedes import big_endian_int, BigEndianInt, binary, raw
 
 from utils import (address, normalize_address, sha3, normalize_key, ecsign,
                    privtoaddr, ecrecover_to_pub, parse_as_bin, int_to_bytes,
-                   ip_to_bytes, bytes_to_ip, encode_hex, bytes_to_int)
+                   encode_hex, bytes_to_int, encode_int8)
 from own_exceptions import InvalidTransaction
-from netaddr import IPNetwork, IPAddress, AddrFormatError
+from ipaddr import IPv4Network, IPv6Network, IPv4Address, IPv6Address, Bytes
+from netaddr import IPNetwork, IPAddress, IPSet
 
 secpk1n = 115792089237316195423570985008687907852837564279074904382605163141518161494337
 null_address = b'\xff' * 20
@@ -16,7 +17,7 @@ class Transaction(rlp.Serializable):
         ('nonce', big_endian_int),
         ('category', big_endian_int),
         ('to', address),
-        ('vni', big_endian_int),
+        ('afi', BigEndianInt(1)),
         ('value', binary),
         ('metadata', raw),
         ('time', big_endian_int),
@@ -26,73 +27,114 @@ class Transaction(rlp.Serializable):
     ]
     _sender = None
 
-    def __init__ (self, nonce, category, to, vni, value, 
+    def __init__ (self, nonce, category, to, afi, value, 
                   metadata=b'', time=0, v=0, r=0, s=0):
 
         if category == 0 or category == 1:
             if metadata != b'':
                 raise InvalidTransaction("Invalid Metadata")
         elif category == 2:
-            if type(metadata) == list and len(metadata)%2==0:
+            if type(metadata) == list and len(metadata) % 3 ==0:
                 _metadata = []
-                for i, elem in enumerate(metadata):
-                    try:
-                        if i % 2 == 0:
-                            ip = IPAddress(elem)
-                            _metadata.append(ip_to_bytes(str(ip)))
-                        else:
-                            addr = normalize_address(elem, allow_blank=True)
-                            _metadata.append(addr)
-                    except AddrFormatError:
-                        if i % 2 == 0:
-                            if len(elem) == 4:
-                                try:
-                                    ip = bytes_to_ip(elem)
-                                    ip = IPAddress(ip)
-                                    _metadata.append(ip_to_bytes(str(ip)))
-                                except:
-                                    raise InvalidTransaction("Invalid Metadata")
-                            else:
-                                raise InvalidTransaction("Invalid Metadata")
-                metadata = _metadata
-            else:
-                raise InvalidTransaction("Invalid Metadata")
-        elif category == 3:
-            if type(metadata) == list and len(metadata) % 3 == 0:
-                _metadata = []
+                _afi = 0
+                if type(metadata[0]) == bytes:
+                    _bytes = True
+                elif type(metadata[0]) == int:
+                    _bytes = False
+                else:
+                    raise InvalidTransaction("Invalid Metadata")
                 i = 0
                 while i < len(metadata):
                     try:
-                        ip = IPAddress(metadata[i])
-                        _metadata.append(ip_to_bytes(str(ip)))
-                        priority = metadata[i+1]
-                        if priority < 0 or priority > 255:
-                            raise InvalidTransaction("Invalid Metadata")
-                        _metadata.append(int_to_bytes(priority))
-                        weight = metadata[i+2]
-                        if weight < 0 or weight > 255:
-                            raise InvalidTransaction("Invalid Metadata")
-                        _metadata.append(int_to_bytes(weight))
-                    except AddrFormatError:
-                        if len(metadata[i]) == 4:
-                            try:
-                                ip = bytes_to_ip(metadata[i])
-                                ip = IPAddress(ip)
-                                _metadata.append(ip_to_bytes(str(ip)))
-                                priority = bytes_to_int(metadata[i+1])
-                                if priority < 0 or priority > 255:
-                                    raise InvalidTransaction
-                                _metadata.append(int_to_bytes(priority))
-                                weight = bytes_to_int(metadata[i+2])
-                                if weight < 0 or weight > 255:
-                                    raise InvalidTransaction
-                                _metadata.append(int_to_bytes(weight))
-                            except:
-                                raise InvalidTransaction("Invalid Metadata")
+                        if _bytes:
+                            _afi = bytes_to_int(metadata[i])
+                            _metadata.append(metadata[i])
                         else:
-                            raise InvalidTransaction("Invalid Metadata")
-                    finally:
+                            _afi = metadata[i]
+                            _metadata.append(encode_int8(metadata[i]))
+                        if _afi != 1 and _afi != 2:
+                            raise InvalidTransaction("Invalid Metadata AFI")
+                    except:
+                        raise InvalidTransaction("Invalid Metadata AFI")
+                    try:
+                        if _bytes:
+                            if _afi == 1:
+                                ip = IPv4Address(Bytes(metadata[i+1]))
+                            else:
+                                ip = IPv6Address(Bytes(metadata[i+1]))
+                            _metadata.append(bytes(ip.packed))
+                            addr = normalize_address(metadata[i+2], allow_blank=True)
+                            _metadata.append(addr)
+                        else:
+                            if _afi == 1:
+                                ip = IPv4Address(metadata[i+1])
+                            else:
+                                ip = IPv6Address(metadata[i+1])
+                            _metadata.append(bytes(ip.packed))
+                            addr = normalize_address(metadata[i+2], allow_blank=True)
+                            _metadata.append(addr)
                         i += 3
+                    except:
+                        raise InvalidTransaction("Invalid Metadata")
+                metadata = _metadata
+            else:
+                raise InvalidTransaction("Invalid Metadata")
+
+        elif category == 3:
+            if type(metadata) == list and len(metadata) % 4 == 0:
+                _metadata = []
+                _afi = 0
+                if type(metadata[0]) == bytes:
+                    _bytes = True
+                elif type(metadata[0]) == int:
+                    _bytes = False
+                else:
+                    raise InvalidTransaction("Invalid Metadata")
+                i = 0
+                while i < len(metadata):
+                    try:
+                        if _bytes:
+                            _afi = bytes_to_int(metadata[i])
+                            _metadata.append(metadata[i])
+                        else:
+                            _afi = metadata[i]
+                            _metadata.append(encode_int8(metadata[i]))
+                        if _afi != 1 and _afi != 2:
+                            raise InvalidTransaction("Invalid Metadata AFI")
+                    except:
+                        raise InvalidTransaction("Invalid Metadata AFI")
+                    try:
+                        if _bytes:
+                            if _afi == 1:
+                                ip = IPv4Address(Bytes(metadata[i+1]))
+                            else:
+                                ip = IPv6Address(Bytes(metadata[i+1]))
+                            _metadata.append(bytes(ip.packed))
+                            priority = bytes_to_int(metadata[i+2])
+                            if priority < 0 or priority > 255:
+                                raise InvalidTransaction("Invalid Metadata Priority")
+                            _metadata.append(int_to_bytes(priority))
+                            weight = bytes_to_int(metadata[i+3])
+                            if weight < 0 or weight > 255:
+                                raise InvalidTransaction("Invalid Metadata Weight")
+                            _metadata.append(int_to_bytes(weight))
+                        else:
+                            if _afi == 1:
+                                ip = IPv4Address(metadata[i+1])
+                            else:
+                                ip = IPv6Address(metadata[i+1])
+                            _metadata.append(bytes(ip.packed))
+                            priority = metadata[i+2]
+                            if priority < 0 or priority > 255:
+                                raise InvalidTransaction("Invalid Metadata Priority")
+                            _metadata.append(int_to_bytes(priority))
+                            weight = metadata[i+3]
+                            if weight < 0 or weight > 255:
+                                raise InvalidTransaction("Invalid Metadata Weight")
+                            _metadata.append(int_to_bytes(weight))
+                        i += 4
+                    except:
+                        raise InvalidTransaction("Invalid Metadata")
                 metadata = _metadata
             else:
                 raise InvalidTransaction("Invalid Metadata")
@@ -101,18 +143,30 @@ class Transaction(rlp.Serializable):
         
         to = normalize_address(to, allow_blank=True)
 
+        if afi != 1 and afi != 2:
+            raise InvalidTransaction("Invalid AFI")
+
         try:
-            ipnet = IPNetwork(value)
-        except AddrFormatError:
+            if afi == 1:
+                ipnet = IPv4Network(value)
+            else:
+                ipnet = IPv6Network(value)
+        except:
             if len(value) == 5:
                 try:
-                    ipnet = bytes_to_ip(value)
-                    ipnet = IPNetwork(ipnet)
+                    ip = IPv4Address(Bytes(value[:4]))
+                    ipnet = IPv4Network(str(ip) + '/' + str(bytes_to_int(value[4])))
+                except:
+                    raise InvalidTransaction("Invalid Value")
+            elif len(value) == 17:
+                try:
+                    ip = IPv6Address(Bytes(value[:16]))
+                    ipnet = IPv6Network(str(ip) + '/' + str(bytes_to_int(value[16])))
                 except:
                     raise InvalidTransaction("Invalid Value")
             else:
                 raise InvalidTransaction("Invalid Value")
-        value = ip_to_bytes(str(ipnet))
+        value = bytes(ipnet.packed) + encode_int8(ipnet.prefixlen)
 
         super(
             Transaction, 
@@ -120,7 +174,7 @@ class Transaction(rlp.Serializable):
             nonce, 
             category, 
             to,
-            vni,
+            afi,
             value,
             metadata, 
             time, 
@@ -198,7 +252,13 @@ class Transaction(rlp.Serializable):
 
     @property
     def ip_network(self):
-        return IPNetwork(bytes_to_ip(self.value))
+        if self.afi == 1:
+            ip = IPv4Address(Bytes(self.value[:4]))
+            ipnet = IPv4Network(str(ip) + '/' + str(bytes_to_int(self.value[4])))
+        else:
+            ip = IPv6Address(Bytes(self.value[:16]))
+            ipnet = IPv6Network(str(ip) + '/' + str(bytes_to_int(self.value[16])))
+        return IPNetwork(str(ipnet))
 
     def to_dict(self):
         d = {}
@@ -207,19 +267,40 @@ class Transaction(rlp.Serializable):
             if name in ('to',):
                 d[name] = '0x' + encode_hex(d[name])
             elif name in ('value',):
-                d[name] = bytes_to_ip(str(d[name]))
+                if self.afi == 1:
+                    ip = IPv4Address(Bytes(d[name][:4]))
+                    net = IPv4Network(str(ip) + '/' + str(bytes_to_int(d[name][4])))
+                    d[name] = str(net)
+                else:
+                    ip = IPv6Address(Bytes(d[name][:16]))
+                    net = IPv6Network(str(ip) + '/' + str(bytes_to_int(d[name][16])))
+                    d[name] = str(net)
             elif name in ('metadata',) and self.category==2:
-                d[name] = [bytes_to_ip(v) if i%2 == 0 else encode_hex(v)
-                           for i, v in enumerate(d[name])]
-            elif name in ('metadata',) and self.category==3:
                 _metadata = []
-                #print d[name]
                 i = 0
                 while i < len(d[name]):
-                    _metadata.append(bytes_to_ip(d[name][i]))
-                    _metadata.append(bytes_to_int(d[name][i+1]))
-                    _metadata.append(bytes_to_int(d[name][i+2]))
+                    _metadata.append(bytes_to_int(d[name][i]))
+                    if _metadata[-1] == 1:
+                        ip = IPv4Address(Bytes(d[name][i+1]))
+                    else:
+                        ip = IPv6Address(Bytes(d[name][i+1]))
+                    _metadata.append(str(ip))
+                    _metadata.append(encode_hex(d[name][i+2]))
                     i += 3
+                d[name] = _metadata
+            elif name in ('metadata',) and self.category==3:
+                _metadata = []
+                i = 0
+                while i < len(d[name]):
+                    _metadata.append(bytes_to_int(d[name][i]))
+                    if _metadata[-1] == 1:
+                        ip = IPv4Address(Bytes(d[name][i+1]))
+                    else:
+                        ip = IPv6Address(Bytes(d[name][i+1]))
+                    _metadata.append(str(ip))
+                    _metadata.append(bytes_to_int(d[name][i+2]))
+                    _metadata.append(bytes_to_int(d[name][i+3]))
+                    i += 4
                 d[name] = _metadata
         d['sender'] = '0x' + encode_hex(self.sender)
         d['hash'] = '0x' + encode_hex(self.hash)

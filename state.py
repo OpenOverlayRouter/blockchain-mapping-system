@@ -189,8 +189,6 @@ class State():
                 acct.nonce = int(account['nonce'])
             if account['balance']:
                 acct.balance = int(account['balance'])
-            if account['code']:
-                acct.code = decode_hex(account['code'])
             state.update(decode_hex(addr), rlp.encode(acct))
             count += 1
         db.commit()
@@ -276,7 +274,7 @@ class State():
                     addr = decode_hex(addr)
                 assert len(addr) == 20
                 if 'balance' in data:
-                    state.set_balance(addr, parse_as_int(data['balance']))
+                    state.set_balance(addr, utils.bin_to_object(data['balance']))
                 if 'nonce' in data:
                     state.set_nonce(addr, parse_as_int(data['nonce']))
         elif "state_root" in snapshot_data:
