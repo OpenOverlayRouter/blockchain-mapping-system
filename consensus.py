@@ -2,8 +2,6 @@ import time
 import datetime
 import ipaddress
 from ethapi import *
-from db import LevelDB # Remove when main is finished
-from config import EV # Remove when main is finished
 
 IPv4_PREFIX_LENGTH = 32
 IPv6_PREFIX_LENGTH = 128
@@ -42,12 +40,6 @@ def from_long_to_bits(l):
 		res = "0"+res
 	return res
 
-def which_protocol():
-	if 1:
-		return "IPv6"
-	else:
-		return "IPv4"
-
 def formalize_IP(IP_bit_list):
 	ip = int(IP_bit_list,2)
 	return ipaddress.ip_address(ip)
@@ -75,20 +67,11 @@ def consensus_for_IPv4(hash):
 
 	return address
 
-def who_signs():
-	protocol = which_protocol()
+def who_signs(protocol):
 	hash = get_random_hash()
 	if protocol == "IPv6":
 		return formalize_IP(consensus_for_IPv6(hash))
 	else:
 		return formalize_IP(consensus_for_IPv4(hash))
 
-print (who_signs())
-
-
-
-db = LevelDB("./chain")
-env = Env(db)
-chain = ChainService(env)
-
-print chain.get_block_by_number(0)
+print (who_signs("IPv4"))
