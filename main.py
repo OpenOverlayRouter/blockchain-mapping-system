@@ -96,3 +96,5 @@ class Server():
 
 def main():
     pass
+    
+chain = init_chain()
