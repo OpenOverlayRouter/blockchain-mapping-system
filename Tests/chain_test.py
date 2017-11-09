@@ -63,7 +63,7 @@ chain.add_pending_transaction(tx4)
 chain.add_pending_transaction(tx5)
 chain.add_pending_transaction(tx6)
 chain.add_pending_transaction(tx7)
-
+print tx7.to_dict()
 block = chain.create_block(add1)
 chain.add_block(block)
 
