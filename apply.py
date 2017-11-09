@@ -1,4 +1,4 @@
-from own_exceptions import InvalidNonce, UnsignedTransaction, InvalidNonce, InsufficientBalance, InvalidTransaction, UncategorizedTransaction, InvalidCategory
+from own_exceptions import UnsignedTransaction, InvalidNonce, InsufficientBalance, UncategorizedTransaction, InvalidCategory
 import trie
 from rlp.utils import encode_hex
 from db import EphemDB
@@ -38,15 +38,11 @@ def validate_transaction(state, tx):
 
         if category == 0 or category == 1:
             if not balance.in_own_ips(value):
-                print(category)
-                print(value)
                 raise InsufficientBalance(value)
         elif category == 2:
-            print("3")
             pass
             #MapServer
         elif category == 3:
-            print("4")
             pass
             #Locator
     else:
@@ -59,7 +55,6 @@ def validate_transaction(state, tx):
 def apply_transaction(state, tx):
     validate_transaction(state, tx)
     category = tx.category
-
     if category == 0:  # allocate
         sender = tx.sender
         to = tx.to
@@ -117,7 +112,6 @@ def apply_transaction(state, tx):
     elif category == 3:  # Locator
         sender = tx.sender
         value = tx.metadata
-        print(value)
         sender_balance = state.get_balance(sender)
         sender_balance.set_locator(value)
         state.set_balance(sender, sender_balance)

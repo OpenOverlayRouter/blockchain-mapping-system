@@ -65,7 +65,6 @@ class Balance(rlp.Serializable):
         return self.own_ips.__contains__(ips)
 
     def affected_delegated_ips(self, ips):
-        print(ips)
         ips = IPSet(ips)
         addresses = {}
         for addr, set in self.delegated_ips.iteritems():
@@ -93,17 +92,14 @@ class Balance(rlp.Serializable):
 
     def set_locator(self, locator):
         self.locator = {}
-        priority = ''
-        weight = ''
-        ip = ''
-        for i in range (0, len(locator),4):
+        l = [None] * 2
+        for i in range (0, len(locator), 4):
             afi = bytes_to_int(locator[i])
             ip = ipaddr_to_netaddr(afi,locator[i+1])
             priority = bytes_to_int(locator[i+2])
             weight = bytes_to_int(locator[i+3])
-            l = []
-            l.append(priority)
-            l.append(weight)
+            l[0] = priority
+            l[1] = weight
             self.locator[ip] = l
 
     def get_locator(self):

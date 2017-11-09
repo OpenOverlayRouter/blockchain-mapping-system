@@ -61,9 +61,8 @@ class ChainService():
             try:
                 apply_transaction(s, tx)
                 block.transactions.append(tx)
-                self.transactions.remove(tx)
-            except Exception:
-                self.transactions.remove(tx)
+            except Exception as e:
+                print (e)
         self._create_tries(block)
         return block
 
@@ -91,6 +90,16 @@ class ChainService():
         self.chain.add_block(block)
         for tx in block.transactions:
             if tx in self.transactions:
+                self.transactions.remove(tx)
+        invalid_tx = []
+        for tx in self.transactions:
+            try:
+                validate_transaction(state,tx)
+            except Exception:
+                invalid_tx.append(tx)
+        if invalid_tx:
+            for tx in invalid_tx:
+                print "Deleted invalid transaction", tx.hash.encode('HEX')
                 self.transactions.remove(tx)
 
     # returns the transaction whose hash is 'tx'

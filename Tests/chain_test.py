@@ -40,6 +40,10 @@ ks3 = Keystore.load("./keystore/a3e04410f475b813c01ca77ff12cb277991e62d2","TFG12
 
 tx1 = Transaction(0, 0, add2, 1, '192.152.0.0/12')
 tx1.sign(ks1.privkey)
+
+tx8 = Transaction(0, 0, add2, 1, '192.152.0.0/5')
+tx8.sign(ks1.privkey)
+
 tx2 = Transaction(0, 0, add3, 1, '192.152.0.0/16')
 tx2.sign(ks2.privkey)
 tx3 = Transaction(0, 1, add1, 1, '192.152.0.0/24')
@@ -58,6 +62,7 @@ tx7.sign(ks2.privkey)
 chain = ChainService(env)
 
 chain.add_pending_transaction(tx1)
+chain.add_pending_transaction(tx8)
 
 #
 #chain.add_pending_transaction(tx3)
@@ -91,32 +96,45 @@ block = chain.create_block(add1)
 chain.add_block(block)
 
 time.sleep(2)
-chain.add_pending_transaction(tx6)
 chain.add_pending_transaction(tx7)
+chain.add_pending_transaction(tx6)
 block = chain.create_block(add1)
 chain.add_block(block)
 
 print("ADDRESS1")
+print "Own IPS"
 print(chain.get_own_ips(add1))
+print "Delegated IPS"
 print(chain.get_delegated_ips(add1))
+print "Received IPS"
 print(chain.get_received_ips(add1))
+print "Map Server"
 print(chain.get_map_server(add1))
+print "Locator"
 print(chain.get_locator(add1))
 
 print("--------------------------")
 print("ADDRESS2")
+print "Own IPS"
 print(chain.get_own_ips(add2))
+print "Delegated IPS"
 print(chain.get_delegated_ips(add2))
+print "Received IPS"
 print(chain.get_received_ips(add2))
+print "Map Server"
 print(chain.get_map_server(add2))
+print "Locator"
 print(chain.get_locator(add2))
 
 print("--------------------------")
 print("ADDRESS3")
+print "Own IPS"
 print(chain.get_own_ips(add3))
+print "Delegated IPS"
 print(chain.get_delegated_ips(add3))
+print "Received IPS"
 print(chain.get_received_ips(add3))
-print("map server")
+print "Map Server"
 print(chain.get_map_server(add3))
-print("locator")
+print "Locator"
 print(chain.get_locator(add3))

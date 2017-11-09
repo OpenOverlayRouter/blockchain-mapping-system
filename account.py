@@ -1,17 +1,11 @@
 import rlp
-from utils import normalize_address, hash32, trie_root, \
-    big_endian_int, address, int256, encode_int, \
-    big_endian_to_int, int_to_addr, zpad, parse_as_bin, parse_as_int
 from rlp.sedes import big_endian_int, binary
 from securetrie import SecureTrie
 from trie import Trie
 from db import RefcountDB, BaseDB
 from balance import Balance
-import pickle
 from netaddr import IPSet
 from utils import object_to_bin
-
-import trie
 import utils
 
 
