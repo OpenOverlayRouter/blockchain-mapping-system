@@ -14,32 +14,37 @@ import select, socket, sys, Queue
 import struct
 import os
 import glob
+from keystore import Keystore
+
 
 def init_chain():
     db = LevelDB("./chain")
     env = Env(db)
     return ChainService(env)
 
+
 def init_p2p():
     # P2P initialization
     return 0
+
 
 def init_consensus():
     # P2P initialization
     return 0
 
-def init_keystore():
-    parent_dir = './Tests/keystore'
-    for file in glob.glob(os.path.join(parent_dir, '*')):
-        print file[-40:]
 
+def init_keystore(keys_dir='./Tests/keystore/'):
+    keys = []
+    for file in glob.glob(os.path.join(keys_dir, '*')):
+        keys.append(Keystore.load(keys_dir + file[-40:], "TFG1234"))
+    return keys
 
 
 def run():
     chain = init_chain()
     p2p = init_p2p()
     consensus = init_consensus()
-    
+    keys = init_keystore()
     end = 0
     
     while(not end):
@@ -95,4 +100,5 @@ def run():
 if __name__ == "__main__":
     #init()
     #run()
-    init_keystore()
+    keys = init_keystore()
+    print(keys[0].keystore['address'])
