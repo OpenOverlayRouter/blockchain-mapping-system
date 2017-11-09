@@ -19,6 +19,7 @@ from apply import apply_transaction
 from utils import normalize_address
 from own_exceptions import UnsignedTransaction
 
+
 class ChainService():
     """
     Manages the chain and requests to it.
