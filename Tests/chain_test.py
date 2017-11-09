@@ -25,8 +25,9 @@ from netaddr import IPNetwork, IPAddress, IPSet
 from utils import address, normalize_address
 from chain_service import ChainService
 
-#db = LevelDB("./chain")
-env = Env(_EphemDB())
+db = LevelDB("./chain")
+env = Env(db)
+#env = Env(_EphemDB())
 
 add1 = "094a2c9f5b46416b9b9bd9f1efa1f3a73d46cec2"
 add2 = "7719818983cb546d1badee634621dad4214cba25"
@@ -86,8 +87,7 @@ print("ADDRESS3")
 print(chain.get_own_ips(add3))
 print(chain.get_delegated_ips(add3))
 print(chain.get_received_ips(add3))
+print("map server")
 print(chain.get_map_server(add3))
+print("locator")
 print(chain.get_locator(add3))
-
-
-
