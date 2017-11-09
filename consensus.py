@@ -112,3 +112,15 @@ def who_signs(protocol):
 		return formalize_IP(consensus_for_IPv4(hash))
 
 print who_signs("IPv4")
+#TODO:
+	#signer_IP = who_signs(Protocol)
+	#if balance.in_own_ips(signer_IP):
+	#	block = chain.create_block(coinbase)
+	#	chain.add_block(block)
+	#	broadcast_message("new_block")
+	#else:
+	#	received = true
+	#	while(not new_block_message_received in 60 seconds)
+	#	received = false
+	#if not received:
+	#	consensus()
