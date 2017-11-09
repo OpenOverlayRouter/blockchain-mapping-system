@@ -2,11 +2,11 @@ import rlp
 from rlp.sedes import big_endian_int, BigEndianInt, binary, raw
 
 from utils import (address, normalize_address, sha3, normalize_key, ecsign,
-                   privtoaddr, ecrecover_to_pub, parse_as_bin, int_to_bytes,
+                   privtoaddr, ecrecover_to_pub, int_to_bytes,
                    encode_hex, bytes_to_int, encode_int8)
 from own_exceptions import InvalidTransaction
 from ipaddr import IPv4Network, IPv6Network, IPv4Address, IPv6Address, Bytes
-from netaddr import IPNetwork, IPAddress, IPSet
+from netaddr import IPNetwork
 
 secpk1n = 115792089237316195423570985008687907852837564279074904382605163141518161494337
 null_address = b'\xff' * 20

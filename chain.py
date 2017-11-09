@@ -1,18 +1,15 @@
 import json
 import time
 import itertools
-import trie
 from utils import big_endian_to_int
 import rlp
 from rlp.utils import encode_hex
 from config import Env
 from state import State, dict_to_prev_header
 from block import Block, BlockHeader, FakeHeader
-from genesis_helpers import state_from_genesis_declaration, mk_basic_state, initialize, initialize_genesis_keys
-from db import EphemDB
+from genesis_helpers import state_from_genesis_declaration, initialize, initialize_genesis_keys
 from apply import apply_block, update_block_env_variables, validate_block, validate_transaction
 
-config_string = ':info'  # ,eth.chain:debug'
 
 
 class Chain(object):

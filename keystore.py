@@ -1,10 +1,8 @@
 import json
 import os
 from random import SystemRandom
-import shutil
-from uuid import UUID
 import keys
-from utils import privtopub, sha3, is_string, decode_hex, remove_0x_head
+from utils import privtopub, sha3
 
 random = SystemRandom()
 

@@ -1,14 +1,11 @@
 from state import State
 from block import Block, BlockHeader
-from utils import  \
-    parse_as_bin, parse_as_int, normalize_address
+from utils import parse_as_bin, parse_as_int, normalize_address
 from config import Env
 from db import RefcountDB
 import json
 import rlp
-from rlp.utils import encode_hex
 from balance import Balance
-import utils
 
 
 def block_from_genesis_declaration(genesis_data, env):

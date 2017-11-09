@@ -2,19 +2,14 @@ from block import Block, BlockHeader
 from transactions import Transaction
 from utils import null_address
 import chain
-import json
 from config import Env
-from db import LevelDB
 import time
 from genesis_helpers import mk_genesis_data
-import datetime, threading
 from db import _EphemDB
-from utils import int_to_big_endian
 from apply import validate_transaction
 import trie
 import state
 import rlp
-import copy
 from apply import apply_transaction
 from utils import normalize_address
 from own_exceptions import UnsignedTransaction
@@ -30,7 +25,6 @@ class ChainService():
         self.db = self.env.db
         self.chain = chain.Chain(genesis=mk_genesis_data(self.env), env=self.env)
         self.transactions = []
-        self.process_time_queue_periodically()
 
     def add_pending_transaction(self, tx):
         assert isinstance(tx, Transaction)
@@ -148,6 +142,4 @@ class ChainService():
     def get_state(self):
         return self.chain.state
 
-    def process_time_queue_periodically(self):
-        threading.Timer(120, self.chain.process_time_queue()).start()
 

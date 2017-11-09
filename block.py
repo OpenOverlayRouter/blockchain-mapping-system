@@ -1,13 +1,11 @@
-import rlp #used to encode data
-import transactions
+import rlp
 import trie
 from rlp.sedes import big_endian_int, Binary, binary, CountableList
-from utils import hash32, trie_root, address
-import utils
+from utils import hash32, trie_root, address, sha3
 from rlp.utils import encode_hex
-from Crypto.Hash import keccak
 from config import default_config
 from transactions import Transaction
+
 
 class BlockHeader(rlp.Serializable):
     fields = [
@@ -17,7 +15,7 @@ class BlockHeader(rlp.Serializable):
         ('state_root', trie_root),
         ('tx_root', trie_root),
         ('number', big_endian_int),
-        ('coinbase',address)
+        ('coinbase', address)
     ]
 
     def __init__(self,
@@ -38,14 +36,14 @@ class BlockHeader(rlp.Serializable):
 
     @property
     def hash(self):
-        return utils.sha3(rlp.encode(self))
+        return sha3(rlp.encode(self))
 
     @property
     def hex_hash(self):
         return encode_hex(self.hash)
 
-class FakeHeader():
 
+class FakeHeader():
     def __init__(self, hash='\x00' * 32, number=0, timestamp=0):
         self.hash = hash
         self.number = number
@@ -56,6 +54,7 @@ class FakeHeader():
             number=self.number,
             timestamp=self.timestamp
         )
+
 
 class Block(rlp.Serializable):
     fields = [
