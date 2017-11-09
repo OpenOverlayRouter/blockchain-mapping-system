@@ -187,6 +187,7 @@ def apply_block(state, block):
             apply_transaction(state, tx)
         # Post-finalize (ie. add the block header to the state for now)
         state.add_block_header(block.header)
+
     except (ValueError, AssertionError) as e:
         state.revert(snapshot)
         raise e

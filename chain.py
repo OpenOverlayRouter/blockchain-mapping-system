@@ -248,6 +248,8 @@ class Chain(object):
             self.new_head_cb(block)
         # Are there blocks that we received that were waiting for this block?
         # If so, process them.
+        self.state.block_number = block.header.number
+
         if block.header.hash in self.parent_queue:
             for _blk in self.parent_queue[block.header.hash]:
                 self.add_block(_blk)

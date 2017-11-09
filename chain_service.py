@@ -33,8 +33,8 @@ class ChainService():
         self.process_time_queue_periodically()
 
     def add_pending_transaction(self, tx):
-        validate_transaction(state, tx)
         assert isinstance(tx, Transaction)
+        validate_transaction(self.chain.state, tx)
         # validate transaction
         try:
             # Transaction validation for broadcasting. Transaction is validated

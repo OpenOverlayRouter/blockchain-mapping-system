@@ -24,10 +24,11 @@ import netaddr
 from netaddr import IPNetwork, IPAddress, IPSet
 from utils import address, normalize_address
 from chain_service import ChainService
-
-#db = LevelDB("./chain")
+"""
+db = LevelDB("./chain")
+env = Env(db)
+"""
 env = Env(_EphemDB())
-#env = Env(_EphemDB())
 
 add1 = "094a2c9f5b46416b9b9bd9f1efa1f3a73d46cec2"
 add2 = "7719818983cb546d1badee634621dad4214cba25"
@@ -49,21 +50,49 @@ tx5 = Transaction(2, 0, add1, 1, '192.152.0.0/26')
 tx5.sign(ks3.privkey)
 tx6 = Transaction(3, 3, add3, 1, '192.152.0.0/16',[2, '2001:cdba:9abc:5678::', 20, 230,1, '5.5.5.5', 45, 50])
 tx6.sign(ks3.privkey)
-tx7 = Transaction(4, 2, add3, 1, '192.152.0.0/16',[1, '1.1.1.2', '54dbb737eac5007103e729e9ab7ce64a6850a310',
+tx7 = Transaction(1, 2, add3, 1, '192.152.0.0/16',[1, '1.1.1.2', '54dbb737eac5007103e729e9ab7ce64a6850a310',
      2, '2001:cdba::3257:9652', '89b44e4d3c81ede05d0f5de8d1a68f754d73d997',
      1, '3.3.3.3', '3a1e02d9ea25349c47fe2e94f4265cd261c5c7ca'])
-tx7.sign(ks3.privkey)
+tx7.sign(ks2.privkey)
 
 chain = ChainService(env)
 
 chain.add_pending_transaction(tx1)
+
+#
+#chain.add_pending_transaction(tx3)
+#chain.add_pending_transaction(tx4)
+#chain.add_pending_transaction(tx5)
+#chain.add_pending_transaction(tx6)
+#chain.add_pending_transaction(tx7)
+block = chain.create_block(add1)
+chain.add_block(block)
+
+
+time.sleep(2)
 chain.add_pending_transaction(tx2)
+block = chain.create_block(add1)
+chain.add_block(block)
+
+time.sleep(2)
 chain.add_pending_transaction(tx3)
+block = chain.create_block(add1)
+chain.add_block(block)
+
+
+time.sleep(2)
 chain.add_pending_transaction(tx4)
+block = chain.create_block(add1)
+chain.add_block(block)
+
+time.sleep(2)
 chain.add_pending_transaction(tx5)
+block = chain.create_block(add1)
+chain.add_block(block)
+
+time.sleep(2)
 chain.add_pending_transaction(tx6)
 chain.add_pending_transaction(tx7)
-print tx7.to_dict()
 block = chain.create_block(add1)
 chain.add_block(block)
 
