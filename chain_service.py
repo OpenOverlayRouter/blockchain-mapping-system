@@ -102,6 +102,7 @@ class ChainService():
                 print "Deleted invalid transaction", tx.hash.encode('HEX')
                 self.transactions.remove(tx)
 
+
     # returns the transaction whose hash is 'tx'
     def get_transaction(self, tx):
         return self.chain.get_transaction(tx)

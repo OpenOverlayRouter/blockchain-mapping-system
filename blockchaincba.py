@@ -12,6 +12,8 @@ from db import LevelDB
 from chain_service import ChainService
 import select, socket, sys, Queue
 import struct
+import os
+import glob
 
 def init_chain():
     db = LevelDB("./chain")
@@ -25,6 +27,13 @@ def init_p2p():
 def init_consensus():
     # P2P initialization
     return 0
+
+def init_keystore():
+    parent_dir = './Tests/keystore'
+    for file in glob.glob(os.path.join(parent_dir, '*')):
+        print file[-40:]
+
+
 
 def run():
     chain = init_chain()
@@ -47,42 +56,43 @@ def run():
 
                 p2p.broadcast_block(block)
             else:
-            #reset consensus alg
+                #reset consensus alg
                 consensus.calculate_next_signer(None)
-    
-    #Process transactions from the network
-    tx_ext = p2p.get_tx()
-    while tx_ext is not None:
-        res = chain.validate_transaction(tx_ext)
-        if res:
-            #correct tx
-            chain.add_pending_transaction(tx_ext)
-            p2p.broadcast_tx(tx_ext)
-        tx_ext = p2p.get_tx()
 
-    
-    #Check if the node has to sign the next block
-    sign = consensus.amIsinger(myIPs)
-    if sign.me is True:
-        new_block = chain.create_block(sign.signer)
-        p2p.broadcast_block(new_block)
-    
-    #Process transactions from the user    
-    tx_int = user.get_tx()
-    if tx_int is not None:
-        res = chain.validate_transaction(tx_int)
-        if res:
-            chain.add_pending_transaction(tx_int)
-            p2p.broadcast_tx(tx_int)
-    
-    #answer queries from OOR     
-    query = oor.get_query()
-    if query is not None:
-        info = chain.query_eid(query)
-        oor.send(info)
+                #Process transactions from the network
+                tx_ext = p2p.get_tx()
+            while tx_ext is not None:
+                #res = chain.validate_transaction(tx_ext)
+                if res:
+                    #correct tx
+                    chain.add_pending_transaction(tx_ext)
+                    p2p.broadcast_tx(tx_ext)
+                tx_ext = p2p.get_tx()
+
+
+            #Check if the node has to sign the next block
+            sign = consensus.amIsinger(myIPs)
+            if sign.me is True:
+                new_block = chain.create_block(sign.signer)
+                p2p.broadcast_block(new_block)
+
+            #Process transactions from the user
+            tx_int = user.get_tx()
+            if tx_int is not None:
+                res = chain.validate_tx(tx_int)
+            if res:
+                #correct tx
+                chain.add_to_pool(tx_int)
+                p2p.broadcast_tx(tx_int)
+
+                #answer queries from OOR
+                query = oor.get_query()
+            if query is not None:
+                info = chain.query_eid(query)
+                oor.send(info)
 
 
 if __name__ == "__main__":
-    init()
-    run()
-    
+    #init()
+    #run()
+    init_keystore()
