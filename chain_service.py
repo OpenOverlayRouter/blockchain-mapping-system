@@ -64,7 +64,6 @@ class ChainService():
             except Exception:
                 pass
         self._create_tries(block)
-        self.transactions = []
         return block
 
     def validate_transaction(self, tx):
