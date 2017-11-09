@@ -9,7 +9,7 @@ from block import Block
 import chain
 from config import Env
 from db import LevelDB
-from chain import ChainService
+from chain_service import ChainService
 import select, socket, sys, Queue
 import struct
 
