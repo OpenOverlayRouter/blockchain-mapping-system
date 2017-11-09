@@ -54,7 +54,15 @@ class ChainService():
         prevnumber = self.chain.state.block_number
         coinbase = normalize_address(coinbase)
         block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber + 1, coinbase=coinbase))
-        block.transactions = self.transactions
+        snapshot = self.chain.state.to_snapshot()
+        s = state.State().from_snapshot(snapshot, Env(_EphemDB()))
+        for tx in self.transactions:
+            try:
+                apply_transaction(s, tx)
+                block.transactions.append(tx)
+                self.transactions.remove(tx)
+            except Exception:
+                pass
         self._create_tries(block)
         self.transactions = []
         return block
