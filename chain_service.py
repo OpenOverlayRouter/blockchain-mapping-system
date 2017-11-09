@@ -31,10 +31,11 @@ class ChainService():
         self.transactions = []
         self.process_time_queue_periodically()
 
-    def add_transaction(self, tx):
+    def add_pending_transaction(self, tx):
         assert isinstance(tx, Transaction)
 
         # validate transaction
+        self.chain.validate_transaction(tx)
         try:
             # Transaction validation for broadcasting. Transaction is validated
             # against the current head candidate.
@@ -58,6 +59,13 @@ class ChainService():
         self._create_tries(block)
         self.transactions = []
         return block
+
+    def validate_transaction(self, tx):
+        return self.chain.validate_transaction(tx)
+
+    def validate_block(self, coinbase):
+        self.chain.process_time_queue()
+        return self.chain.validate_block()
 
     # creates the tx_trie and state trie of a block
     def _create_tries(self, block):

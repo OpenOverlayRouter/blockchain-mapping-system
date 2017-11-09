@@ -10,7 +10,7 @@ from state import State, dict_to_prev_header
 from block import Block, BlockHeader, FakeHeader
 from genesis_helpers import state_from_genesis_declaration, mk_basic_state, initialize, initialize_genesis_keys
 from db import EphemDB
-from apply import apply_block, update_block_env_variables
+from apply import apply_block, update_block_env_variables, validate_block, validate_transaction
 
 config_string = ':info'  # ,eth.chain:debug'
 
@@ -183,6 +183,12 @@ class Chain(object):
             self.add_block(self.time_queue.pop(i))
             if len(self.time_queue) == pre_len:
                 i += 1
+
+    def validate_transaction(self, tx):
+        return validate_transaction(self.state,tx)
+
+    def validate_block(self,block):
+        return validate_block(self.state,block)
 
     # Call upon receiving a block
     def add_block(self, block):
