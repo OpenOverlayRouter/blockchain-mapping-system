@@ -35,7 +35,6 @@ class ChainService():
     def add_pending_transaction(self, tx):
         assert isinstance(tx, Transaction)
         # validate transaction
-        self.chain.validate_transaction(tx)
         try:
             # Transaction validation for broadcasting. Transaction is validated
             # against the current head candidate.

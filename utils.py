@@ -160,11 +160,14 @@ def object_to_bin(o):
 def bin_to_object(b):
     return pickle.loads(b.decode('hex'))
 
-def ipaddr_to_netaddr(ipaddr):
-    if isinstance(ipaddr, IPv4Network) or isinstance(ipaddr, IPv6Network):
-        return IPNetwork(str(ipaddr.ip) + '/' + str(ipaddr.netmask))
-    elif isinstance(ipaddr, IPv4Address) or isinstance(ipaddr, IPv6Address):
-        return IPAddress(str(ipaddr))
+def ipaddr_to_netaddr(afi,ipaddr):
+    print("afi",afi)
+    print("ipaddr",ipaddr)
+    if afi == 1:
+        ip = IPv4Address(ipaddr)
+    elif afi == 2:
+        ip = IPv6Address(ipaddr)
+    return IPNetwork(str(ip.ip) + '/' + str(ip.netmask))
 
 
 address = Binary.fixed_length(20, allow_empty=True)

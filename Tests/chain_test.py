@@ -25,8 +25,8 @@ from netaddr import IPNetwork, IPAddress, IPSet
 from utils import address, normalize_address
 from chain_service import ChainService
 
-db = LevelDB("./chain")
-env = Env(db)
+#db = LevelDB("./chain")
+env = Env(_EphemDB())
 #env = Env(_EphemDB())
 
 add1 = "094a2c9f5b46416b9b9bd9f1efa1f3a73d46cec2"

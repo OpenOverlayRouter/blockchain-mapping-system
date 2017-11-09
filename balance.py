@@ -82,14 +82,11 @@ class Balance(rlp.Serializable):
 
     def set_map_server(self, map_server):
         self.map_server = {}
-
-        for i in range (0, len(map_server)):
-            if i%3 == 1:
-                ip = ipaddr_to_netaddr(map_server[i])
-            elif i%3 == 2:
-                address = map_server[i]
-            elif i%3 == 0 and i > 0:
-                self.map_server[ip] = address
+        for i in range (0, len(map_server), 3):
+            afi = bytes_to_int(map_server[i])
+            ip = ipaddr_to_netaddr(afi,map_server[i+1])
+            address = map_server[i+2]
+            self.map_server[ip] = address
 
     def get_map_server(self):
         return self.map_server
@@ -99,18 +96,15 @@ class Balance(rlp.Serializable):
         priority = ''
         weight = ''
         ip = ''
-        for i in range (0, len(locator)):
-            if i%4 == 1:
-                ip = ipaddr_to_netaddr(locator[i])
-            elif i%4 == 2:
-                priority = bytes_to_int(locator[i])
-            elif i%4 == 3:
-                weight = bytes_to_int(locator[i])
-            elif i%4 == 0 and i > 0:
-                l = []
-                l.append(priority)
-                l.append(weight)
-                self.locator[ip] = l
+        for i in range (0, len(locator),4):
+            afi = bytes_to_int(locator[i])
+            ip = ipaddr_to_netaddr(afi,locator[i+1])
+            priority = bytes_to_int(locator[i+2])
+            weight = bytes_to_int(locator[i+3])
+            l = []
+            l.append(priority)
+            l.append(weight)
+            self.locator[ip] = l
 
     def get_locator(self):
         return self.locator
