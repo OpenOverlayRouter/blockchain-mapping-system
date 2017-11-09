@@ -6,7 +6,7 @@ from utils import address, normalize_address
 import random
 import json
 from ipaddr import IPv4Network, IPv6Network, IPv4Address, IPv6Address, Bytes
-from utils import bytes_to_int
+from utils import bytes_to_int, ipaddr_to_netaddr
 
 
 
@@ -85,8 +85,7 @@ class Balance(rlp.Serializable):
 
         for i in range (0, len(map_server)):
             if i%3 == 1:
-                ip = map_server[i]
-
+                ip = ipaddr_to_netaddr(map_server[i])
             elif i%3 == 2:
                 address = map_server[i]
             elif i%3 == 0 and i > 0:
@@ -102,7 +101,7 @@ class Balance(rlp.Serializable):
         ip = ''
         for i in range (0, len(locator)):
             if i%4 == 1:
-                ip = locator[i]
+                ip = ipaddr_to_netaddr(locator[i])
             elif i%4 == 2:
                 priority = bytes_to_int(locator[i])
             elif i%4 == 3:
