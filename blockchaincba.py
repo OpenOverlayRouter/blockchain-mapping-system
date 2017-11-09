@@ -48,12 +48,12 @@ def run():
                 p2p.broadcast_block(block)
             else:
             #reset consensus alg
-            consensus.calculate_next_signer(None)
+                consensus.calculate_next_signer(None)
     
     #Process transactions from the network
     tx_ext = p2p.get_tx()
     while tx_ext is not None:
-        #res = chain.validate_transaction(tx_ext)
+        res = chain.validate_transaction(tx_ext)
         if res:
             #correct tx
             chain.add_pending_transaction(tx_ext)
@@ -70,17 +70,16 @@ def run():
     #Process transactions from the user    
     tx_int = user.get_tx()
     if tx_int is not None:
-    res = chain.validate_tx(tx_int)
-    if res:
-    #correct tx
-    chain.add_to_pool(tx_int)
-    p2p.broadcast_tx(tx_int)
+        res = chain.validate_transaction(tx_int)
+        if res:
+            chain.add_pending_transaction(tx_int)
+            p2p.broadcast_tx(tx_int)
     
     #answer queries from OOR     
     query = oor.get_query()
     if query is not None:
-    info = chain.query_eid(query)
-    oor.send(info)
+        info = chain.query_eid(query)
+        oor.send(info)
 
 
 if __name__ == "__main__":
