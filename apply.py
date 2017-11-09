@@ -166,6 +166,13 @@ def validate_header(state, header):
             raise ValueError("Timestamp waaaaaaaaaaayy too large")
     return True
 
+def validate_block(state, block):
+    assert validate_header(state, block.header)
+    assert validate_transaction_tree(state, block)
+    for tx in block.transactions:
+        if not validate_transaction(state,tx):
+            return False
+    return True
 
 # Applies the block-level state transition function
 def apply_block(state, block):
