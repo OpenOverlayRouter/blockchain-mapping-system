@@ -33,7 +33,6 @@ class ChainService():
 
     def add_transaction(self, tx):
         assert isinstance(tx, Transaction)
-
         # validate transaction
         try:
             # Transaction validation for broadcasting. Transaction is validated
