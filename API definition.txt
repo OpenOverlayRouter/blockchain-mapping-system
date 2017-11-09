@@ -1,0 +1,86 @@
+#####################
+#p2p
+#####################
+
+
+block get_block()
+#returns a new block or None if there is no data
+
+transaction get_tx()
+#returns a new transaction or None if there is no data
+
+broadcast_block(block bl)
+#sends a new block to the network
+
+broadcast_tx(transaction tx)
+#send a new transaction to the network
+
+
+#####################
+#consensus
+#####################
+
+signer get_next_signer()
+#returns the next IP that has to sign a block
+
+calculate_next_signer(myIPs ip)
+#calculates the next IP that will sign a block. It is stored in an internal variable that get_next_signer() uses
+#myIPs is the set of IPs owned by the node, updated each time a block is added
+#if myIPs is None, means that it the previous block was incorrect
+
+amIsigner(myIPs ip)
+#returns a sign object that says if the node has to sign
+
+
+#####################
+#chain
+##################### 
+
+validate_block(block bl, signer sig)
+#returns True if the block is correct, False otherwise
+#Internally, checks the block signature and ALL transactions
+
+validate_tx (transaction tx)
+#returns True if the transaction is correct, False otherwise
+
+add_block (block bl)
+#adds a new block to the chain. DOES NOT CHECK if the block is correct
+
+add_to_pool(transaction tx)
+#adds a transaction to the pool of unconfirmed transactions DOES NOT CHECK if it is correct
+
+create_block(signer sig)
+#Creates and signs a new block with the IP in sig
+
+info query_eid(query q)
+#returns an RLOC record or a MS list corresponding to the EID in q
+
+#####################
+#user
+##################### 
+
+transaction get_tx()
+#returns a new transaction submitted by the user or None if there is no data
+
+#####################
+#oor
+##################### 
+get_query(query q)
+#returns an EID query from OOR or None if there is no data
+
+send(info i)
+#writes the RLOC record or MS list to the OOR socket
+
+
+#data objects
+
+block
+signer: IP that has to sign the new block
+transaction
+        tx: the transaction
+	more: true if the buffer has more transactions
+sign
+	me: True if the node has to sign
+        signer: IP that has to sign the new block
+myIPs: set of IPs owned by the node
+
