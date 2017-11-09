@@ -53,7 +53,7 @@ def run():
     #Process transactions from the network
     tx_ext = p2p.get_tx()
     while tx_ext is not None:
-        res = chain.validate_transaction(tx_ext)
+        #res = chain.validate_transaction(tx_ext)
         if res:
             #correct tx
             chain.add_pending_transaction(tx_ext)
