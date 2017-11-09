@@ -33,6 +33,7 @@ class ChainService():
         self.process_time_queue_periodically()
 
     def add_pending_transaction(self, tx):
+        validate_transaction(state, tx)
         assert isinstance(tx, Transaction)
         # validate transaction
         try:
@@ -62,7 +63,7 @@ class ChainService():
                 block.transactions.append(tx)
                 self.transactions.remove(tx)
             except Exception:
-                pass
+                self.transactions.remove(tx)
         self._create_tries(block)
         return block
 
