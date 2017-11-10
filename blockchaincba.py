@@ -48,53 +48,63 @@ def run():
     end = 0
     
     while(not end):
-        #Process a block
+        
+        #Process a block from the network
         block = p2p.get_block()
         if block is not None:
             signer = consensus.get_next_signer()
-            res = chain.validate_block(block,signer)
-            if res:
+            res = chain.verify_block_signature(block, signer)
+            if res:        
                 # correct block
-                myIPs = chain.add_block(block)
-
-                consensus.calculate_next_signer(myIPs)
-
+                consensus.store_block(block)
+                #Maybe not necessary, depends on P2P implementation                
                 p2p.broadcast_block(block)
             else:
                 #reset consensus alg
                 consensus.calculate_next_signer(None)
+     
+        #Process a definitive block
+        block = consensus.get_solid_block()
+        if block is not None:
+            #These blocks are always OK
+            #Only needed to validate tx logic (apply.py)
+            #For simplicity we assume that the previous validation will never fail
+            myIPs = chain.add_block(block)
+            consensus.calculate_next_signer(myIPs)        
 
-                #Process transactions from the network
-                tx_ext = p2p.get_tx()
-            while tx_ext is not None:
-                #res = chain.validate_transaction(tx_ext)
-                if res:
-                    #correct tx
-                    chain.add_pending_transaction(tx_ext)
-                    p2p.broadcast_tx(tx_ext)
-                tx_ext = p2p.get_tx()
+        #Process transactions from the network
+        tx_ext = p2p.get_tx()
+        while tx_ext is not None:
+            res = chain.add_pending_transaction(tx_ext)
+            if res:
+                #correct tx    
+                p2p.broadcast_tx(tx_ext)
+            #get new transactions to process    
+            tx_ext = p2p.get_tx()
 
 
-            #Check if the node has to sign the next block
-            sign = consensus.amIsinger(myIPs)
-            if sign.me is True:
-                new_block = chain.create_block(sign.signer)
-                p2p.broadcast_block(new_block)
+        #Check if the node has to sign the next block
+        sign = consensus.amIsinger(myIPs)
+        if sign.me is True:
+            last_block_hash = consensus.get_last_block_hash()
+            #TODO: Do you need transactions in the previous blocks (unconfirmed)? I think so :(
+            new_block = chain.create_block(sign.signer,last_block_hash)
+            consensus.store_block(new_block)
+            p2p.broadcast_block(new_block)
 
-            #Process transactions from the user
-            tx_int = user.get_tx()
-            if tx_int is not None:
-                res = chain.validate_tx(tx_int)
+        #Process transactions from the user
+        tx_int = user.get_tx()
+        if tx_int is not None:
+            res = chain.add_pending_transaction(tx_int)
             if res:
                 #correct tx
-                chain.add_to_pool(tx_int)
                 p2p.broadcast_tx(tx_int)
 
-                #answer queries from OOR
-                query = oor.get_query()
-            if query is not None:
-                info = chain.query_eid(query)
-                oor.send(info)
+        #answer queries from OOR
+        query = oor.get_query()
+        if query is not None:
+            info = chain.query_eid(query)
+            oor.send(info)
 
 
 if __name__ == "__main__":
