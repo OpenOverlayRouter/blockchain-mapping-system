@@ -20,17 +20,14 @@ class InsufficientBalance(InvalidTransaction):
 class UncategorizedTransaction(InvalidTransaction):
     pass
 
-
 class InvalidCategory(InvalidTransaction):
     pass
 
-class InsufficientStartGas(InvalidTransaction):
+class InvalidBlock(Exception):
     pass
 
-
-class BlockGasLimitReached(InvalidTransaction):
+class UnsignedBlock(InvalidBlock):
     pass
 
-
-class GasPriceTooLow(InvalidTransaction):
+class InvalidBlockSigner(InvalidBlock):
     pass

@@ -5,7 +5,11 @@ from utils import hash32, trie_root, address, sha3
 from rlp.utils import encode_hex
 from config import default_config
 from transactions import Transaction
+from utils import address, sha3, normalize_key, ecsign, privtoaddr, ecrecover_to_pub, int_to_bytes, encode_hex, bytes_to_int, encode_int8
+from own_exceptions import InvalidBlock
 
+secpk1n = 115792089237316195423570985008687907852837564279074904382605163141518161494337
+null_address = b'\xff' * 20
 
 class BlockHeader(rlp.Serializable):
     fields = [
@@ -59,12 +63,62 @@ class FakeHeader():
 class Block(rlp.Serializable):
     fields = [
         ('header', BlockHeader),
-        ('transactions', CountableList(Transaction))
+        ('transactions', CountableList(Transaction)),
+        ('v', big_endian_int),
+        ('r', big_endian_int),
+        ('s', big_endian_int)
     ]
+    _signer = None
 
     def __init__(self, header, transactions=None):
         self.header = header
         self.transactions = transactions or []
+
+    def sign(self, key, network_id=None):
+        if network_id is None:
+            rawhash = sha3(rlp.encode(self, UnsignedBlock))
+        else:
+            assert 1 <= network_id < 2 ** 63 - 18
+            rlpdata = rlp.encode(rlp.infer_sedes(self).serialize(self)[
+                                 :-3] + [network_id, b'', b''])
+            rawhash = sha3(rlpdata)
+
+        key = normalize_key(key)
+        self.v, self.r, self.s = ecsign(rawhash, key)
+        if network_id is not None:
+            self.v += 8 + network_id * 2
+
+        self._signer = privtoaddr(key)
+        return self
+
+    @property
+    def signer(self):
+        if not self._signer:
+            if self.r == 0 and self.s == 0:
+                if self.header.number == 0:
+                    pub = b"\x00" * 64
+                    self._signer = sha3(pub)[-20:]
+                    print("GENESIS BLOCK")
+                self._signer = null_address
+            else:
+                if self.v in (27, 28):
+                    vee = self.v
+                    sighash = sha3(rlp.encode(self, UnsignedBlock))
+                elif self.v >= 37:
+                    vee = self.v - self.network_id * 2 - 8
+                    assert vee in (27, 28)
+                    rlpdata = rlp.encode(rlp.infer_sedes(self).serialize(self)[
+                                         :-3] + [self.network_id, '', ''])
+                    sighash = sha3(rlpdata)
+                if self.r >= secpk1n or self.s >= secpk1n or self.r == 0 or self.s == 0:
+                    raise InvalidBlock("Invalid signature values!")
+
+                pub = ecrecover_to_pub(sighash, self.v, self.r, self.s)
+                if pub == b"\x00" * 64:
+                    raise InvalidBlock(
+                        "Invalid signature (zero privkey cannot sign)")
+                self._signer = sha3(pub)[-20:]
+        return self._signer
 
     def __getattribute__(self, name):
         try:
@@ -75,3 +129,5 @@ class Block(rlp.Serializable):
     @property
     def transaction_count(self):
         return len(self.transactions)
+
+UnsignedBlock = Block.exclude(['v', 'r', 's'])

@@ -1,14 +1,33 @@
-from own_exceptions import UnsignedTransaction, InvalidNonce, InsufficientBalance, UncategorizedTransaction, InvalidCategory
+from own_exceptions import UnsignedTransaction, InvalidNonce, InsufficientBalance, UncategorizedTransaction, \
+    InvalidCategory, InvalidBlockSigner, UnsignedBlock
 import trie
 from rlp.utils import encode_hex
 from db import EphemDB
 import rlp
+from netaddr import IPAddress
 
 null_address = b'\xff' * 20
 
 
 def rp(tx, what, actual, target):
     return '%r: %r actual:%r target:%r' % (tx, what, actual, target)
+
+
+def validate_block_signature(state, block, ip):
+    if not block.signer:
+        raise UnsignedBlock()
+
+    if isinstance(ip, IPAddress):
+        try:
+            ip = IPAddress(ip)
+        except Exception as e:
+            raise e
+
+    signer = block.signer
+    if state.get_balance(signer).in_own_ips(ip):
+        return True
+    else:
+        raise InvalidBlockSigner()
 
 
 # Validate the transaction and check that it is correct
@@ -41,10 +60,10 @@ def validate_transaction(state, tx):
                 raise InsufficientBalance(value)
         elif category == 2:
             pass
-            #MapServer
+            # MapServer
         elif category == 3:
             pass
-            #Locator
+            # Locator
     else:
         raise UncategorizedTransaction(tx)
 
@@ -139,8 +158,9 @@ def mk_transaction_sha(receipts):
 def validate_transaction_tree(state, block):
     if block.header.tx_root != mk_transaction_sha(block.transactions):
         raise ValueError("Transaction root mismatch: header %s computed %s, %d transactions" %
-                         (encode_hex(str(block.header.tx_root)), encode_hex(str(mk_transaction_sha(block.transactions))),
-                          len(block.transactions)))
+                         (
+                         encode_hex(str(block.header.tx_root)), encode_hex(str(mk_transaction_sha(block.transactions))),
+                         len(block.transactions)))
     return True
 
 
@@ -156,17 +176,19 @@ def validate_header(state, header):
                 "Block's number is not the successor of its parent number")
         if header.timestamp <= parent.timestamp:
             raise ValueError("Timestamp equal to or before parent")
-        if header.timestamp >= 2**256:
+        if header.timestamp >= 2 ** 256:
             raise ValueError("Timestamp waaaaaaaaaaayy too large")
     return True
+
 
 def validate_block(state, block):
     assert validate_header(state, block.header)
     assert validate_transaction_tree(state, block)
     for tx in block.transactions:
-        if not validate_transaction(state,tx):
+        if not validate_transaction(state, tx):
             return False
     return True
+
 
 # Applies the block-level state transition function
 def apply_block(state, block):

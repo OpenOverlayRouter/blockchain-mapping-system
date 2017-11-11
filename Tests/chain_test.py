@@ -70,9 +70,15 @@ chain.add_pending_transaction(tx8)
 #chain.add_pending_transaction(tx5)
 #chain.add_pending_transaction(tx6)
 #chain.add_pending_transaction(tx7)
-block = chain.create_block(add1)
-chain.add_block(block)
 
+block = chain.create_block(add1)
+#block.sign(ks1.privkey)
+#print(block.signer.encode("HEX"))
+print(chain.validate_block_signature(block,"192.128.0.0"))
+chain.add_block(block)
+print(chain.validate_block_signature(block,"192.144.0.0"))
+
+"""
 
 time.sleep(2)
 chain.add_pending_transaction(tx2)
@@ -100,7 +106,7 @@ chain.add_pending_transaction(tx7)
 chain.add_pending_transaction(tx6)
 block = chain.create_block(add1)
 chain.add_block(block)
-
+"""
 print("ADDRESS1")
 print "Own IPS"
 print(chain.get_own_ips(add1))

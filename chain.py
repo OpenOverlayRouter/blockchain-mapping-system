@@ -8,7 +8,7 @@ from config import Env
 from state import State, dict_to_prev_header
 from block import Block, BlockHeader, FakeHeader
 from genesis_helpers import state_from_genesis_declaration, initialize, initialize_genesis_keys
-from apply import apply_block, update_block_env_variables, validate_block, validate_transaction
+from apply import apply_block, update_block_env_variables, validate_block, validate_transaction, validate_block_signature
 
 
 
@@ -186,6 +186,9 @@ class Chain(object):
 
     def validate_block(self,block):
         return validate_block(self.state,block)
+
+    def validate_block_signature(self,block,ip):
+        return validate_block_signature(self.state,block,ip)
 
     # Call upon receiving a block
     def add_block(self, block):
