@@ -46,41 +46,53 @@ def run():
     consensus = init_consensus()
     keys = init_keystore()
     end = 0
-    
+
     while(not end):
         
         #Process a block from the network
-        block = p2p.get_block()
-        if block is not None:
-            signer = consensus.get_next_signer()
-            res = chain.verify_block_signature(block, signer)
-            if res:        
-                # correct block
-                consensus.store_block(block)
-                #Maybe not necessary, depends on P2P implementation                
-                p2p.broadcast_block(block)
-            else:
-                #reset consensus alg
-                consensus.calculate_next_signer(None)
+        try:
+            block = p2p.get_block()
+            if block is not None:
+                signer = consensus.get_next_signer()
+                res = chain.verify_block_signature(block, signer)
+                if res:
+                    # correct block
+                    consensus.store_block(block)
+                    #Maybe not necessary, depends on P2P implementation
+                    p2p.broadcast_block(block)
+                else:
+                    #reset consensus alg
+                    consensus.calculate_next_signer(None)
+        except Exception as e:
+            print "Exception while processing a received block"
+            print e
      
         #Process a definitive block
-        block = consensus.get_solid_block()
-        if block is not None:
-            #These blocks are always OK
-            #Only needed to validate tx logic (apply.py)
-            #For simplicity we assume that the previous validation will never fail
-            myIPs = chain.add_block(block)
-            consensus.calculate_next_signer(myIPs)        
+        try:
+            block = consensus.get_solid_block()
+            if block is not None:
+                #These blocks are always OK
+                #Only needed to validate tx logic (apply.py)
+                #For simplicity we assume that the previous validation will never fail
+                myIPs = chain.add_block(block)
+                consensus.calculate_next_signer(myIPs)
+        except Exception as e:
+            print "Exception while adding a definitive block"
+            print e
 
         #Process transactions from the network
-        tx_ext = p2p.get_tx()
-        while tx_ext is not None:
-            res = chain.add_pending_transaction(tx_ext)
-            if res:
-                #correct tx    
-                p2p.broadcast_tx(tx_ext)
-            #get new transactions to process    
+        try:
             tx_ext = p2p.get_tx()
+            while tx_ext is not None:
+                res = chain.add_pending_transaction(tx_ext)
+                if res:
+                    #correct tx
+                    p2p.broadcast_tx(tx_ext)
+                #get new transactions to process
+                tx_ext = p2p.get_tx()
+        except Exception as e:
+            print "Exception while processing a received transaction"
+            print e
 
 
         #Check if the node has to sign the next block
