@@ -13,7 +13,7 @@ def rp(tx, what, actual, target):
     return '%r: %r actual:%r target:%r' % (tx, what, actual, target)
 
 
-def validate_block_signature(state, block, ip):
+def verify_block_signature(state, block, ip):
     try:
         if not block.signer:
             raise UnsignedBlock()

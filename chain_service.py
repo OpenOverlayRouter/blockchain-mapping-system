@@ -67,8 +67,8 @@ class ChainService():
         self.chain.process_time_queue()
         return self.chain.validate_block()
 
-    def validate_block_signature(self,block,ip):
-        return self.chain.validate_block_signature(block,ip)
+    def verify_block_signature(self,block,ip):
+        return self.chain.verify_block_signature(block,ip)
 
     # creates the tx_trie and state trie of a block
     def _create_tries(self, block):
