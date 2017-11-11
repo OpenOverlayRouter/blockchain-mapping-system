@@ -72,11 +72,11 @@ chain.add_pending_transaction(tx8)
 #chain.add_pending_transaction(tx7)
 
 block = chain.create_block(add1)
-#block.sign(ks1.privkey)
+block.sign(ks1.privkey)
 #print(block.signer.encode("HEX"))
 print(chain.validate_block_signature(block,"192.128.0.0"))
 chain.add_block(block)
-print(chain.validate_block_signature(block,"192.144.0.0"))
+#print(chain.validate_block_signature(block,"192.144.0.0"))
 
 """
 

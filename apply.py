@@ -14,7 +14,10 @@ def rp(tx, what, actual, target):
 
 
 def validate_block_signature(state, block, ip):
-    if not block.signer:
+    try:
+        if not block.signer:
+            raise UnsignedBlock()
+    except AttributeError:
         raise UnsignedBlock()
 
     if isinstance(ip, IPAddress):
