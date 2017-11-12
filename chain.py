@@ -123,6 +123,16 @@ class Chain(object):
         except Exception:
             return None
 
+    def get_head_block(self):
+        try:
+            block_rlp = self.db.get(self.head_hash)
+            if block_rlp == 'GENESIS':
+                return self.genesis
+            else:
+                return rlp.decode(block_rlp, Block)
+        except Exception:
+            return None
+
     # Add a record allowing you to later look up the provided block's
     # parent hash and see that it is one of its children
     def add_child(self, child):

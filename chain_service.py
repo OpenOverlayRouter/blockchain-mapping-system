@@ -108,6 +108,9 @@ class ChainService():
     def get_pending_transactions(self):
         return self.transactions
 
+    def get_head_block(self):
+        return self.chain.get_head_block()
+
     # returns the block whose hash is 'block'
     def get_block(self, block):
         return self.chain.get_block(block)

@@ -130,4 +130,7 @@ class Block(rlp.Serializable):
     def transaction_count(self):
         return len(self.transactions)
 
+    def get_timestamp(self):
+        return getattr(self.header, "timestamp")
+
 UnsignedBlock = Block.exclude(['v', 'r', 's'])

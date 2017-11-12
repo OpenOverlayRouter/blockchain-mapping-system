@@ -15,6 +15,7 @@ import struct
 import os
 import glob
 from keystore import Keystore
+from consensus import Consensus
 
 
 def init_chain():
@@ -29,8 +30,7 @@ def init_p2p():
 
 
 def init_consensus():
-    # P2P initialization
-    return 0
+    return Consensus()
 
 
 def init_keystore(keys_dir='./Tests/keystore/'):
@@ -124,3 +124,10 @@ if __name__ == "__main__":
     #run()
     keys = init_keystore()
     print(keys[0].keystore['address'])
+
+    chain = init_chain()
+    print chain.get_head_block().get_timestamp()
+
+    consensus = init_consensus()
+    consensus.calculate_next_signer()
+    print consensus.get_next_signer()

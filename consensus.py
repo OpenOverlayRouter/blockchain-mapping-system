@@ -15,7 +15,7 @@ class Consensus():
 		return self.next_signer
 
 	def calculate_next_signer(self):
-		self.next_signer = who_signs("IPv6")
+		self.next_signer = who_signs("IPv4")
 
 # Returns the HASH of a block
 def get_hash_from_json_block(json_block):
