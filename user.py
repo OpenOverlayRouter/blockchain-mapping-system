@@ -2,6 +2,8 @@
 from utils import normalize_address
 from ipaddr import IPv6Address, IPv6Network, IPv4Address, IPv4Network
 from transactions import Transaction
+from chain_service import ChainService
+from keystore import Keystore
 
 transactions = []
 changes_file = '/home/jordi/Documents/prefix-file/pref_data.txt'
@@ -34,7 +36,6 @@ class Parser():
 
     def __init__(self, key, chain_service):
         self.key = key
-        self.read_transactions()
         self.chain_service = chain_service
 
     def category(self, data_string, data_buffer):
@@ -45,7 +46,7 @@ class Parser():
 
     def to(self, data_string, data_buffer):
         address = normalize_address(data_string)
-        data_buffer["address"] = address
+        data_buffer["to"] = address
 
     def afi(self, data_string, data_buffer):
         afi = int(data_string)
@@ -54,11 +55,7 @@ class Parser():
         data_buffer["afi"] = int(data_string)
 
     def value(self, data_string, data_buffer):
-        if data_buffer["afi"] == 1:
-            ipnet = IPv4Network(data_string)
-        else:
-            ipnet = IPv6Network(data_string)
-        data_buffer["value"] = ipnet
+        data_buffer["value"] = data_string
 
     def metadata(self, data_string, data_buffer):
         data_buffer["metadata"] = []
@@ -66,27 +63,23 @@ class Parser():
         it = iter(data)
         if data_buffer["category"] == 2:
             if len(data)%3 != 0:
-                raise Exception("metadata of category 2 is not multiple of 3")
+                raise Exception("metadata of a transaction with category 2 is not multiple of 3")
             # de 3 en 3
             for afi, ip, address in zip(*[iter(data)]*3):
                 data_buffer["metadata"].append(int(afi))
-                if int(afi) == 1:
-                    data_buffer["metadata"].append(IPv4Network(ip))
-                elif int(afi) == 2:
-                    data_buffer["metadata"].append(IPv6Network(ip))
+                if int(afi) == 1 or int(afi) == 2:
+                    data_buffer["metadata"].append(ip)
                 else:
                     raise Exception("Incorrect AFI in metadata")
                 data_buffer["metadata"].append(normalize_address(address))
         elif data_buffer["category"] == 3:
             if len(data)%4 != 0:
-                raise Exception("metadata of category 3 is not multiple of 4")
+                raise Exception("metadata of a transaction with category 3 is not multiple of 4")
             # de 4 en 4
             for afi, ip, priority, weight in zip(*[iter(data)]*4):
                 data_buffer["metadata"].append(int(afi))
-                if int(afi) == 1:
-                    data_buffer["metadata"].append(IPv4Network(ip))
-                elif int(afi) == 2:
-                    data_buffer["metadata"].append(IPv6Network(ip))
+                if int(afi) == 1 or int(afi) == 2:
+                    data_buffer["metadata"].append(ip)
                 else:
                     raise Exception("Incorrect AFI in metadata")
                 data_buffer["metadata"].appned(int(priority))
@@ -102,9 +95,8 @@ class Parser():
         "metadata": metadata
     }
 
+    # read from the file and get new transactions. Store in a list
     def read_transactions(self, transactions_dir='./Tests/transactions.txt'):
-        # read from the file and get new transactions. Store in a list
-        #TODO: read from file
         buffers = []
         with open(transactions_dir) as f:
             data_buffer = {}
@@ -112,17 +104,20 @@ class Parser():
                 type, content = line.split(';')
                 content = content.strip("\n")
                 if type == "end":
-                    if data_buffer["afi"] and data_buffer["category"] and data_buffer["value"] and data_buffer["value"]:
+                    if data_buffer.get("afi") is not None and data_buffer.get("category") is not None and \
+                                    data_buffer.get("value") is not None and data_buffer.get("to") is not None:
                         buffers.append(data_buffer)
+                        print("All necessary fields are filled. Adding one transaction...")
                     else:
-                        print("One transaction contains errors. Ignoring it...")
+                        raise Exception("One transaction contains errors. Ignoring it...")
                     data_buffer = {}
                 else:
-                    self.types_dir[type](content, data_buffer)
-        open(transactions_dir, 'w').close()  # to remove all contents of the txt file
+                    self.types_dir[type](self, content, data_buffer)
+        #open(transactions_dir, 'w').close()  # to remove all contents of the txt file
+        print(buffers[0])
         transactions = []
         for count, elem in enumerate(buffers):
-            transaction = self.chain_service.parse_transaction(buffers, count, self.key["address"])
+            transaction = self.chain_service.parse_transaction(elem, count, self.key.keystore["address"])
             transaction.sign(self.key)
             transactions.append(transaction)
 
@@ -134,3 +129,8 @@ class Parser():
         else:
             return transactions.pop([0])
 
+if __name__ == "__main__":
+    c = ChainService()
+    ks1 = Keystore.load("./Tests/keystore/094a2c9f5b46416b9b9bd9f1efa1f3a73d46cec2", "TFG1234")
+    p = Parser(ks1, c)
+    p.read_transactions()
