@@ -32,9 +32,10 @@ changes_file = '/home/jordi/Documents/prefix-file/pref_data.txt'
 
 class Parser():
 
-    def __init__(self, key):
+    def __init__(self, key, chain_service):
         self.key = key
         self.read_transactions()
+        self.chain_service = chain_service
 
     def category(self, data_string, data_buffer):
         category = int(data_string)
@@ -111,13 +112,21 @@ class Parser():
                 type, content = line.split(';')
                 content = content.strip("\n")
                 if type == "end":
-                    buffers.append(data_buffer)
+                    if data_buffer["afi"] and data_buffer["category"] and data_buffer["value"] and data_buffer["value"]:
+                        buffers.append(data_buffer)
+                    else:
+                        print("One transaction contains errors. Ignoring it...")
                     data_buffer = {}
                 else:
                     self.types_dir[type](content, data_buffer)
         open(transactions_dir, 'w').close()  # to remove all contents of the txt file
         transactions = []
-        return buffers
+        for count, elem in enumerate(buffers):
+            transaction = self.chain_service.parse_transaction(buffers, count, self.key["address"])
+            transaction.sign(self.key)
+            transactions.append(transaction)
+
+        return transactions
 
     def get_tx():
         if len(transactions) == 0:
