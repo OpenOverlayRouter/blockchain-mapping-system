@@ -94,5 +94,5 @@ transaction
 sign
 	me: True if the node has to sign
         signer: IP that has to sign the new block
-myIPs: set of IPs owned by the node
+myIPs: Two python lists of IP addresses owned by the node (one for IPv4, one for IPv6)
 
