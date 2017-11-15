@@ -37,26 +37,36 @@ class Parser():
     def __init__(self, key, chain_service):
         self.key = key
         self.chain_service = chain_service
+        self.transactions = []
 
+    # changes the key with which the Parser signs all the transactions read
+    def change_keystore(self, key):
+        self.key = key
+
+    # sets the "category2 field of the data_buffer dict with the data in the data_string
     def category(self, data_string, data_buffer):
         category = int(data_string)
         if category < 0 or category > 3:
             raise Exception("Wrong category")
         data_buffer["category"] = int(category)
 
+    # sets the "to" field of the data_buffer dict with the data in the data_string
     def to(self, data_string, data_buffer):
         address = normalize_address(data_string)
         data_buffer["to"] = address
 
+    # sets the "afi" field of the data_buffer dict with the data in the data_string
     def afi(self, data_string, data_buffer):
         afi = int(data_string)
         if afi != 1 and afi != 2:
             raise Exception("Wrong AFI")
         data_buffer["afi"] = int(data_string)
 
+    # sets the "value" field of the data_buffer dict with the data in the data_string
     def value(self, data_string, data_buffer):
         data_buffer["value"] = data_string
 
+    # sets the "metadata" field of the data_buffer dict with the data in the data_string
     def metadata(self, data_string, data_buffer):
         data_buffer["metadata"] = []
         data = data_string.split(',')
@@ -68,10 +78,10 @@ class Parser():
             for afi, ip, address in zip(*[iter(data)]*3):
                 data_buffer["metadata"].append(int(afi))
                 if int(afi) == 1 or int(afi) == 2:
-                    data_buffer["metadata"].append(ip)
+                    data_buffer["metadata"].append(str(ip))
                 else:
                     raise Exception("Incorrect AFI in metadata")
-                data_buffer["metadata"].append(normalize_address(address))
+                data_buffer["metadata"].append(normalize_address(str(address)))
         elif data_buffer["category"] == 3:
             if len(data)%4 != 0:
                 raise Exception("metadata of a transaction with category 3 is not multiple of 4")
@@ -79,7 +89,7 @@ class Parser():
             for afi, ip, priority, weight in zip(*[iter(data)]*4):
                 data_buffer["metadata"].append(int(afi))
                 if int(afi) == 1 or int(afi) == 2:
-                    data_buffer["metadata"].append(ip)
+                    data_buffer["metadata"].append(str(ip))
                 else:
                     raise Exception("Incorrect AFI in metadata")
                 data_buffer["metadata"].appned(int(priority))
@@ -113,21 +123,22 @@ class Parser():
                     data_buffer = {}
                 else:
                     self.types_dir[type](self, content, data_buffer)
+
         #open(transactions_dir, 'w').close()  # to remove all contents of the txt file
-        print(buffers[0])
         transactions = []
         for count, elem in enumerate(buffers):
             transaction = self.chain_service.parse_transaction(elem, count, self.key.keystore["address"])
-            transaction.sign(self.key)
+            transaction.sign(self.key.privkey)
             transactions.append(transaction)
 
-        return transactions
+        self.transactions = transactions
 
-    def get_tx():
-        if len(transactions) == 0:
+    # returns the first transaction of the "transactions" list
+    def get_tx(self):
+        if len(self.transactions) == 0:
             return None
         else:
-            return transactions.pop([0])
+            return transactions.pop(0)
 
 if __name__ == "__main__":
     c = ChainService()
