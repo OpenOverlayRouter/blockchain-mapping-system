@@ -10,12 +10,23 @@ class Consensus():
 
 	def __init__(self):
 		self.next_signer = None
+		self.last_timestamp = 0
+		self.ips = []
 
 	def get_next_signer(self):
 		return self.next_signer
 
-	def calculate_next_signer(self):
-		self.next_signer = who_signs("IPv4")
+	def calculate_next_signer(self, ips, timestamp):
+		self.next_signer = who_signs("IPv4", timestamp)
+		self.last_timestamp = timestamp
+		self.ips = ips
+
+	def amISigner(self, ips):
+		# TODO: calcular 30 segons desde el timestamp (self.timestamp?)
+		self.ips = ips
+		if self.next_signer in self.ips:
+			return true
+		return false
 
 # Returns the HASH of a block
 def get_hash_from_json_block(json_block):
@@ -66,7 +77,7 @@ def get_block_from_timestamp(last_block_number,timestamp):
 	return json_block
 
 # Returns a random HASH mixing NIST and ETHEREUM HASH block
-def get_random_hash():
+def get_random_hash(timestamp):
 	# Get timestamp to work with
 	timestamp = get_timestamp()
 
@@ -115,8 +126,8 @@ def consensus_for_IPv4(hash):
 	return address
 
 # Given the protocol type, returns the selected address in the correct format
-def who_signs(protocol):
-	hash = get_random_hash()
+def who_signs(protocol, timestamp):
+	hash = get_random_hash(timestamp)
 	if protocol == "IPv6":
 		return formalize_IP(consensus_for_IPv6(hash))
 	else:

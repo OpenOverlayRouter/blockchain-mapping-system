@@ -75,7 +75,8 @@ def run():
                 #Only needed to validate tx logic (apply.py)
                 #For simplicity we assume that the previous validation will never fail
                 myIPs = chain.add_block(block)
-                consensus.calculate_next_signer(myIPs)
+                timestamp = chain.get_head_block().get_timestamp()
+                consensus.calculate_next_signer(myIPs, timestamp)
         except Exception as e:
             print "Exception while adding a definitive block"
             print e
