@@ -161,6 +161,8 @@ if __name__ == "__main__":
         res = read_socket(rec_socket)
         if res is not None:
             print(res)
+            write_socket("Respondiendo a..." + str(res), snd_socket)
+
     #keys = init_keystore()
     #print(keys[0].keystore['address'])
 
