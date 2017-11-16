@@ -47,7 +47,7 @@ def read_socket(rec_socket):
     return data
 
 
-def write_socket(res):
+def write_socket(res, snd_socket):
     snd_socket.sendto(res, (HOST, SND_PORT))
 
 
