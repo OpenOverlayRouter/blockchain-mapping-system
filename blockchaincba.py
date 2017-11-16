@@ -157,6 +157,10 @@ if __name__ == "__main__":
     #init()
     #run
     open_sockets()
+    while 1:
+        res = read_socket()
+        if res is not None:
+            print(res)
     #keys = init_keystore()
     #print(keys[0].keystore['address'])
 
