@@ -140,8 +140,3 @@ class Parser():
         else:
             return transactions.pop(0)
 
-if __name__ == "__main__":
-    c = ChainService()
-    ks1 = Keystore.load("./Tests/keystore/094a2c9f5b46416b9b9bd9f1efa1f3a73d46cec2", "TFG1234")
-    p = Parser(ks1, c)
-    p.read_transactions()
