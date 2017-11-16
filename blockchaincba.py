@@ -17,6 +17,39 @@ import glob
 from keystore import Keystore
 from consensus import Consensus
 
+global rec_socket
+global snd_socket
+HOST = ''
+REC_PORT = 16001
+SND_PORT = 16002
+
+
+def open_sockets():
+    try:
+        rec_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        snd_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        print 'Socket created'
+    except socket.error, msg:
+        print 'Failed to create socket. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
+        sys.exit(1)
+    # Bind socket to local host and port
+    try:
+        rec_socket.bind((HOST, REC_PORT))
+    except socket.error:
+        print 'Bind failed.'
+        sys.exit(1)
+
+    print 'Socket bind complete in ports ' + str(REC_PORT) + ' and ' + str(SND_PORT)
+
+
+def read_socket():
+    data = rec_socket.recvfrom(1024)
+    return data
+
+
+def write_socket(res):
+    snd_socket.sendto(res, (HOST, SND_PORT))
+
 
 def init_chain():
     db = LevelDB("./chain")
@@ -122,13 +155,14 @@ def run():
 
 if __name__ == "__main__":
     #init()
-    #run()
-    keys = init_keystore()
-    print(keys[0].keystore['address'])
+    #run
+    open_sockets()
+    #keys = init_keystore()
+    #print(keys[0].keystore['address'])
 
-    chain = init_chain()
-    print chain.get_head_block().get_timestamp()
+    #chain = init_chain()
+    #print chain.get_head_block().get_timestamp()
 
-    consensus = init_consensus()
-    consensus.calculate_next_signer()
-    print consensus.get_next_signer()
+    #consensus = init_consensus()
+    #consensus.calculate_next_signer()
+    #print consensus.get_next_signer()
