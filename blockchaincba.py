@@ -17,8 +17,6 @@ import glob
 from keystore import Keystore
 from consensus import Consensus
 
-global rec_socket
-global snd_socket
 HOST = ''
 REC_PORT = 16001
 SND_PORT = 16002
@@ -41,8 +39,10 @@ def open_sockets():
 
     print 'Socket bind complete in ports ' + str(REC_PORT) + ' and ' + str(SND_PORT)
 
+    return rec_socket, snd_socket
 
-def read_socket():
+
+def read_socket(rec_socket):
     data = rec_socket.recvfrom(1024)
     return data
 
@@ -156,9 +156,9 @@ def run():
 if __name__ == "__main__":
     #init()
     #run
-    open_sockets()
+    rec_socket, snd_socket = open_sockets()
     while 1:
-        res = read_socket()
+        res = read_socket(rec_socket)
         if res is not None:
             print(res)
     #keys = init_keystore()
