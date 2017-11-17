@@ -154,3 +154,6 @@ class ChainService():
                            transaction_data["to"], transaction_data["afi"], transaction_data["value"],
                            transaction_data["metadata"])
 
+    # queries the eid to the blockchain and returns the response
+    def query_eid(self, query):
+        pass

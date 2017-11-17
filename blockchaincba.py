@@ -7,6 +7,7 @@ import Queue
 from transactions import Transaction
 from block import Block
 import chain
+import time
 from config import Env
 from db import LevelDB
 from chain_service import ChainService
@@ -158,10 +159,12 @@ if __name__ == "__main__":
     #run
     rec_socket, snd_socket = open_sockets()
     while 1:
-        res = read_socket(rec_socket)
-        if res is not None:
-            print(res)
-            write_socket("Respondiendo a..." + str(res), snd_socket)
+        write_socket("Hola puto", snd_socket)
+        time.sleep(5)
+        #res = read_socket(rec_socket)
+        #if res is not None:
+            #print(res)
+            #write_socket("Respondiendo a..." + str(res), snd_socket)
 
     #keys = init_keystore()
     #print(keys[0].keystore['address'])
