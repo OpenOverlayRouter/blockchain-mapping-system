@@ -20,7 +20,7 @@ HOST = '127.0.0.1'
 
 BOOTSTRAP_NODES = ["127.0.0.2"]
 
-PING_TIME = 20
+PING_TIME = 300
 
 #log.startLogging(sys.stdout)
 
@@ -158,6 +158,8 @@ class myFactory(Factory):
     def startFactory(self):
         self.peers = {}
         self.peers_ip = {}
+        self.blocks = []
+        self.transactions = []
         self.local = None
     
     def stopFactory(self):
