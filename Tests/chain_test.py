@@ -24,6 +24,7 @@ import netaddr
 from netaddr import IPNetwork, IPAddress, IPSet
 from utils import address, normalize_address
 from chain_service import ChainService
+import sys
 """
 db = LevelDB("./chain")
 env = Env(db)
@@ -73,6 +74,7 @@ chain.add_pending_transaction(tx8)
 
 block = chain.create_block(add1)
 block.sign(ks1.privkey)
+print(sys.getsizeof(block))
 #print(block.signer.encode("HEX"))
 print(chain.verify_block_signature(block,"192.128.0.0"))
 chain.add_block(block)
