@@ -42,10 +42,58 @@ def open_sockets():
 
     return rec_socket, snd_socket
 
-
+# reads an entire map-request message from the receive socket
 def read_socket(rec_socket):
-    data = rec_socket.recvfrom(1024)
+    data = rec_socket.recv(32*6)  # 6 first rows of map-request are fixed
+    map_request_message = data
+    records = []
+    rec_count = int(data[24:32])  # rec_count is located in the bits 24...31 of the map-request message
+    for i in range(0, rec_count):
+        read = rec_socket.recv(32*2)
+        records.append(read)
+        map_request_message += read
+    map_request_message += rec_socket.recv(32*2)
     return data
+
+
+def dummy_map_request():
+    type = '0'*4
+    amps = '0'*4
+    reserved = '0'*16
+    record_count = '00000003'  # this dummy message will have 3 records
+    nonce = '0'*64
+    source_eid_afi = '1'*16
+    itr_afi = '1'*16
+    source_eid_address = '0'*32
+    originating_itr_rloc_address = '2'*32
+
+    reserved1 = '0'*8
+    eid_mask_len = '00000001'
+    eid_prefix_afi = '0'*16
+    record1 = reserved1 + eid_mask_len + eid_prefix_afi + '0'*31 + '3'
+    record2 = reserved1 + eid_mask_len + eid_prefix_afi + '0'*31 + '4'
+    record3 = reserved1 + eid_mask_len + eid_prefix_afi + '0'*31 + '5'
+
+    map_reply_record = '1'*32
+    mapping_protocol_data = '2'*32
+
+    map_request_dummy = type + amps + reserved + record_count + nonce + source_eid_afi + itr_afi + source_eid_address +\
+        originating_itr_rloc_address + record1 + record2 + record3 + map_reply_record + mapping_protocol_data
+
+    return map_request_dummy
+
+
+def read_dummy_map_request(map_request):
+    first_row = map_request[0:32]
+    print(first_row)
+    five_rows = map_request[32:32*6]
+    for i in range (0, 6):
+        print(five_rows[32*i:32*(i+1)])
+    rec_count = int(first_row[24:32])
+    print("records")
+    for i in range (0, rec_count):
+        print(map_request[32*(6+i*2):32*(6+i*2+1)])
+        print(map_request[32*(7+i*2):32*(7+i*2+1)])
 
 
 def write_socket(res, snd_socket):
@@ -157,6 +205,7 @@ def run():
 if __name__ == "__main__":
     #init()
     #run
+    #read_dummy_map_request(dummy_map_request())
     rec_socket, snd_socket = open_sockets()
     while 1:
         write_socket("Hola puto", snd_socket)
@@ -169,9 +218,10 @@ if __name__ == "__main__":
     #keys = init_keystore()
     #print(keys[0].keystore['address'])
 
-    #chain = init_chain()
-    #print chain.get_head_block().get_timestamp()
+    '''chain = init_chain()
+    timestamp = chain.get_head_block().get_timestamp()
+    print timestamp
 
-    #consensus = init_consensus()
-    #consensus.calculate_next_signer()
-    #print consensus.get_next_signer()
+    consensus = init_consensus()
+    consensus.calculate_next_signer(0,timestamp)
+    print consensus.get_next_signer()'''

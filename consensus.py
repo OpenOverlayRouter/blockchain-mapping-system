@@ -17,7 +17,20 @@ class Consensus():
 		return self.next_signer
 
 	def calculate_next_signer(self, ips, timestamp):
-		self.next_signer = who_signs("IPv4", timestamp)
+		if timestamp == self.last_timestamp:
+			# Check that there is a new block in 30 seconds
+			current_timestamp = get_timestamp()
+			if (current_timestamp-timestamp) >= 30:
+				timestamp = timestamp+30
+				new_signer = who_signs("IPv4", timestamp)
+			else:
+				new_signer = None
+				# If the timestamp is the same, we need to wait until NIST or Ethereum
+				# hashes changes. So we put next_signer to None until we get a
+				# valid signer. i.e. adding 30s to timestamp
+		else:
+			new_signer= who_signs("IPv4", timestamp)
+		self.next_signer = new_signer
 		self.last_timestamp = timestamp
 		self.ips = ips
 
@@ -70,10 +83,10 @@ def get_block_from_timestamp(last_block_number,timestamp):
 	block_number = last_block_number
 	json_block = get_block_by_number(last_block_number)
 	block_timestamp = from_hex_to_int(get_timestamp_from_json_block(json_block))
-	while (timestamp > block_timestamp):
+	'''while (timestamp > block_timestamp):
 		block_number = sub_to_hex(block_number,1)
 		json_block = get_block_by_number(block_number)
-		block_timestamp = get_timestamp_from_json_block(json_block)
+		block_timestamp = get_timestamp_from_json_block(json_block)'''
 	return json_block
 
 # Returns a random HASH mixing NIST and ETHEREUM HASH block
