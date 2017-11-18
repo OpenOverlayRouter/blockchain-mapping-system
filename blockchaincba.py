@@ -218,9 +218,10 @@ if __name__ == "__main__":
     #keys = init_keystore()
     #print(keys[0].keystore['address'])
 
-    #chain = init_chain()
-    #print chain.get_head_block().get_timestamp()
+    '''chain = init_chain()
+    timestamp = chain.get_head_block().get_timestamp()
+    print timestamp
 
-    #consensus = init_consensus()
-    #consensus.calculate_next_signer()
-    #print consensus.get_next_signer()
+    consensus = init_consensus()
+    consensus.calculate_next_signer(0,timestamp)
+    print consensus.get_next_signer()'''
