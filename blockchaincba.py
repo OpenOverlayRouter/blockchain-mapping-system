@@ -56,6 +56,37 @@ def read_socket(rec_socket):
     return data
 
 
+'''
+
+    Map-request message format
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |Type=1 |A|M|P|S|p|s|    Reserved     |   IRC   | Record Count  |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                         Nonce . . .                           |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                         . . . Nonce                           |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |         Source-EID-AFI        |   Source EID Address  ...     |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |         ITR-RLOC-AFI 1        |    ITR-RLOC Address 1  ...    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                              ...                              |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |         ITR-RLOC-AFI n        |    ITR-RLOC Address n  ...    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ / |   Reserved    | EID mask-len  |        EID-Prefix-AFI         |
+Rec +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ \ |                       EID-Prefix  ...                         |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                   Map-Reply Record  ...                       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   
+   '''
+
+
 def dummy_map_request():
     type = '0'*4
     amps = '0'*4
@@ -205,11 +236,11 @@ def run():
 if __name__ == "__main__":
     #init()
     #run
-    #read_dummy_map_request(dummy_map_request())
+    read_dummy_map_request(dummy_map_request())
     rec_socket, snd_socket = open_sockets()
-    while 1:
-        write_socket("Hola puto", snd_socket)
-        time.sleep(5)
+    #while 1:
+        #write_socket("Hola puto", snd_socket)
+        #time.sleep(5)
         #res = read_socket(rec_socket)
         #if res is not None:
             #print(res)
