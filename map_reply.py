@@ -32,23 +32,23 @@ def get_bitstream_for_afi_address(address):
     elif isinstance(address, IPv6Network):
         return BitArray('uint:16=2, uint:128=%d' % int(address[0]))
 
-    #TODO: los primeros 16 bits puede que tengan que ser la barra de la dirección, no 1s o 2s según si es IPv4 o IPv6
-
     else:
         raise ValueError('Unsupported address type')
 
 
 class LocatorRecord(object):
 
-    def __init__(self, priority=0, weight=0, mpriority=0, mweight=0, unusedflags=0, LpR=0, loc_afi=0, locator=0):
+    def __init__(self, priority=0, weight=0, mpriority=0, mweight=0, unusedflags=0, LpR=0, locator=None):
         self.priority = priority
         self.weight = weight
         self.mpriority = mpriority
         self.mweight = mweight
         self.unusedflags = unusedflags
         self.LpR = LpR
-        self.loc_afi = loc_afi
         self.locator = locator
+
+    def __iter__(self):
+        return iter(self)
 
     def to_bytes(self):
         return self.to_bitstream().bytes
@@ -73,11 +73,8 @@ class LocatorRecord(object):
         # Add the LpR
         bitstream += BitArray('uint:3=%d' % self.LpR)
 
-        #Add the locator afi
-        bitstream += BitArray('uint:16=%d' % self.loc_afi)
-
-        #Add the locator
-        bitstream += BitArray('uint:32=%d' % self.locator)
+        #Add the locator-afi and locator
+        get_bitstream_for_afi_address(self.locator)
 
         return bitstream
 
@@ -103,7 +100,7 @@ class MapReplyRecord(object):
     ACT_SEND_MAP_REQUEST = 2
     ACT_DROP = 3
 
-    def __init__(self, ttl=0, action=ACT_NO_ACTION, authoritative=False,
+    def __init__(self, ttl=24*60, action=ACT_NO_ACTION, authoritative=False,
                  map_version=0, eid_prefix=None, locator_records=None):
         '''
         Constructor
@@ -160,61 +157,9 @@ class MapReplyRecord(object):
 
         # Add the locator records
         for locator_record in self.locator_records:
-            bitstream += locator_record.to_bitstream()
+            try:
+                bitstream += locator_record.to_bitstream()
+            except:
+                raise Exception('Bad locator in MapReplyRecord')
 
         return bitstream
-
-
-class MapReplyMessage():
-    def __init__(self, probe=False, enlra_enabled=False, security=False,
-                 nonce='\x00\x00\x00\x00\x00\x00\x00\x00', records=None):
-        '''
-        Constructor
-        '''
-
-        # Set defaults
-        self.probe = probe
-        self.enlra_enabled = enlra_enabled
-        self.security = security
-        self.nonce = nonce
-        self.records = records or []  # array de objetos de la clase MapReplyRecord
-
-        # Store space for reserved bits
-        self._reserved1 = BitArray(17)
-
-    def to_bytes(self):
-        '''
-        Create bytes from properties
-        '''
-
-        # Add the flags
-        bitstream = BitArray('bool=%d, bool=%d, bool=%d'
-                              % (self.probe,
-                                 self.enlra_enabled,
-                                 self.security))
-
-        # Add padding
-        bitstream += self._reserved1
-
-        # Add record count
-        bitstream += BitArray('uint:8=%d' % len(self.records))
-
-        # Add the nonce
-        nonce = bytes(self.nonce)
-        if len(nonce) < 8:
-            padding_len = 8 - len(nonce)
-            bitstream += BitArray(8 * padding_len)
-
-        bitstream += BitArray(bytes=nonce)
-
-        # Add the map-reply records
-        for record in self.records:
-            bitstream += record.to_bitstream()
-
-        # If the security flag is set then there should be security data here
-        # TODO: deal with security flag [LISP-Security]
-        if self.security:
-            raise NotImplementedError('Handling security data is not ' +
-                                      'implemented yet')
-
-        return bitstream.bytes

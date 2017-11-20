@@ -17,6 +17,8 @@ import os
 import glob
 from keystore import Keystore
 from consensus import Consensus
+from map_reply import MapReplyRecord, LocatorRecord
+from ipaddress import IPv4Network, IPv6Network, IPv4Address, IPv6Address
 
 HOST = ''
 REC_PORT = 16001
@@ -42,94 +44,34 @@ def open_sockets():
 
     return rec_socket, snd_socket
 
-# reads an entire map-request message from the receive socket
+
+# reads the fields nonce, AFI and the IP from the socket
 def read_socket(rec_socket):
-    data = rec_socket.recv(32*6)  # 6 first rows of map-request are fixed
-    map_request_message = data
-    records = []
-    rec_count = int(data[24:32])  # rec_count is located in the bits 24...31 of the map-request message
-    for i in range(0, rec_count):
-        read = rec_socket.recv(32*2)
-        records.append(read)
-        map_request_message += read
-    map_request_message += rec_socket.recv(32*2)
-    return data
-
-
-'''
-
-    Map-request message format
-
-    0                   1                   2                   3
-    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |Type=1 |A|M|P|S|p|s|    Reserved     |   IRC   | Record Count  |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |                         Nonce . . .                           |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |                         . . . Nonce                           |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |         Source-EID-AFI        |   Source EID Address  ...     |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |         ITR-RLOC-AFI 1        |    ITR-RLOC Address 1  ...    |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |                              ...                              |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |         ITR-RLOC-AFI n        |    ITR-RLOC Address n  ...    |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- / |   Reserved    | EID mask-len  |        EID-Prefix-AFI         |
-Rec +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- \ |                       EID-Prefix  ...                         |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |                   Map-Reply Record  ...                       |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   
-   '''
-
-
-def dummy_map_request():
-    type = '0'*4
-    amps = '0'*4
-    reserved = '0'*16
-    record_count = '00000003'  # this dummy message will have 3 records
-    nonce = '0'*64
-    source_eid_afi = '1'*16
-    itr_afi = '1'*16
-    source_eid_address = '0'*32
-    originating_itr_rloc_address = '2'*32
-
-    reserved1 = '0'*8
-    eid_mask_len = '00000001'
-    eid_prefix_afi = '0'*16
-    record1 = reserved1 + eid_mask_len + eid_prefix_afi + '0'*31 + '3'
-    record2 = reserved1 + eid_mask_len + eid_prefix_afi + '0'*31 + '4'
-    record3 = reserved1 + eid_mask_len + eid_prefix_afi + '0'*31 + '5'
-
-    map_reply_record = '1'*32
-    mapping_protocol_data = '2'*32
-
-    map_request_dummy = type + amps + reserved + record_count + nonce + source_eid_afi + itr_afi + source_eid_address +\
-        originating_itr_rloc_address + record1 + record2 + record3 + map_reply_record + mapping_protocol_data
-
-    return map_request_dummy
-
-
-def read_dummy_map_request(map_request):
-    first_row = map_request[0:32]
-    print(first_row)
-    five_rows = map_request[32:32*6]
-    for i in range (0, 6):
-        print(five_rows[32*i:32*(i+1)])
-    rec_count = int(first_row[24:32])
-    print("records")
-    for i in range (0, rec_count):
-        print(map_request[32*(6+i*2):32*(6+i*2+1)])
-        print(map_request[32*(7+i*2):32*(7+i*2+1)])
+    nonce = rec_socket.recv(64)
+    afi = rec_socket.recv(16)
+    if (afi == '1'*16):
+        # address IPv4
+        address = rec_socket.recv(32)
+    elif (afi == '2'*16):
+        # address IPv6
+        address = rec_socket.recv(128)
+    else:
+        rec_socket.recv(1024)  # used to empty socket
+        raise Exception('Incorrect AFI read from socket')
+    return nonce, afi, address
 
 
 def write_socket(res, snd_socket):
     snd_socket.sendto(res, (HOST, SND_PORT))
 
+
+def test_map_reply():
+    locator = LocatorRecord(priority=0, weight=0, mpriority=0, mweight=0, unusedflags=0, LpR=0,
+                            locator=IPv4Address(u'192.168.0.1'))
+    locators = []
+    locators.append(locator)
+    reply = MapReplyRecord(eid_prefix=IPv4Network(u'192.168.1.0/24'), locator_records=locators)
+    print(reply.to_bitstream())
 
 def init_chain():
     db = LevelDB("./chain")
@@ -236,7 +178,7 @@ def run():
 if __name__ == "__main__":
     #init()
     #run
-    read_dummy_map_request(dummy_map_request())
+    test_map_reply()
     rec_socket, snd_socket = open_sockets()
     #while 1:
         #write_socket("Hola puto", snd_socket)
