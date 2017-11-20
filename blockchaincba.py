@@ -17,6 +17,8 @@ import os
 import glob
 from keystore import Keystore
 from consensus import Consensus
+from map_reply import MapReplyRecord, LocatorRecord
+from ipaddress import IPv4Network, IPv6Network, IPv4Address, IPv6Address
 
 HOST = ''
 REC_PORT = 16001
@@ -43,14 +45,33 @@ def open_sockets():
     return rec_socket, snd_socket
 
 
+# reads the fields nonce, AFI and the IP from the socket
 def read_socket(rec_socket):
-    data = rec_socket.recvfrom(1024)
-    return data
+    nonce = rec_socket.recv(64)
+    afi = rec_socket.recv(16)
+    if (afi == '1'*16):
+        # address IPv4
+        address = rec_socket.recv(32)
+    elif (afi == '2'*16):
+        # address IPv6
+        address = rec_socket.recv(128)
+    else:
+        rec_socket.recv(1024)  # used to empty socket
+        raise Exception('Incorrect AFI read from socket')
+    return nonce, afi, address
 
 
 def write_socket(res, snd_socket):
     snd_socket.sendto(res, (HOST, SND_PORT))
 
+
+def test_map_reply():
+    locator = LocatorRecord(priority=0, weight=0, mpriority=0, mweight=0, unusedflags=0, LpR=0, loc_afi='1'*16,
+                            locator='192.168.0.1')
+    locators = []
+    locators.append(locator)
+    reply = MapReplyRecord(eid_prefix=IPv4Network(u'192.168.1.0/24'), locator_records=locators)
+    print(reply.to_bitstream())
 
 def init_chain():
     db = LevelDB("./chain")
@@ -157,21 +178,23 @@ def run():
 if __name__ == "__main__":
     #init()
     #run
+    test_map_reply()
     rec_socket, snd_socket = open_sockets()
-    while 1:
-        #write_socket("Hola puto \n", snd_socket)
+    #while 1:
+        #write_socket("Hola puto", snd_socket)
         #time.sleep(5)
-        res = read_socket(rec_socket)
-        if res is not None:
-            print(res)
+        #res = read_socket(rec_socket)
+        #if res is not None:
+            #print(res)
             #write_socket("Respondiendo a..." + str(res), snd_socket)
 
     #keys = init_keystore()
     #print(keys[0].keystore['address'])
 
-    #chain = init_chain()
-    #print chain.get_head_block().get_timestamp()
+    '''chain = init_chain()
+    timestamp = chain.get_head_block().get_timestamp()
+    print timestamp
 
-    #consensus = init_consensus()
-    #consensus.calculate_next_signer()
-    #print consensus.get_next_signer()
+    consensus = init_consensus()
+    consensus.calculate_next_signer(0,timestamp)
+    print consensus.get_next_signer()'''

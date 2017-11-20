@@ -17,27 +17,31 @@ def pong():
 def get_peers():
     return make_envelope("get_peers")
 
-def block_hashes():
-    return make_envelope("block_hashes")
+def set_peers(peers):
+    kwargs = {"peers": peers}
+    return make_envelope("set_peers", **kwargs)
 
-def get_block_hashes(hash, max_blocks):
-    kwargs = {"hash": hash,
-              "max_blocks":max_blocks}
-    return make_envelope("getBlockHashes", **kwargs)
+def send_tx(tx):
+    kwargs = {"tx": tx}
+    return make_envelope("set_tx", **kwargs)
 
-def blocks():
-    return make_envelope("blocks")
+def get_tx():
+    return make_envelope("get_tx")
 
-def get_blocks(block_list):
-    kwargs = {"block_list": block_list}
+def send_block(block):
+    kwargs = {"block": block}
+    return make_envelope("set_block", **kwargs)
+
+def get_block():
+    return make_envelope("get_block")
+
+def get_blocks(height, chunk):
+    kwargs = {"height": height,
+              "chunk": chunk}
     return make_envelope("get_blocks", **kwargs)
 
 if __name__ == "__main__":
     print ping()
     print pong()
     print get_peers()
-    print block_hashes()
-    print get_block_hashes(0x123456789, 30)
-    print blocks()
-    print get_blocks([0x1, 0x2, 0x3])
     print read_envelope(ping())

@@ -12,6 +12,9 @@ from twisted.python.filepath import FilePath
 from twisted.python import log
 
 import messages
+from transactions import Transaction
+#from block import Block, BlockHeader
+import rlp
 
 GLOBAL_PORT = 5005
 QUERY_PORT = 5006
@@ -75,23 +78,26 @@ class p2pProtocol(Protocol):
                     if data["msgtype"] == "ping":
                         #print self.transport.getPeer().host
                         self.sendPong()
-                    if data["msgtype"] == "pong":
+                    elif data["msgtype"] == "pong":
                         #print self.transport.getPeer().host
                         self.pong = True
-                    if data["msgtype"] == "get_peers":
-                        kwargs = {"peers": self.factory.peers_ip}
-                        self.sendMsg("set_peers", kwargs)
-                    if data["msgtype"] == "set_peers":
+                    elif data["msgtype"] == "get_peers":
+                        self.sendMsg(messages.set_peers(self.factory.peers_ip))
+                    elif data["msgtype"] == "set_peers":
                         print data.get("peers")
                         peers = data.get("peers")
                         for key in peers:
                             exists = self.factory.peers_ip.get(key)
                             if exists is None and key != self.factory.nodeid:
-                                p = int(HOST.split('.')[-1]*2+peers.get(key).split('.')[-1]*2)
-                                #print key, peers.get(key), P2P_PORT, p
-                                point = TCP4ClientEndpoint(reactor, peers.get(key), P2P_PORT, bindAddress=(HOST, p))
-                                connectProtocol(point, p2pProtocol(self.factory))
                                 #point = TCP4ClientEndpoint(reactor, peers.get(key), P2P_PORT)
+                                point = TCP4ClientEndpoint(reactor, peers.get(key), P2P_PORT, bindAddress=(HOST, 0))
+                                connectProtocol(point, p2pProtocol(self.factory))
+                    elif data["msgtype"] == "set_tx":
+                        try:
+                            tx = rlp.decode(data["tx"].decode('hex'), Transaction)
+                            self.factory.transactions.append(data["tx"])
+                        except:
+                            print "Tx Error"
                                 
                 except Exception as exception:
                     print "except", exception.__class__.__name__, exception
@@ -99,13 +105,13 @@ class p2pProtocol(Protocol):
                 #else:
                     #print (line)
 
-    def sendMsg(self, msgtype, msg):
-        msg = messages.make_envelope(msgtype, **msg)
+    def sendMsg(self, msg):
+        #msg = messages.make_envelope(msgtype, **msg)
         self.transport.write(msg)
     
-    '''def sendMsg(self, msg):
+    '''def sendData(self, msg):
         self.transport.write(msg + b'\r\n')
-        self.state = 'LOCAL'''
+        self.state = 'LOCAL' '''
     
     def sendPing(self):
         self.transport.write(messages.ping())
@@ -143,8 +149,19 @@ class localProtocol(Protocol):
             line = line.strip()
             if line == b'quit':
                 reactor.stop()
-            for nodeid, address in self.factory.peers.items():
-                address.sendMsg(line)
+            try:
+                data = messages.read_envelope(line)
+                if data["msgtype"] == "get_tx":
+                    if not self.factory.transactions:
+                        self.sendMsg('None')
+                    else:
+                        self.sendMsg(self.factory.transactions.pop(0).encode('utf-8'))
+                else:
+                    for nodeid, address in self.factory.peers.items():
+                        address.sendMsg(line)
+            except Exception as exception:
+                    print "except", exception.__class__.__name__, exception
+                    self.transport.loseConnection()
 
     def sendMsg(self, msg):
         self.transport.write(msg + b'\r\n')
@@ -171,7 +188,7 @@ class myFactory(Factory):
         '''if addr.host == "127.0.0.1":
             return localProtocol(self)
         return p2pProtocol(self, addr)'''
-        if addr.port == QUERY_PORT:
+        if addr.host == "127.0.0.1":
             return localProtocol(self)
         return p2pProtocol(self)
 
@@ -198,9 +215,9 @@ if __name__ == '__main__':
 
     try:
         factory = myFactory()
-        #endpoint_local = TCP4ServerEndpoint(reactor, GLOBAL_PORT)
-        #endpoint_local.listen(factory)
-        #_print("LISTEN: {}".format(GLOBAL_PORT))
+        endpoint_local = TCP4ServerEndpoint(reactor, QUERY_PORT)
+        endpoint_local.listen(factory)
+        _print("LISTEN: {}".format(QUERY_PORT))
         endpoint_p2p = TCP4ServerEndpoint(reactor, P2P_PORT, interface=HOST)
         #endpoint_p2p = TCP4ServerEndpoint(reactor, P2P_PORT)
         endpoint_p2p.listen(factory)
@@ -215,8 +232,7 @@ if __name__ == '__main__':
         if host != HOST:
             print ("[*] {}".format(host))
             #point = TCP4ClientEndpoint(reactor, host, P2P_PORT)
-            p = int(HOST.split('.')[-1])*1000
-            point = TCP4ClientEndpoint(reactor, host, P2P_PORT, bindAddress=(HOST, p))
+            point = TCP4ClientEndpoint(reactor, host, P2P_PORT, bindAddress=(HOST, 0))
             d = point.connect(factory)
             d.addCallback(bootstrapProtocol)
             d.addErrback(printError)
