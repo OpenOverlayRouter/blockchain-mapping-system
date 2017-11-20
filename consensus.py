@@ -1,7 +1,7 @@
 import time
 import datetime
-import ipaddress
 from ethapi import *
+from netaddr import IPAddress
 
 IPv4_PREFIX_LENGTH = 32
 IPv6_PREFIX_LENGTH = 128
@@ -112,8 +112,8 @@ def get_random_hash(timestamp):
 
 # Returns the IP Address in a readable format
 def formalize_IP(IP_bit_list):
-	ip = int(IP_bit_list,2)
-	return ipaddress.ip_address(ip)
+  ip = int(IP_bit_list,2)
+  return IPAddress(ip)
 
 # Given a random HASH, returns the selected address in a list
 def consensus_for_IPv6(hash):
