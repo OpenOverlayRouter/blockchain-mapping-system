@@ -66,8 +66,8 @@ def write_socket(res, snd_socket):
 
 
 def test_map_reply():
-    locator = LocatorRecord(priority=0, weight=0, mpriority=0, mweight=0, unusedflags=0, LpR=0, loc_afi='1'*16,
-                            locator='192.168.0.1')
+    locator = LocatorRecord(priority=0, weight=0, mpriority=0, mweight=0, unusedflags=0, LpR=0,
+                            locator=IPv4Address(u'192.168.0.1'))
     locators = []
     locators.append(locator)
     reply = MapReplyRecord(eid_prefix=IPv4Network(u'192.168.1.0/24'), locator_records=locators)

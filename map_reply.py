@@ -32,22 +32,19 @@ def get_bitstream_for_afi_address(address):
     elif isinstance(address, IPv6Network):
         return BitArray('uint:16=2, uint:128=%d' % int(address[0]))
 
-    #TODO: los primeros 16 bits puede que tengan que ser la barra de la direccion, no 1s o 2s segun si es IPv4 o IPv6
-
     else:
         raise ValueError('Unsupported address type')
 
 
 class LocatorRecord(object):
 
-    def __init__(self, priority=0, weight=0, mpriority=0, mweight=0, unusedflags=0, LpR=0, loc_afi='0'*16, locator='0.0.0.0'):
+    def __init__(self, priority=0, weight=0, mpriority=0, mweight=0, unusedflags=0, LpR=0, locator=None):
         self.priority = priority
         self.weight = weight
         self.mpriority = mpriority
         self.mweight = mweight
         self.unusedflags = unusedflags
         self.LpR = LpR
-        self.loc_afi = loc_afi
         self.locator = locator
 
     def __iter__(self):
@@ -76,16 +73,8 @@ class LocatorRecord(object):
         # Add the LpR
         bitstream += BitArray('uint:3=%d' % self.LpR)
 
-        #Add the locator afi
-        bitstream += BitArray('uint:16=%d' % self.loc_afi)
-
-        #Add the locator
-        if (self.loc_afi == '1'*16):
-            bitstream += BitArray('uint:32=%d' % self.locator)
-        elif (self.loc_afi == '2'*16):
-            bitstream += BitArray('uint:128=%d' % self.locator)
-        else:
-            raise Exception ('Bad AFI in LocatoRecord')
+        #Add the locator-afi and locator
+        get_bitstream_for_afi_address(self.locator)
 
         return bitstream
 
