@@ -252,7 +252,11 @@ if __name__ == "__main__":
     '''chain = init_chain()
     timestamp = chain.get_head_block().get_timestamp()
     print timestamp
+    timestamp = 1511119667
 
     consensus = init_consensus()
+    consensus.calculate_next_signer(0,timestamp)
+    print consensus.get_next_signer()
+
     consensus.calculate_next_signer(0,timestamp)
     print consensus.get_next_signer()'''
