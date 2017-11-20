@@ -178,14 +178,13 @@ def run():
 if __name__ == "__main__":
     #init()
     #run
-    test_map_reply()
     rec_socket, snd_socket = open_sockets()
-    #while 1:
+    while 1:
         #write_socket("Hola puto", snd_socket)
         #time.sleep(5)
-        #res = read_socket(rec_socket)
-        #if res is not None:
-            #print(res)
+        res = read_socket(rec_socket)
+        if res is not None:
+            print(res)
             #write_socket("Respondiendo a..." + str(res), snd_socket)
 
     #keys = init_keystore()
