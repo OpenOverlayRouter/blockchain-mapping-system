@@ -105,7 +105,7 @@ def run():
 
     while(not end):
         
-        #Process a block from the network
+        #Process a new block
         try:
             block = p2p.get_block()
             if block is not None:
@@ -113,30 +113,19 @@ def run():
                 res = chain.verify_block_signature(block, signer)
                 if res:
                     # correct block
-                    consensus.store_block(block)
+                    myIPs = chain.add_block(block)
+                    timestamp = chain.get_head_block().get_timestamp()
+                    consensus.calculate_next_signer(myIPs, timestamp)
                     #Maybe not necessary, depends on P2P implementation
                     p2p.broadcast_block(block)
                 else:
                     #reset consensus alg
+                    #@Eric: really needed?? Or we can assume incorrect block == non-existent block?
                     consensus.calculate_next_signer(None)
         except Exception as e:
             print "Exception while processing a received block"
             print e
      
-        #Process a definitive block
-        try:
-            block = consensus.get_solid_block()
-            if block is not None:
-                #These blocks are always OK
-                #Only needed to validate tx logic (apply.py)
-                #For simplicity we assume that the previous validation will never fail
-                myIPs = chain.add_block(block)
-                timestamp = chain.get_head_block().get_timestamp()
-                consensus.calculate_next_signer(myIPs, timestamp)
-        except Exception as e:
-            print "Exception while adding a definitive block"
-            print e
-
         #Process transactions from the network
         try:
             tx_ext = p2p.get_tx()
@@ -155,10 +144,12 @@ def run():
         #Check if the node has to sign the next block
         sign = consensus.amIsinger(myIPs)
         if sign.me is True:
-            last_block_hash = consensus.get_last_block_hash()
-            #TODO: Do you need transactions in the previous blocks (unconfirmed)? I think so :(
-            new_block = chain.create_block(sign.signer,last_block_hash)
-            consensus.store_block(new_block)
+            new_block = chain.create_block(sign.signer)
+            #Like receiving a new block
+            myIPs = chain.add_block(new_block)
+            timestamp = chain.get_head_block().get_timestamp()
+            consensus.calculate_next_signer(myIPs, timestamp)
+            #Maybe not necessary, depends on P2P implementation
             p2p.broadcast_block(new_block)
 
         #Process transactions from the user
