@@ -6,6 +6,17 @@ from ethapi import *
 IPv4_PREFIX_LENGTH = 32
 IPv6_PREFIX_LENGTH = 128
 
+class Consensus():
+
+	def __init__(self):
+		self.next_signer = None
+
+	def get_next_signer(self):
+		return self.next_signer
+
+	def calculate_next_signer(self):
+		self.next_signer = who_signs("IPv4")
+
 # Returns the HASH of a block
 def get_hash_from_json_block(json_block):
 	return json_block['result']['hash']
@@ -111,7 +122,7 @@ def who_signs(protocol):
 	else:
 		return formalize_IP(consensus_for_IPv4(hash))
 
-print who_signs("IPv4")
+#print who_signs("IPv4")
 #TODO:
 	#signer_IP = who_signs(Protocol)
 	#if balance.in_own_ips(signer_IP):

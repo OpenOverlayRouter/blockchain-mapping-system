@@ -1,14 +1,36 @@
-from own_exceptions import InvalidNonce, UnsignedTransaction, InvalidNonce, InsufficientBalance, InvalidTransaction, UncategorizedTransaction, InvalidCategory
+from own_exceptions import UnsignedTransaction, InvalidNonce, InsufficientBalance, UncategorizedTransaction, \
+    InvalidCategory, InvalidBlockSigner, UnsignedBlock
 import trie
 from rlp.utils import encode_hex
 from db import EphemDB
 import rlp
+from netaddr import IPAddress
 
 null_address = b'\xff' * 20
 
 
 def rp(tx, what, actual, target):
     return '%r: %r actual:%r target:%r' % (tx, what, actual, target)
+
+
+def verify_block_signature(state, block, ip):
+    try:
+        if not block.signer:
+            raise UnsignedBlock()
+    except AttributeError:
+        raise UnsignedBlock()
+
+    if isinstance(ip, IPAddress):
+        try:
+            ip = IPAddress(ip)
+        except Exception as e:
+            raise e
+
+    signer = block.signer
+    if state.get_balance(signer).in_own_ips(ip):
+        return True
+    else:
+        raise InvalidBlockSigner()
 
 
 # Validate the transaction and check that it is correct
@@ -38,17 +60,13 @@ def validate_transaction(state, tx):
 
         if category == 0 or category == 1:
             if not balance.in_own_ips(value):
-                print(category)
-                print(value)
                 raise InsufficientBalance(value)
         elif category == 2:
-            print("3")
             pass
-            #MapServer
+            # MapServer
         elif category == 3:
-            print("4")
             pass
-            #Locator
+            # Locator
     else:
         raise UncategorizedTransaction(tx)
 
@@ -59,7 +77,6 @@ def validate_transaction(state, tx):
 def apply_transaction(state, tx):
     validate_transaction(state, tx)
     category = tx.category
-
     if category == 0:  # allocate
         sender = tx.sender
         to = tx.to
@@ -117,7 +134,6 @@ def apply_transaction(state, tx):
     elif category == 3:  # Locator
         sender = tx.sender
         value = tx.metadata
-        print(value)
         sender_balance = state.get_balance(sender)
         sender_balance.set_locator(value)
         state.set_balance(sender, sender_balance)
@@ -145,8 +161,9 @@ def mk_transaction_sha(receipts):
 def validate_transaction_tree(state, block):
     if block.header.tx_root != mk_transaction_sha(block.transactions):
         raise ValueError("Transaction root mismatch: header %s computed %s, %d transactions" %
-                         (encode_hex(str(block.header.tx_root)), encode_hex(str(mk_transaction_sha(block.transactions))),
-                          len(block.transactions)))
+                         (
+                         encode_hex(str(block.header.tx_root)), encode_hex(str(mk_transaction_sha(block.transactions))),
+                         len(block.transactions)))
     return True
 
 
@@ -162,8 +179,17 @@ def validate_header(state, header):
                 "Block's number is not the successor of its parent number")
         if header.timestamp <= parent.timestamp:
             raise ValueError("Timestamp equal to or before parent")
-        if header.timestamp >= 2**256:
+        if header.timestamp >= 2 ** 256:
             raise ValueError("Timestamp waaaaaaaaaaayy too large")
+    return True
+
+
+def validate_block(state, block):
+    assert validate_header(state, block.header)
+    assert validate_transaction_tree(state, block)
+    for tx in block.transactions:
+        if not validate_transaction(state, tx):
+            return False
     return True
 
 
@@ -180,6 +206,7 @@ def apply_block(state, block):
             apply_transaction(state, tx)
         # Post-finalize (ie. add the block header to the state for now)
         state.add_block_header(block.header)
+
     except (ValueError, AssertionError) as e:
         state.revert(snapshot)
         raise e

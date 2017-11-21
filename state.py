@@ -1,19 +1,14 @@
 import rlp
-from utils import normalize_address, hash32, trie_root, \
-    big_endian_int, address, int256, encode_int, \
-    big_endian_to_int, int_to_addr, parse_as_bin, parse_as_int, \
-    decode_hex, sha3, is_string, is_numeric, zpad
-from rlp.sedes import big_endian_int, Binary, binary, CountableList
+from utils import parse_as_bin, parse_as_int, decode_hex, sha3, is_string, is_numeric, zpad
 import utils
 import trie
 from trie import Trie
 from securetrie import SecureTrie
 from config import default_config, Env
-from db import BaseDB, EphemDB, OverlayDB, RefcountDB
+from db import RefcountDB
 import copy
 from account import Account
-from trie import BLANK_NODE, BLANK_ROOT
-import sys
+from trie import BLANK_ROOT
 from block import FakeHeader
 from rlp.utils import encode_hex
 
@@ -24,6 +19,7 @@ STATE_DEFAULTS = {
     "timestamp": 0,
     "prev_headers": []
 }
+
 
 class State():
     def __init__(self, root=b'', env=Env(), executing_on_head=False, **kwargs):
@@ -322,6 +318,7 @@ class State():
         for k in STATE_DEFAULTS:
             setattr(self, k, copy.copy(auxvars[k]))
 
+
 def prev_header_to_dict(h):
     return {
         "hash": '0x' + encode_hex(h.hash),
@@ -329,12 +326,11 @@ def prev_header_to_dict(h):
         "timestamp": str(h.timestamp)
     }
 
+
 def dict_to_prev_header(h):
     return FakeHeader(hash=parse_as_bin(h['hash']),
                       number=parse_as_int(h['number']),
                       timestamp=parse_as_int(h['timestamp']))
-
-
 
 
 BLANK_UNCLES_HASH = sha3(rlp.encode([]))

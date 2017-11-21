@@ -1,8 +1,5 @@
-from rlp.utils import decode_hex
-
 import utils
 from db import BaseDB, EphemDB
-import copy
 
 
 default_config = dict(

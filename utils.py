@@ -6,6 +6,8 @@ from rlp.utils import decode_hex, ascii_chr, str_to_bytes, encode_hex
 from py_ecc.secp256k1 import privtopub, ecdsa_raw_sign, ecdsa_raw_recover
 import struct
 import pickle
+from ipaddr import IPv4Network, IPv6Network, IPv4Address, IPv6Address, Bytes
+from netaddr import IPNetwork, IPAddress, IPSet
 
 import random
 
@@ -157,6 +159,13 @@ def object_to_bin(o):
 
 def bin_to_object(b):
     return pickle.loads(b.decode('hex'))
+
+def ipaddr_to_netaddr(afi,ipaddr):
+    if afi == 1:
+        ip = IPv4Address(Bytes(ipaddr))
+    elif afi == 2:
+        ip = IPv6Address(Bytes(ipaddr))
+    return IPNetwork(str(ip))
 
 
 address = Binary.fixed_length(20, allow_empty=True)

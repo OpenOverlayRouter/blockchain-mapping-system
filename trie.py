@@ -1,8 +1,6 @@
 import utils
 import rlp
-#import leveldb
-from rlp.utils import decode_hex, ascii_chr, str_to_bytes
-import sys
+from rlp.utils import ascii_chr, str_to_bytes
 
 (
     NODE_TYPE_BLANK,

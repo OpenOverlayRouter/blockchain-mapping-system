@@ -2,22 +2,18 @@ from block import Block, BlockHeader
 from transactions import Transaction
 from utils import null_address
 import chain
-import json
 from config import Env
-from db import LevelDB
 import time
 from genesis_helpers import mk_genesis_data
-import datetime, threading
 from db import _EphemDB
-from utils import int_to_big_endian
 from apply import validate_transaction
 import trie
 import state
 import rlp
-import copy
 from apply import apply_transaction
 from utils import normalize_address
 from own_exceptions import UnsignedTransaction
+
 
 class ChainService():
     """
@@ -29,10 +25,10 @@ class ChainService():
         self.db = self.env.db
         self.chain = chain.Chain(genesis=mk_genesis_data(self.env), env=self.env)
         self.transactions = []
-        self.process_time_queue_periodically()
 
-    def add_transaction(self, tx):
+    def add_pending_transaction(self, tx):
         assert isinstance(tx, Transaction)
+        validate_transaction(self.chain.state, tx)
         # validate transaction
         try:
             # Transaction validation for broadcasting. Transaction is validated
@@ -53,10 +49,26 @@ class ChainService():
         prevnumber = self.chain.state.block_number
         coinbase = normalize_address(coinbase)
         block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber + 1, coinbase=coinbase))
-        block.transactions = self.transactions
+        snapshot = self.chain.state.to_snapshot()
+        s = state.State().from_snapshot(snapshot, Env(_EphemDB()))
+        for tx in self.transactions:
+            try:
+                apply_transaction(s, tx)
+                block.transactions.append(tx)
+            except Exception as e:
+                print (e)
         self._create_tries(block)
-        self.transactions = []
         return block
+
+    def validate_transaction(self, tx):
+        return self.chain.validate_transaction(tx)
+
+    def validate_block(self):
+        self.chain.process_time_queue()
+        return self.chain.validate_block()
+
+    def verify_block_signature(self,block,ip):
+        return self.chain.verify_block_signature(block,ip)
 
     # creates the tx_trie and state trie of a block
     def _create_tries(self, block):
@@ -76,6 +88,17 @@ class ChainService():
         for tx in block.transactions:
             if tx in self.transactions:
                 self.transactions.remove(tx)
+        invalid_tx = []
+        for tx in self.transactions:
+            try:
+                validate_transaction(state,tx)
+            except Exception:
+                invalid_tx.append(tx)
+        if invalid_tx:
+            for tx in invalid_tx:
+                print "Deleted invalid transaction", tx.hash.encode('HEX')
+                self.transactions.remove(tx)
+
 
     # returns the transaction whose hash is 'tx'
     def get_transaction(self, tx):
@@ -84,6 +107,9 @@ class ChainService():
     # returns the list of pending transactions (not yet included in a block)
     def get_pending_transactions(self):
         return self.transactions
+
+    def get_head_block(self):
+        return self.chain.get_head_block()
 
     # returns the block whose hash is 'block'
     def get_block(self, block):
@@ -121,8 +147,5 @@ class ChainService():
     # returns the state of the chain
     def get_state(self):
         return self.chain.state
-
-    def process_time_queue_periodically(self):
-        threading.Timer(120, self.chain.process_time_queue()).start()
 
 

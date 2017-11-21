@@ -28,32 +28,44 @@ calculate_next_signer(myIPs ip)
 #myIPs is the set of IPs owned by the node, updated each time a block is added
 #if myIPs is None, means that it the previous block was incorrect
 
-amIsigner(myIPs ip)
+signer amIsigner(myIPs ip)
 #returns a sign object that says if the node has to sign
+
+block get_solid_block()
+#returns a definitve block to be added to the chain, or None if there is no data
+
+store_block(block bl)
+#adds a block to the structure that handles forks
+
+
+string get_last_block_hash()
+#returns the hash of the block in the tip of the chain
+#used when creating a new block
 
 
 #####################
 #chain
 ##################### 
 
-validate_block(block bl, signer sig)
-#returns True if the block is correct, False otherwise
-#Internally, checks the block signature and ALL transactions
-
-validate_tx (transaction tx)
+add_pending_transaction (transaction tx)
 #returns True if the transaction is correct, False otherwise
+#adds a transaction to the pool of unconfirmed transactions
 
 add_block (block bl)
 #adds a new block to the chain. DOES NOT CHECK if the block is correct
+#returns True if the block is correct, False otherwise
+#Internally, checks the block signature and ALL transactions
 
-add_to_pool(transaction tx)
-#adds a transaction to the pool of unconfirmed transactions DOES NOT CHECK if it is correct
 
-create_block(signer sig)
-#Creates and signs a new block with the IP in sig
+create_block(signer sig, string last_block_hash)
+#Creates and signs a new block with the IP in sig and the  
+#hash of the previous block as last_block_hash
 
 info query_eid(query q)
 #returns an RLOC record or a MS list corresponding to the EID in q
+
+verify_block_signature(block bl, ip_addres ip)
+#Returns True if the block bl is signed with the key associated with ip address ip, False otherwise
 
 #####################
 #user

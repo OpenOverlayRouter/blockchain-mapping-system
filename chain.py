@@ -1,18 +1,15 @@
 import json
 import time
 import itertools
-import trie
 from utils import big_endian_to_int
 import rlp
 from rlp.utils import encode_hex
 from config import Env
 from state import State, dict_to_prev_header
 from block import Block, BlockHeader, FakeHeader
-from genesis_helpers import state_from_genesis_declaration, mk_basic_state, initialize, initialize_genesis_keys
-from db import EphemDB
-from apply import apply_block, update_block_env_variables
+from genesis_helpers import state_from_genesis_declaration, initialize, initialize_genesis_keys
+from apply import apply_block, update_block_env_variables, validate_block, validate_transaction, verify_block_signature
 
-config_string = ':info'  # ,eth.chain:debug'
 
 
 class Chain(object):
@@ -126,6 +123,16 @@ class Chain(object):
         except Exception:
             return None
 
+    def get_head_block(self):
+        try:
+            block_rlp = self.db.get(self.head_hash)
+            if block_rlp == 'GENESIS':
+                return self.genesis
+            else:
+                return rlp.decode(block_rlp, Block)
+        except Exception:
+            return None
+
     # Add a record allowing you to later look up the provided block's
     # parent hash and see that it is one of its children
     def add_child(self, child):
@@ -183,6 +190,15 @@ class Chain(object):
             self.add_block(self.time_queue.pop(i))
             if len(self.time_queue) == pre_len:
                 i += 1
+
+    def validate_transaction(self, tx):
+        return validate_transaction(self.state,tx)
+
+    def validate_block(self,block):
+        return validate_block(self.state,block)
+
+    def verify_block_signature(self,block,ip):
+        return verify_block_signature(self.state,block,ip)
 
     # Call upon receiving a block
     def add_block(self, block):
@@ -242,6 +258,8 @@ class Chain(object):
             self.new_head_cb(block)
         # Are there blocks that we received that were waiting for this block?
         # If so, process them.
+        self.state.block_number = block.header.number
+
         if block.header.hash in self.parent_queue:
             for _blk in self.parent_queue[block.header.hash]:
                 self.add_block(_blk)

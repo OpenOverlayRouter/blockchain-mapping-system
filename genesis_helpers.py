@@ -1,14 +1,12 @@
 from state import State
 from block import Block, BlockHeader
-from utils import  \
-    parse_as_bin, parse_as_int, normalize_address
+from utils import parse_as_bin, parse_as_int, normalize_address
 from config import Env
 from db import RefcountDB
 import json
 import rlp
-from rlp.utils import encode_hex
 from balance import Balance
-import utils
+from utils import int_to_big_endian
 
 
 def block_from_genesis_declaration(genesis_data, env):
@@ -67,7 +65,7 @@ def mk_basic_state(alloc, header=None, env=None, executing_on_head=False):
 def mk_genesis_data(env):
     assert isinstance(env, Env)
 
-    with open('../genesis.json') as json_data:
+    with open('genesis.json') as json_data:
         d = json.load(json_data)
         genesis_data = {
             "parentHash": d["parentHash"],
@@ -88,7 +86,8 @@ def initialize_genesis_keys(state, genesis):
     db.put('GENESIS_NUMBER', str(genesis.header.number))
     db.put('GENESIS_HASH', str(genesis.header.hash))
     db.put('GENESIS_STATE', json.dumps(state.to_snapshot()))
-    db.put('GENESIS_RLP', rlp.encode(genesis))
+    genesis_rlp = rlp.encode(genesis,Block.exclude(['v', 'r', 's']))
+    db.put('GENESIS_RLP', genesis_rlp)
     db.put(b'block:0', genesis.header.hash)
     db.put(b'state:' + genesis.header.hash, state.trie.root_hash)
     db.put(genesis.header.hash, 'GENESIS')

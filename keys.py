@@ -5,11 +5,9 @@ import bitcoin
 from hashlib import pbkdf2_hmac
 from rlp.utils import decode_hex
 from utils import encode_hex, sha3
-import binascii
 import struct
 from math import ceil
 from Crypto.Cipher import AES
-from Crypto.Hash import SHA256
 from Crypto.Util import Counter
 
 scrypt = __import__('scrypt')
