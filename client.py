@@ -1,14 +1,35 @@
-import socket
-import struct
+'''
+    udp socket client
+    Silver Moon
+'''
 
+import socket  # for sockets
+import sys  # for exit
 
-# this class must be used to send a message to the server
-class Client():
-    def __init__(self):
-        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.s.connect(('localhost', 50000))
+# create dgram udp socket
+try:
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+except socket.error:
+    print 'Failed to create socket'
+    sys.exit()
 
-    # this function sends the message to the server in a format the server understands
-    def send(self, message):
-        msg = struct.pack('>I', len(message)) + message
-        self.s.sendall(msg)
+host = 'localhost';
+port = 16001;
+
+while (1):
+    msg = raw_input('Enter message to send : ')
+
+    try:
+        # Set the whole string
+        s.sendto(msg, (host, port))
+
+        # receive data from client (data, addr)
+        d = s.recvfrom(1024)
+        reply = d[0]
+        addr = d[1]
+
+        print 'Server reply : ' + reply
+
+    except socket.error, msg:
+        print 'Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
+        sys.exit()

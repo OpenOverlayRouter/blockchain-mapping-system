@@ -1,7 +1,7 @@
 import time
 import datetime
-import ipaddress
 from ethapi import *
+from netaddr import IPAddress
 
 IPv4_PREFIX_LENGTH = 32
 IPv6_PREFIX_LENGTH = 128
@@ -10,12 +10,36 @@ class Consensus():
 
 	def __init__(self):
 		self.next_signer = None
+		self.last_timestamp = 0
+		self.ips = []
 
 	def get_next_signer(self):
 		return self.next_signer
 
-	def calculate_next_signer(self):
-		self.next_signer = who_signs("IPv4")
+	def calculate_next_signer(self, ips, timestamp):
+		if timestamp == self.last_timestamp:
+			# Check that there is a new block in 30 seconds
+			current_timestamp = get_timestamp()
+			if (current_timestamp-timestamp) >= 30:
+				timestamp = timestamp+30
+				new_signer = who_signs("IPv4", timestamp)
+			else:
+				new_signer = None
+				# If the timestamp is the same, we need to wait until NIST or Ethereum
+				# hashes changes. So we put next_signer to None until we get a
+				# valid signer. i.e. adding 30s to timestamp
+		else:
+			new_signer= who_signs("IPv4", timestamp)
+		self.next_signer = new_signer
+		self.last_timestamp = timestamp
+		self.ips = ips
+
+	def amISigner(self, ips):
+		# TODO: calcular 30 segons desde el timestamp (self.timestamp?)
+		self.ips = ips
+		if self.next_signer in self.ips:
+			return true
+		return false
 
 # Returns the HASH of a block
 def get_hash_from_json_block(json_block):
@@ -59,16 +83,17 @@ def get_block_from_timestamp(last_block_number,timestamp):
 	block_number = last_block_number
 	json_block = get_block_by_number(last_block_number)
 	block_timestamp = from_hex_to_int(get_timestamp_from_json_block(json_block))
-	while (timestamp > block_timestamp):
+	while (timestamp < block_timestamp):
+		#print block_timestamp
 		block_number = sub_to_hex(block_number,1)
 		json_block = get_block_by_number(block_number)
-		block_timestamp = get_timestamp_from_json_block(json_block)
+		block_timestamp = from_hex_to_int(get_timestamp_from_json_block(json_block))
 	return json_block
 
 # Returns a random HASH mixing NIST and ETHEREUM HASH block
-def get_random_hash():
+def get_random_hash(timestamp):
 	# Get timestamp to work with
-	timestamp = get_timestamp()
+	#timestamp = get_timestamp()
 
 	# Get Ethereum hash
 	last_block_number = get_last_block_number()
@@ -87,8 +112,8 @@ def get_random_hash():
 
 # Returns the IP Address in a readable format
 def formalize_IP(IP_bit_list):
-	ip = int(IP_bit_list,2)
-	return ipaddress.ip_address(ip)
+  ip = int(IP_bit_list,2)
+  return IPAddress(ip)
 
 # Given a random HASH, returns the selected address in a list
 def consensus_for_IPv6(hash):
@@ -115,8 +140,8 @@ def consensus_for_IPv4(hash):
 	return address
 
 # Given the protocol type, returns the selected address in the correct format
-def who_signs(protocol):
-	hash = get_random_hash()
+def who_signs(protocol, timestamp):
+	hash = get_random_hash(timestamp)
 	if protocol == "IPv6":
 		return formalize_IP(consensus_for_IPv6(hash))
 	else:

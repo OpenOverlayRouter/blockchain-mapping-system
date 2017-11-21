@@ -3,15 +3,27 @@ from datetime import datetime
 from os import urandom
 
 from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
+from twisted.internet.endpoints import connectProtocol
 from twisted.internet.address import UNIXAddress
-from twisted.internet import reactor
+from twisted.internet import reactor, task
 from twisted.internet.error import CannotListenError
 from twisted.internet.protocol import Protocol, Factory
 from twisted.python.filepath import FilePath
 from twisted.python import log
 
-BOOTSTRAP_NODES = ["localhost:5010",
-                   "localhost:5011"]
+import messages
+from transactions import Transaction
+#from block import Block, BlockHeader
+import rlp
+
+GLOBAL_PORT = 5005
+QUERY_PORT = 5006
+P2P_PORT = 5007
+HOST = '127.0.0.1'
+
+BOOTSTRAP_NODES = ["127.0.0.2"]
+
+PING_TIME = 300
 
 #log.startLogging(sys.stdout)
 
@@ -19,65 +31,137 @@ def _print(msg):
     print("[{}] {}".format(str(datetime.now()), msg))
 
 
-class myProtocol(Protocol):
-    def __init__(self, factory, addr):
+class p2pProtocol(Protocol):
+    def __init__(self, factory):
         self.factory = factory
-        self.address = addr
+        #self.address = addr
         self.nodeid = None
         self.state = 'NODEID'
+        self.pingcall = task.LoopingCall(self.sendPing)
+        self.pong = False
 
     def connectionMade(self):
-        self.transport.write(self.factory.nodeid.encode('utf-8'))
+        self.transport.write(self.factory.nodeid.encode('utf-8') + b'\r\n')
+        self.pingcall.start(PING_TIME, now=False)
     
     def connectionLost(self, reason):
         if self.nodeid is not None:
-            _print("Connection Lost: {}".format(self.address))
+            _print("Connection Lost: {}".format(self.transport.getPeer()))
+            try: self.pingcall.stop()
+            except: pass
             del self.factory.peers[self.nodeid]
+            del self.factory.peers_ip[self.nodeid]
         else:
-            _print("Connection Error: {}".format(self.address))
+            _print("Connection Error: {}".format(self.transport.getPeer()))
 
     def dataReceived(self, data):
         for line in data.splitlines():
             line = line.strip()
+            #print "STATE", self.state
             if self.state == 'NODEID':
                 if self.factory.peers.get(line) is None:
                     self.nodeid = line
                     self.factory.peers[self.nodeid] = self
-                    _print("New Peer: {} {}".format(line, self.address))
+                    self.factory.peers_ip[self.nodeid] = self.transport.getPeer().host
+                    _print("New Peer: {} {}".format(line, self.transport.getPeer()))
                     self.state = None
                 else:
+                    _print("Peer Already Known: {} {}".format(line, self.transport.getPeer()))
                     self.transport.loseConnection()
-            elif self.state == 'UNIX':
-                self.factory.unix_sock.sendMsg(line)
+            elif self.state == 'LOCAL':
+                self.factory.local.sendMsg(line)
+                self.state = None
             else:
-                print (line)
+                try:
+                    data = messages.read_envelope(line)
+                    _print (data["msgtype"])
+                    if data["msgtype"] == "ping":
+                        #print self.transport.getPeer().host
+                        self.sendPong()
+                    elif data["msgtype"] == "pong":
+                        #print self.transport.getPeer().host
+                        self.pong = True
+                    elif data["msgtype"] == "get_peers":
+                        self.sendMsg(messages.set_peers(self.factory.peers_ip))
+                    elif data["msgtype"] == "set_peers":
+                        print data.get("peers")
+                        peers = data.get("peers")
+                        for key in peers:
+                            exists = self.factory.peers_ip.get(key)
+                            if exists is None and key != self.factory.nodeid:
+                                #point = TCP4ClientEndpoint(reactor, peers.get(key), P2P_PORT)
+                                point = TCP4ClientEndpoint(reactor, peers.get(key), P2P_PORT, bindAddress=(HOST, 0))
+                                connectProtocol(point, p2pProtocol(self.factory))
+                    elif data["msgtype"] == "set_tx":
+                        try:
+                            tx = rlp.decode(data["tx"].decode('hex'), Transaction)
+                            self.factory.transactions.append(data["tx"])
+                        except:
+                            print "Tx Error"
+                                
+                except Exception as exception:
+                    print "except", exception.__class__.__name__, exception
+                    self.transport.loseConnection()
+                #else:
+                    #print (line)
 
     def sendMsg(self, msg):
+        #msg = messages.make_envelope(msgtype, **msg)
+        self.transport.write(msg)
+    
+    '''def sendData(self, msg):
         self.transport.write(msg + b'\r\n')
-        self.state = 'UNIX'
+        self.state = 'LOCAL' '''
+    
+    def sendPing(self):
+        self.transport.write(messages.ping())
+        self.pong = False
+        d = task.deferLater(reactor, 3, self.checkPong)
+
+    def checkPong(self):
+        if self.pong == False:
+            self.transport.loseConnection()
+
+    def sendPong(self):
+        self.transport.write(messages.pong())
+
+    def sendGetPeers(self):
+        self.transport.write(messages.get_peers())
 
 
-class UnixProtocol(Protocol):
+class localProtocol(Protocol):
     def __init__(self, factory):
         self.factory = factory
 
     def connectionMade(self):
-        if self.factory.unix_sock is None:
-            self.factory.unix_sock = self
-            _print("Unix Connection")
+        if self.factory.local is None:
+            self.factory.local = self
+            _print("Local Connection")
         else:
             self.transport.loseConnection()
 
     def connectionLost(self, reason):
-        pass
+        self.factory.local = None
+        _print("Local Connection Lost")
 
     def dataReceived(self, data):
         for line in data.splitlines():
             line = line.strip()
             if line == b'quit':
                 reactor.stop()
-            for nodeid, address in self.factory.peers.items():
-                address.sendMsg(line)
+            try:
+                data = messages.read_envelope(line)
+                if data["msgtype"] == "get_tx":
+                    if not self.factory.transactions:
+                        self.sendMsg('None')
+                    else:
+                        self.sendMsg(self.factory.transactions.pop(0).encode('utf-8'))
+                else:
+                    for nodeid, address in self.factory.peers.items():
+                        address.sendMsg(line)
+            except Exception as exception:
+                    print "except", exception.__class__.__name__, exception
+                    self.transport.loseConnection()
 
     def sendMsg(self, msg):
         self.transport.write(msg + b'\r\n')
@@ -85,41 +169,72 @@ class UnixProtocol(Protocol):
 
 class myFactory(Factory):
     def __init__(self):
-        self.nodeid = urandom(256//8).hex()
+        self.nodeid = urandom(128//8).encode('hex')
         print ("NodeID: {}".format(self.nodeid))
 
     def startFactory(self):
         self.peers = {}
-        self.unix_sock = None
+        self.peers_ip = {}
+        self.blocks = []
+        self.transactions = []
+        self.local = None
     
     def stopFactory(self):
         pass
     
     def buildProtocol(self, addr):
-        if type(addr) == UNIXAddress:
-            return UnixProtocol(self)
-        return myProtocol(self, addr)
+        # TODO check port
+        #print("hello", addr)
+        '''if addr.host == "127.0.0.1":
+            return localProtocol(self)
+        return p2pProtocol(self, addr)'''
+        if addr.host == "127.0.0.1":
+            return localProtocol(self)
+        return p2pProtocol(self)
+
+
+
+def printError(failure):
+    print (failure.getErrorMessage())
+
+
+def bootstrapProtocol(p):
+    print "BOOTSTRAPING"
+    p.sendGetPeers()
 
 
 if __name__ == '__main__':
-    port = 5005
-    path = FilePath("block.sock")
+    '''if len(sys.argv) > 1:
+        print ("Error: too many arguments")
+        sys.exit(1)'''
     if len(sys.argv) == 2:
-        port = int(sys.argv[1])
+        HOST = sys.argv[1]
     elif len(sys.argv) > 2:
-        port = int(sys)
-        path = FilePath(sys.argv[2])
+        print ("Error: too many arguments")
+        sys.exit(1)
 
     try:
-        endpoint = TCP4ServerEndpoint(reactor, port)
         factory = myFactory()
-        endpoint.listen(factory)
-        _print("LISTEN: {}".format(port))
-        unixpoint = reactor.listenUNIX(path.path, factory)
+        endpoint_local = TCP4ServerEndpoint(reactor, QUERY_PORT)
+        endpoint_local.listen(factory)
+        _print("LISTEN: {}".format(QUERY_PORT))
+        endpoint_p2p = TCP4ServerEndpoint(reactor, P2P_PORT, interface=HOST)
+        #endpoint_p2p = TCP4ServerEndpoint(reactor, P2P_PORT)
+        endpoint_p2p.listen(factory)
+        _print("LISTEN P2P: {}".format(P2P_PORT))
     except CannotListenError:
         _print("ERROR: Port in use")
         sys.exit(1)
 
-    # TODO BootStrap
+    # BootStrap Nodes
+    _print ("Trying to connect to bootstrap hosts:")
+    for host in BOOTSTRAP_NODES:
+        if host != HOST:
+            print ("[*] {}".format(host))
+            #point = TCP4ClientEndpoint(reactor, host, P2P_PORT)
+            point = TCP4ClientEndpoint(reactor, host, P2P_PORT, bindAddress=(HOST, 0))
+            d = point.connect(factory)
+            d.addCallback(bootstrapProtocol)
+            d.addErrback(printError)
 
     reactor.run()
