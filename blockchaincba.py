@@ -47,12 +47,16 @@ def open_sockets():
 
 # reads the fields nonce, AFI and the IP from the socket
 def read_socket(rec_socket):
-    nonce = rec_socket.recv(64)
-    afi = rec_socket.recv(16)
-    if (afi == '1'*16):
+    nonce = rec_socket.recv(6)
+    print("nonce")
+    print(nonce)
+    afi = rec_socket.recv(1)
+    print("afi")
+    print(afi)
+    if (afi == '1'):
         # address IPv4
         address = IPv4Address(rec_socket.recv(32))
-    elif (afi == '2'*16):
+    elif (afi == '2'):
         # address IPv6
         address = IPv6Address(rec_socket.recv(128))
     else:
@@ -67,7 +71,7 @@ def write_socket(res, snd_socket):
 
 def test_map_reply():
     locator = LocatorRecord(priority=0, weight=0, mpriority=0, mweight=0, unusedflags=0, LpR=0,
-                            locator=IPv4Address(u'192.168.0.1'))
+                            locator=IPv4Address("192.168.0.1"))
     locators = []
     locators.append(locator)
     reply = MapReplyRecord(eid_prefix=IPv4Network(u'192.168.1.0/24'), locator_records=locators)
@@ -180,16 +184,16 @@ if __name__ == "__main__":
     #init()
     #run
     #test_map_reply()
-    keys = init_keystore()
-    chain = init_chain()
-    chain.query_eid(keys[0].keystore['address'], IPv4Address('192.168.0.1'))
-    #rec_socket, snd_socket = open_sockets()
-    #while 1:
+    #keys = init_keystore()
+    #chain = init_chain()
+    #chain.query_eid(keys[0].keystore['address'], IPv4Address("192.168.0.1"))
+    rec_socket, snd_socket = open_sockets()
+    while 1:
         #write_socket("Hola puto", snd_socket)
         #time.sleep(5)
-        #res = read_socket(rec_socket)
-        #if res is not None:
-            #print(res)
+        res = read_socket(rec_socket)
+        if res is not None:
+            print(res)
             #write_socket("Respondiendo a..." + str(res), snd_socket)
 
 

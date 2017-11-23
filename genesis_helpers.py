@@ -65,7 +65,7 @@ def mk_basic_state(alloc, header=None, env=None, executing_on_head=False):
 def mk_genesis_data(env):
     assert isinstance(env, Env)
 
-    with open('genesis.json') as json_data:
+    with open('../genesis.json') as json_data:
         d = json.load(json_data)
         genesis_data = {
             "parentHash": d["parentHash"],

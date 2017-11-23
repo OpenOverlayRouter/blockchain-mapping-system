@@ -136,6 +136,7 @@ class RefcountDB(BaseDB):
         self.kv = None
 
     def get(self, key):
+        print(self.db)
         return self.db.get(key)[4:]
 
     def get_refcount(self, key):

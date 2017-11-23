@@ -6,7 +6,7 @@ import rlp
 from rlp.utils import encode_hex
 from config import Env
 from state import State, dict_to_prev_header
-from block import Block, BlockHeader, FakeHeader
+from block import Block, BlockHeader, FakeHeader, UnsignedBlock
 from genesis_helpers import state_from_genesis_declaration, initialize, initialize_genesis_keys
 from apply import apply_block, update_block_env_variables, validate_block, validate_transaction, verify_block_signature
 
@@ -75,7 +75,9 @@ class Chain(object):
             raise Exception("Block hash %s not found" % encode_hex(blockhash))
 
         block_rlp = self.db.get(blockhash)
+
         if block_rlp in ('GENESIS', b'GENESIS'):
+            print("Genesis block hash ")
             return State.from_snapshot(json.loads(
                 self.db.get('GENESIS_STATE')), self.env)
         block = rlp.decode(block_rlp, Block)
