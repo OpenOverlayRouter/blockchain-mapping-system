@@ -88,7 +88,7 @@ def get_block_from_timestamp(last_block_number,timestamp):
 	json_block = get_block_by_number(last_block_number)
 	block_timestamp = from_hex_to_int(get_timestamp_from_json_block(json_block))
 	while (timestamp < block_timestamp):
-		#print block_timestamp
+		print "Getting old blocks..."
 		block_number = sub_to_hex(block_number,1)
 		json_block = get_block_by_number(block_number)
 		block_timestamp = from_hex_to_int(get_timestamp_from_json_block(json_block))
@@ -111,7 +111,7 @@ def get_random_hash(timestamp):
 	nist_hash_bits = from_hex_to_bits(nist_hash,512)
 
 	# Mix both hashes
-	xor = long(eth_hash_bits,2)^long(nist_hash_bits,2)
+	xor = long(eth_hash_bits+eth_hash_bits,2)^long(nist_hash_bits,2)
 	return from_long_to_bits(xor)
 
 # Returns the IP Address in a readable format

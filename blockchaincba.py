@@ -171,10 +171,10 @@ if __name__ == "__main__":
     #init()
     #run
     #test_map_reply()
-    keys = init_keystore()
+    '''keys = init_keystore()
     chain = init_chain()
     chain.query_eid(keys[0].keystore['address'], IPv4Address('192.168.0.1'))
-    #rec_socket, snd_socket = open_sockets()
+    '''#rec_socket, snd_socket = open_sockets()
     #while 1:
         #write_socket("Hola puto", snd_socket)
         #time.sleep(5)
@@ -185,17 +185,17 @@ if __name__ == "__main__":
 
 
 
-    '''chain = init_chain()
+    chain = init_chain()
     #timestamp = chain.get_head_block().get_timestamp()
     timestamp = chain.get_head_block().__getattribute__("timestamp")
     block_number = chain.get_head_block().__getattribute__("number")
     print block_number
     print timestamp
-    timestamp = 1511451667
+    timestamp = 1511452659
 
     consensus = init_consensus()
     consensus.calculate_next_signer(0,timestamp,block_number)
-    print consensus.get_next_signer()'''
+    print consensus.get_next_signer()
 
     #consensus.calculate_next_signer(0,timestamp)
     #print consensus.get_next_signer()
