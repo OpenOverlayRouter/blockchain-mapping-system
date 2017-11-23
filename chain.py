@@ -19,8 +19,8 @@ class Chain(object):
         self.env = env or Env()
         # Initialize the state
         if 'head_hash' in self.db:  # new head tag
-            self.state = self.mk_poststate_of_blockhash(
-                self.db.get('head_hash'))
+            print(self.db.get('head_hash').encode("HEX"))
+            self.state = self.mk_poststate_of_blockhash(self.db.get('head_hash'))
             self.state.executing_on_head = True
             print('Initializing chain from saved head, #%d (%s)' %
                   (self.state.prev_headers[0].number, encode_hex(self.state.prev_headers[0].hash)))
@@ -81,8 +81,11 @@ class Chain(object):
             return State.from_snapshot(json.loads(
                 self.db.get('GENESIS_STATE')), self.env)
         block = rlp.decode(block_rlp, Block)
-
         state = State(env=self.env)
+        print("block.number")
+        print(block.number)
+        print("block.header.state_root")
+        print(block.header.state_root.encode("HEX"))
         state.trie.root_hash = block.header.state_root
         update_block_env_variables(state, block)
         state.txindex = len(block.transactions)
@@ -236,6 +239,7 @@ class Chain(object):
         elif block.header.prevhash in self.env.db:
             temp_state = self.mk_poststate_of_blockhash(block.header.prevhash)
             try:
+                print ("Block being added to a chain that is not currently the head")
                 apply_block(temp_state, block)
             except (Exception):
                 print ("exception found int add_block (apply_block in line 223 failed), returning False")

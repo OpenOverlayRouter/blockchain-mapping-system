@@ -136,7 +136,6 @@ class RefcountDB(BaseDB):
         self.kv = None
 
     def get(self, key):
-        print(self.db)
         return self.db.get(key)[4:]
 
     def get_refcount(self, key):
@@ -153,7 +152,6 @@ class RefcountDB(BaseDB):
             # print('putin', key, utils.big_endian_to_int(existing[:4]) + 1)
         except KeyError:
             self.db.put(key, b'\x00\x00\x00\x01' + value)
-            # print('putin', key, 1)
 
     def delete(self, key):
         existing = self.db.get(key)
@@ -211,7 +209,6 @@ class LevelDB(BaseDB):
             if self.uncommitted[key] is None:
                 raise KeyError("key not in db")
             return self.uncommitted[key]
-        #print(key.encode('hex'))
         o = decompress(self.db.Get(key))
         self.uncommitted[key] = o
         return o

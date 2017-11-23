@@ -65,11 +65,14 @@ block = chain.create_block(add1)
 print(block.v,block.r,block.s)
 block.sign(ks1.privkey)
 
+
 block_rlp = rlp.encode(block)
 rlp.decode(block_rlp,Block)
-chain.add_pending_transaction(tx1)
-chain.add_pending_transaction(tx8)
-
+try:
+     chain.add_pending_transaction(tx1)
+     chain.add_pending_transaction(tx8)
+except:
+     pass
 #
 #chain.add_pending_transaction(tx3)
 #chain.add_pending_transaction(tx4)
@@ -83,39 +86,58 @@ print(sys.getsizeof(block))
 #print(block.signer.encode("HEX"))
 print(chain.verify_block_signature(block,"192.128.0.0"))
 chain.add_block(block)
+
+print("block.header.state_root")
+print(block.header.state_root.encode("HEX"))
+print("db.uncommitted")
+#print(env.db.uncommitted)
 #print(chain.verify_block_signature(block,"192.144.0.0"))
+try:
+     time.sleep(2)
+     chain.add_pending_transaction(tx2)
+     block = chain.create_block(add1)
+     block.sign(ks1.privkey)
+     chain.add_block(block)
+except:
+     pass
 
-time.sleep(2)
-chain.add_pending_transaction(tx2)
-block = chain.create_block(add1)
-block.sign(ks1.privkey)
-chain.add_block(block)
+try:
+     time.sleep(2)
+     chain.add_pending_transaction(tx3)
+     block = chain.create_block(add1)
+     block.sign(ks1.privkey)
+     chain.add_block(block)
+except:
+     pass
 
-time.sleep(2)
-chain.add_pending_transaction(tx3)
-block = chain.create_block(add1)
-block.sign(ks1.privkey)
-chain.add_block(block)
+try:
+     time.sleep(2)
+     chain.add_pending_transaction(tx4)
+     block = chain.create_block(add1)
+     block.sign(ks1.privkey)
+     chain.add_block(block)
+except:
+     pass
 
+try:
+     time.sleep(2)
+     chain.add_pending_transaction(tx5)
+     block = chain.create_block(add1)
+     block.sign(ks1.privkey)
+     chain.add_block(block)
+except:
+     pass
 
-time.sleep(2)
-chain.add_pending_transaction(tx4)
-block = chain.create_block(add1)
-block.sign(ks1.privkey)
-chain.add_block(block)
+try:
+     time.sleep(2)
+     chain.add_pending_transaction(tx7)
+     chain.add_pending_transaction(tx6)
+     block = chain.create_block(add1)
+     block.sign(ks1.privkey)
+     chain.add_block(block)
+except:
+     pass
 
-time.sleep(2)
-chain.add_pending_transaction(tx5)
-block = chain.create_block(add1)
-block.sign(ks1.privkey)
-chain.add_block(block)
-
-time.sleep(2)
-chain.add_pending_transaction(tx7)
-chain.add_pending_transaction(tx6)
-block = chain.create_block(add1)
-block.sign(ks1.privkey)
-chain.add_block(block)
 
 print("ADDRESS1")
 print "Own IPS"
@@ -154,3 +176,10 @@ print "Map Server"
 print(chain.get_map_server(add3))
 print "Locator"
 print(chain.get_locator(add3))
+
+
+print "HEAD HASH"
+print(block.header.hash.encode("HEX"))
+print(chain.chain.head_hash.encode("HEX"))
+print(env.db.get('head_hash').encode("HEX"))
+

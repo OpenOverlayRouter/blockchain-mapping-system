@@ -137,8 +137,6 @@ class Trie(object):
 
     @root_hash.setter
     def root_hash(self, value):
-        print ("value")
-        print (value.encode("HEX"))
         self.set_root_hash(value)
 
     def set_root_hash(self, root_hash):
@@ -182,9 +180,6 @@ class Trie(object):
             return BLANK_NODE
         if isinstance(encoded, list):
             return encoded
-        print("ENCODED")
-        print(encoded)
-        print(self.db.db)
         o = rlp.decode(self.db.get(encoded))
         return o
 
@@ -762,7 +757,6 @@ class Trie(object):
 
         if not utils.is_string(value):
             raise Exception("Value must be string")
-
         self.root_node = self._update_and_delete_storage(
             self.root_node,
             bin_to_nibbles(utils.to_string(key)),
