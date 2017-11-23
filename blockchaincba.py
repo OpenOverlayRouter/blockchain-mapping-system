@@ -47,16 +47,12 @@ def open_sockets():
 
 # reads the fields nonce, AFI and the IP from the socket
 def read_socket(rec_socket):
-    nonce = rec_socket.recv(6)
-    print("nonce")
-    print(nonce)
-    afi = rec_socket.recv(1)
-    print("afi")
-    print(afi)
-    if (afi == '1'):
+    nonce = rec_socket.recv(64)
+    afi = rec_socket.recv(16)
+    if (afi == '1'*16):
         # address IPv4
         address = IPv4Address(rec_socket.recv(32))
-    elif (afi == '2'):
+    elif (afi == '2'*16):
         # address IPv6
         address = IPv6Address(rec_socket.recv(128))
     else:
@@ -71,7 +67,7 @@ def write_socket(res, snd_socket):
 
 def test_map_reply():
     locator = LocatorRecord(priority=0, weight=0, mpriority=0, mweight=0, unusedflags=0, LpR=0,
-                            locator=IPv4Address("192.168.0.1"))
+                            locator=IPv4Address(u'192.168.0.1'))
     locators = []
     locators.append(locator)
     reply = MapReplyRecord(eid_prefix=IPv4Network(u'192.168.1.0/24'), locator_records=locators)
@@ -109,7 +105,7 @@ def run():
 
     while(not end):
         
-        #Process a block from the network
+        #Process a new block
         try:
             block = p2p.get_block()
             if block is not None:
@@ -117,30 +113,19 @@ def run():
                 res = chain.verify_block_signature(block, signer)
                 if res:
                     # correct block
-                    consensus.store_block(block)
+                    myIPs = chain.add_block(block)
+                    timestamp = chain.get_head_block().get_timestamp()
+                    consensus.calculate_next_signer(myIPs, timestamp)
                     #Maybe not necessary, depends on P2P implementation
                     p2p.broadcast_block(block)
                 else:
                     #reset consensus alg
+                    #@Eric: really needed?? Or we can assume incorrect block == non-existent block?
                     consensus.calculate_next_signer(None)
         except Exception as e:
             print "Exception while processing a received block"
             print e
      
-        #Process a definitive block
-        try:
-            block = consensus.get_solid_block()
-            if block is not None:
-                #These blocks are always OK
-                #Only needed to validate tx logic (apply.py)
-                #For simplicity we assume that the previous validation will never fail
-                myIPs = chain.add_block(block)
-                timestamp = chain.get_head_block().get_timestamp()
-                consensus.calculate_next_signer(myIPs, timestamp)
-        except Exception as e:
-            print "Exception while adding a definitive block"
-            print e
-
         #Process transactions from the network
         try:
             tx_ext = p2p.get_tx()
@@ -159,10 +144,12 @@ def run():
         #Check if the node has to sign the next block
         sign = consensus.amIsinger(myIPs)
         if sign.me is True:
-            last_block_hash = consensus.get_last_block_hash()
-            #TODO: Do you need transactions in the previous blocks (unconfirmed)? I think so :(
-            new_block = chain.create_block(sign.signer,last_block_hash)
-            consensus.store_block(new_block)
+            new_block = chain.create_block(sign.signer)
+            #Like receiving a new block
+            myIPs = chain.add_block(new_block)
+            timestamp = chain.get_head_block().get_timestamp()
+            consensus.calculate_next_signer(myIPs, timestamp)
+            #Maybe not necessary, depends on P2P implementation
             p2p.broadcast_block(new_block)
 
         #Process transactions from the user
@@ -184,28 +171,31 @@ if __name__ == "__main__":
     #init()
     #run
     #test_map_reply()
-    #keys = init_keystore()
-    #chain = init_chain()
-    #chain.query_eid(keys[0].keystore['address'], IPv4Address("192.168.0.1"))
-    rec_socket, snd_socket = open_sockets()
-    while 1:
+    '''keys = init_keystore()
+    chain = init_chain()
+    chain.query_eid(keys[0].keystore['address'], IPv4Address('192.168.0.1'))
+    '''#rec_socket, snd_socket = open_sockets()
+    #while 1:
         #write_socket("Hola puto", snd_socket)
         #time.sleep(5)
-        res = read_socket(rec_socket)
-        if res is not None:
-            print(res)
+        #res = read_socket(rec_socket)
+        #if res is not None:
+            #print(res)
             #write_socket("Respondiendo a..." + str(res), snd_socket)
 
 
 
-    '''chain = init_chain()
-    timestamp = chain.get_head_block().get_timestamp()
+    chain = init_chain()
+    #timestamp = chain.get_head_block().get_timestamp()
+    timestamp = chain.get_head_block().__getattribute__("timestamp")
+    block_number = chain.get_head_block().__getattribute__("number")
+    print block_number
     print timestamp
-    timestamp = 1511216597
+    timestamp = 1511452659
 
     consensus = init_consensus()
-    consensus.calculate_next_signer(0,timestamp)
+    consensus.calculate_next_signer(0,timestamp,block_number)
     print consensus.get_next_signer()
 
-    consensus.calculate_next_signer(0,timestamp)
-    print consensus.get_next_signer()'''
+    #consensus.calculate_next_signer(0,timestamp)
+    #print consensus.get_next_signer()
