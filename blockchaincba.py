@@ -186,13 +186,16 @@ if __name__ == "__main__":
 
 
     '''chain = init_chain()
-    timestamp = chain.get_head_block().get_timestamp()
+    #timestamp = chain.get_head_block().get_timestamp()
+    timestamp = chain.get_head_block().__getattribute__("timestamp")
+    block_number = chain.get_head_block().__getattribute__("number")
+    print block_number
     print timestamp
-    timestamp = 1511216597
+    timestamp = 1511451667
 
     consensus = init_consensus()
-    consensus.calculate_next_signer(0,timestamp)
-    print consensus.get_next_signer()
-
-    consensus.calculate_next_signer(0,timestamp)
+    consensus.calculate_next_signer(0,timestamp,block_number)
     print consensus.get_next_signer()'''
+
+    #consensus.calculate_next_signer(0,timestamp)
+    #print consensus.get_next_signer()

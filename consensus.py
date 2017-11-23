@@ -16,20 +16,24 @@ class Consensus():
 	def get_next_signer(self):
 		return self.next_signer
 
-	def calculate_next_signer(self, ips, timestamp):
+	def calculate_next_signer(self, ips, timestamp, block_number):
+		if block_number % 2 == 0:
+			protocol = "IPv4"
+		else:
+			protocol = "IPv6"
 		if timestamp == self.last_timestamp:
 			# Check that there is a new block in 30 seconds
 			current_timestamp = get_timestamp()
 			if (current_timestamp-timestamp) >= 30:
 				timestamp = timestamp+30
-				new_signer = who_signs("IPv4", timestamp)
+				new_signer = who_signs(protocol, timestamp)
 			else:
 				new_signer = None
 				# If the timestamp is the same, we need to wait until NIST or Ethereum
 				# hashes changes. So we put next_signer to None until we get a
 				# valid signer. i.e. adding 30s to timestamp
 		else:
-			new_signer= who_signs("IPv4", timestamp)
+			new_signer= who_signs(protocol, timestamp)
 		self.next_signer = new_signer
 		self.last_timestamp = timestamp
 		self.ips = ips
