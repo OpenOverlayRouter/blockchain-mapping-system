@@ -1,7 +1,7 @@
 import time
 import datetime
-import ipaddress
 from ethapi import *
+from netaddr import IPAddress
 
 IPv4_PREFIX_LENGTH = 32
 IPv6_PREFIX_LENGTH = 128
@@ -83,16 +83,17 @@ def get_block_from_timestamp(last_block_number,timestamp):
 	block_number = last_block_number
 	json_block = get_block_by_number(last_block_number)
 	block_timestamp = from_hex_to_int(get_timestamp_from_json_block(json_block))
-	'''while (timestamp > block_timestamp):
+	while (timestamp < block_timestamp):
+		#print block_timestamp
 		block_number = sub_to_hex(block_number,1)
 		json_block = get_block_by_number(block_number)
-		block_timestamp = get_timestamp_from_json_block(json_block)'''
+		block_timestamp = from_hex_to_int(get_timestamp_from_json_block(json_block))
 	return json_block
 
 # Returns a random HASH mixing NIST and ETHEREUM HASH block
 def get_random_hash(timestamp):
 	# Get timestamp to work with
-	timestamp = get_timestamp()
+	#timestamp = get_timestamp()
 
 	# Get Ethereum hash
 	last_block_number = get_last_block_number()
@@ -111,8 +112,8 @@ def get_random_hash(timestamp):
 
 # Returns the IP Address in a readable format
 def formalize_IP(IP_bit_list):
-	ip = int(IP_bit_list,2)
-	return ipaddress.ip_address(ip)
+  ip = int(IP_bit_list,2)
+  return IPAddress(ip)
 
 # Given a random HASH, returns the selected address in a list
 def consensus_for_IPv6(hash):

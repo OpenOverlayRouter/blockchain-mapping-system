@@ -51,10 +51,10 @@ def read_socket(rec_socket):
     afi = rec_socket.recv(16)
     if (afi == '1'*16):
         # address IPv4
-        address = rec_socket.recv(32)
+        address = IPv4Address(rec_socket.recv(32))
     elif (afi == '2'*16):
         # address IPv6
-        address = rec_socket.recv(128)
+        address = IPv6Address(rec_socket.recv(128))
     else:
         rec_socket.recv(1024)  # used to empty socket
         raise Exception('Incorrect AFI read from socket')
@@ -66,12 +66,13 @@ def write_socket(res, snd_socket):
 
 
 def test_map_reply():
-    locator = LocatorRecord(priority=0, weight=0, mpriority=0, mweight=0, unusedflags=0, LpR=0, loc_afi='1'*16,
-                            locator='192.168.0.1')
+    locator = LocatorRecord(priority=0, weight=0, mpriority=0, mweight=0, unusedflags=0, LpR=0,
+                            locator=IPv4Address(u'192.168.0.1'))
     locators = []
     locators.append(locator)
     reply = MapReplyRecord(eid_prefix=IPv4Network(u'192.168.1.0/24'), locator_records=locators)
     print(reply.to_bitstream())
+
 
 def init_chain():
     db = LevelDB("./chain")
@@ -178,22 +179,29 @@ def run():
 if __name__ == "__main__":
     #init()
     #run
-    rec_socket, snd_socket = open_sockets()
-    while 1:
+    #test_map_reply()
+    keys = init_keystore()
+    chain = init_chain()
+    chain.query_eid(keys[0].keystore['address'], IPv4Address('192.168.0.1'))
+    #rec_socket, snd_socket = open_sockets()
+    #while 1:
         #write_socket("Hola puto", snd_socket)
         #time.sleep(5)
-        res = read_socket(rec_socket)
-        if res is not None:
-            print(res)
+        #res = read_socket(rec_socket)
+        #if res is not None:
+            #print(res)
             #write_socket("Respondiendo a..." + str(res), snd_socket)
 
-    #keys = init_keystore()
-    #print(keys[0].keystore['address'])
+
 
     '''chain = init_chain()
     timestamp = chain.get_head_block().get_timestamp()
     print timestamp
+    timestamp = 1511216597
 
     consensus = init_consensus()
+    consensus.calculate_next_signer(0,timestamp)
+    print consensus.get_next_signer()
+
     consensus.calculate_next_signer(0,timestamp)
     print consensus.get_next_signer()'''
