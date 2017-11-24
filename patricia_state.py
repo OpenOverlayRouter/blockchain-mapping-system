@@ -1,13 +1,13 @@
 import pytricia
 import pickle
-from leveldb import LevelDB
+import os
 
 
 class Patricia_state():
 
     def __init__(self):
         self.patricia = pytricia.PyTricia()
-        self.db = LevelDB("./patricia", create_if_missing=True)
+        self.dic = {}
 
     def set_value(self, key, value):
         self.patricia[key] = value
@@ -16,8 +16,13 @@ class Patricia_state():
         return self.patricia[key]
 
     def to_db(self):
-        obj = pickle.dumps(self.patricia)
-        self.db.Put("patricia", obj)
+        for key in self.patricia:
+            self.dic[key] = self.patricia[key]
+        if not os.path.exists((os.path.dirname("./Patricia/patricia.p"))):
+            os.makedirs(os.path.dirname("./Patricia/patricia.p"))
+        pickle.dump(self.dic, open("./Patricia/patricia.p", "wb"))
 
     def from_db(self):
-        self.patricia = pickle.loads(self.db.Get("patricia"))
+        self.dic = pickle.load(open("./Patricia/patricia.p", "rb"))
+        for key in self.dic:
+            self.patricia[key] = self.dic[key]

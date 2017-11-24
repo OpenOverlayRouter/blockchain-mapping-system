@@ -1,4 +1,3 @@
-
 from bitstring import ConstBitStream, BitArray, Bits
 from ipaddress import IPv4Network, IPv6Network, IPv4Address, IPv6Address
 import numbers
