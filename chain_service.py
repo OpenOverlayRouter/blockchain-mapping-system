@@ -163,21 +163,13 @@ class ChainService():
                            transaction_data["metadata"])
 
     # queries the eid to the blockchain and returns the response
-    def query_eid(self, address, ipaddr):
+    def query_eid(self, ipaddr):
+        address = normalize_address(self.chain.patricia[str(ipaddr)])
         balance = self.chain.state.get_balance(address)
-        own_ips = balance.own_ips
-        for key in balance.delegated_ips.keys():  # substract delegated ips to list of own ips
-            own_ips = own_ips - balance.delegated_ips[key]
-        if own_ips.__contains__(ipaddr):
+        if balance is not None:
             if len(balance.map_server.keys()) > 0:
                 return balance.map_server
             elif len(balance.locator.keys()) > 0:
                 return balance.locator
-        for key in balance.received_ips:
-            if balance.received_ips[key].__contains__(ipaddr):
-                if len(balance.map_server.keys()) > 0:
-                    return balance.map_server
-                elif len(balance.locator.keys()) > 0:
-                    return balance.locator
-
+        
         return None

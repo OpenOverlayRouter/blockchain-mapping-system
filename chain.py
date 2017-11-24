@@ -9,6 +9,7 @@ from state import State, dict_to_prev_header
 from block import Block, BlockHeader, FakeHeader, UnsignedBlock
 from genesis_helpers import state_from_genesis_declaration, initialize, initialize_genesis_keys
 from apply import apply_block, update_block_env_variables, validate_block, validate_transaction, verify_block_signature
+from patricia_state import PatriciaState
 
 
 
@@ -56,6 +57,8 @@ class Chain(object):
         self.parent_queue = {}
         self.localtime = time.time() if localtime is None else localtime
         self.max_history = max_history
+        self.patricia = PatriciaState()
+        self.patricia.from_db()  # TODO: test
 
     # Head (tip) of the chain
     @property
@@ -221,10 +224,13 @@ class Chain(object):
             self.state.deletes = []
             self.state.changed = {}
             #try:
-            apply_block(self.state, block)
+            apply_block(self.state, block, self.patricia)
             #except (Exception):
                 #print ("exception found int add_block (apply_block failed), returning False")
                 #return False
+
+            self.patricia.to_db()  # store the patricia into the db in order to make changes persistent, TODO: test
+
             self.db.put(b'block:%d' % block.header.number, block.header.hash)
             # side effect: put 'score:' cache in db
             self.head_hash = block.header.hash

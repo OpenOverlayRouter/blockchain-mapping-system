@@ -3,7 +3,7 @@ import pickle
 import os
 
 
-class Patricia_state():
+class PatriciaState():
 
     def __init__(self):
         self.patricia = pytricia.PyTricia()
@@ -23,6 +23,9 @@ class Patricia_state():
         pickle.dump(self.dic, open("./Patricia/patricia.p", "wb"))
 
     def from_db(self):
-        self.dic = pickle.load(open("./Patricia/patricia.p", "rb"))
+        try:
+            self.dic = pickle.load(open("./Patricia/patricia.p", "rb"))
+        except:
+            pass
         for key in self.dic:
             self.patricia[key] = self.dic[key]
