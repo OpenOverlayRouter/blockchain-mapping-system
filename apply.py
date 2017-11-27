@@ -5,6 +5,7 @@ from rlp.utils import encode_hex
 from db import EphemDB
 import rlp
 from netaddr import IPAddress
+from utils import normalize_address
 
 null_address = b'\xff' * 20
 
@@ -81,7 +82,7 @@ def apply_transaction(state, tx, cached):
         sender = tx.sender
         to = tx.to
         value = tx.ip_network
-        cached[str(value.ip)] = to
+        cached[str(value)] = normalize_address(to)
 
         sender_balance = state.get_balance(sender)
 
@@ -105,8 +106,7 @@ def apply_transaction(state, tx, cached):
         sender = tx.sender
         to = tx.to
         value = tx.ip_network
-        cached[str(value.ip)] = to
-
+        cached[str(value)] = normalize_address(to)
         sender_balance = state.get_balance(sender)
 
         affected = sender_balance.affected_delegated_ips(value)
@@ -212,7 +212,7 @@ def apply_block(state, block, patricia):
 
         # now that all transactions are correct, we can apply cached to patricia tree
         for key in cached:
-            patricia[key] = cached[key]
+            patricia.set_value(key, cached[key])
 
     except (ValueError, AssertionError) as e:
         state.revert(snapshot)

@@ -54,7 +54,8 @@ class ChainService():
         s = state.State().from_snapshot(snapshot, Env(_EphemDB()))
         for tx in self.transactions:
             try:
-                apply_transaction(s, tx)
+                dictionary = {}
+                apply_transaction(s, tx, dictionary)
                 block.transactions.append(tx)
             except Exception as e:
                 print (e)
@@ -83,9 +84,10 @@ class ChainService():
 
         print("temp_state.trie.root_hash")
         print(temp_state.trie.root_hash.encode("HEX"))
+        dictionary = {}
         for index, tx in enumerate(block.transactions):
             t.update(rlp.encode(index), rlp.encode(tx))
-            apply_transaction(temp_state, tx)
+            apply_transaction(temp_state, tx, dictionary)
         block.header.tx_root = t.root_hash
         block.header.state_root = temp_state.trie.root_hash
 

@@ -18,11 +18,14 @@ class Chain(object):
     def __init__(self, genesis=None, env=None,
                  new_head_cb=None, reset_genesis=False, localtime=None, max_history=1000, **kwargs):
         self.env = env or Env()
+        self.patricia = PatriciaState()
+        self.patricia.from_db()  # TODO: test
         # Initialize the state
         if 'head_hash' in self.db:  # new head tag
             print(self.db.get('head_hash').encode("HEX"))
             self.state = self.mk_poststate_of_blockhash(self.db.get('head_hash'))
             self.state.executing_on_head = True
+
             print('Initializing chain from saved head, #%d (%s)' %
                   (self.state.prev_headers[0].number, encode_hex(self.state.prev_headers[0].hash)))
         elif genesis is None:
@@ -34,8 +37,13 @@ class Chain(object):
             print('Initializing chain from provided state')
         elif isinstance(genesis, dict):
             print('Initializing chain from new state based on alloc')
+            diction = {}
             self.state = state_from_genesis_declaration(
-                genesis, self.env, executing_on_head=True)
+                genesis, self.env, executing_on_head=True, pytricia=diction)
+            for key in diction:
+                self.patricia.set_value(str(key), str(diction[key]))
+            self.patricia.to_db()
+
 
         initialize(self.state)
         if isinstance(self.state.prev_headers[0], FakeHeader):
@@ -57,8 +65,7 @@ class Chain(object):
         self.parent_queue = {}
         self.localtime = time.time() if localtime is None else localtime
         self.max_history = max_history
-        self.patricia = PatriciaState()
-        self.patricia.from_db()  # TODO: test
+
 
     # Head (tip) of the chain
     @property

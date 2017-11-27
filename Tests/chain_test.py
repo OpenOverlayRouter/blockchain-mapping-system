@@ -139,6 +139,12 @@ except:
      pass
 
 
+print "el patricia contiene:"
+for key in chain.chain.patricia.patricia:
+    print str(key) + ": " + str(chain.chain.patricia.get_value(key))
+    print chain.chain.patricia.get_value(key)
+
+
 print("ADDRESS1")
 print "Own IPS"
 print(chain.get_own_ips(add1))
