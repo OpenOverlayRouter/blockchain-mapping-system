@@ -174,13 +174,15 @@ if __name__ == "__main__":
     '''keys = init_keystore()
     chain = init_chain()
     chain.query_eid(keys[0].keystore['address'], IPv4Address('192.168.0.1'))
-    '''#rec_socket, snd_socket = open_sockets()
-    #while 1:
+    '''#
+    rec_socket, snd_socket = open_sockets()
+    while 1:
         #write_socket("Hola puto", snd_socket)
         #time.sleep(5)
-        #res = read_socket(rec_socket)
-        #if res is not None:
-            #print(res)
+        res = rec_socket.recvfrom(64)
+        if res is not None:
+            print(res[0].encode('utf8'))
+        res = None
             #write_socket("Respondiendo a..." + str(res), snd_socket)
 
 
