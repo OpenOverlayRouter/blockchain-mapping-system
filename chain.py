@@ -9,6 +9,7 @@ from state import State, dict_to_prev_header
 from block import Block, BlockHeader, FakeHeader, UnsignedBlock
 from genesis_helpers import state_from_genesis_declaration, initialize, initialize_genesis_keys
 from apply import apply_block, update_block_env_variables, validate_block, validate_transaction, verify_block_signature
+from patricia_state import PatriciaState
 
 
 
@@ -20,11 +21,14 @@ class Chain(object):
     def __init__(self, genesis=None, env=None,
                  new_head_cb=None, reset_genesis=False, localtime=None, max_history=1000, **kwargs):
         self.env = env or Env()
+        self.patricia = PatriciaState()
+        self.patricia.from_db()  # TODO: test
         # Initialize the state
         if 'head_hash' in self.db:  # new head tag
             print(self.db.get('head_hash').encode("HEX"))
             self.state = self.mk_poststate_of_blockhash(self.db.get('head_hash'))
             self.state.executing_on_head = True
+
             print('Initializing chain from saved head, #%d (%s)' %
                   (self.state.prev_headers[0].number, encode_hex(self.state.prev_headers[0].hash)))
         elif genesis is None:
@@ -36,8 +40,13 @@ class Chain(object):
             print('Initializing chain from provided state')
         elif isinstance(genesis, dict):
             print('Initializing chain from new state based on alloc')
+            diction = {}
             self.state = state_from_genesis_declaration(
-                genesis, self.env, executing_on_head=True)
+                genesis, self.env, executing_on_head=True, pytricia=diction)
+            for key in diction:
+                self.patricia.set_value(str(key), str(diction[key]))
+            self.patricia.to_db()
+
 
         initialize(self.state)
         if isinstance(self.state.prev_headers[0], FakeHeader):
@@ -59,6 +68,7 @@ class Chain(object):
         self.parent_queue = {}
         self.localtime = time.time() if localtime is None else localtime
         self.max_history = max_history
+
 
     # Head (tip) of the chain
     @property
@@ -224,10 +234,13 @@ class Chain(object):
             self.state.deletes = []
             self.state.changed = {}
             #try:
-            apply_block(self.state, block)
+            apply_block(self.state, block, self.patricia)
             #except (Exception):
                 #print ("exception found int add_block (apply_block failed), returning False")
                 #return False
+
+            self.patricia.to_db()  # store the patricia into the db in order to make changes persistent, TODO: test
+
             self.db.put(b'block:%d' % block.header.number, block.header.hash)
             # side effect: put 'score:' cache in db
             self.head_hash = block.header.hash

@@ -5,6 +5,7 @@ from rlp.utils import encode_hex
 from db import EphemDB
 import rlp
 from netaddr import IPAddress
+from utils import normalize_address
 
 null_address = b'\xff' * 20
 
@@ -74,13 +75,14 @@ def validate_transaction(state, tx):
 
 
 # Applies the transaction to the state
-def apply_transaction(state, tx):
+def apply_transaction(state, tx, cached):
     validate_transaction(state, tx)
     category = tx.category
     if category == 0:  # allocate
         sender = tx.sender
         to = tx.to
         value = tx.ip_network
+        cached[str(value)] = normalize_address(to)
 
         sender_balance = state.get_balance(sender)
 
@@ -104,7 +106,7 @@ def apply_transaction(state, tx):
         sender = tx.sender
         to = tx.to
         value = tx.ip_network
-
+        cached[str(value)] = normalize_address(to)
         sender_balance = state.get_balance(sender)
 
         affected = sender_balance.affected_delegated_ips(value)
@@ -194,7 +196,7 @@ def validate_block(state, block):
 
 
 # Applies the block-level state transition function
-def apply_block(state, block):
+def apply_block(state, block, patricia):
     # Pre-processing and verification
     snapshot = state.snapshot()
     try:
@@ -202,10 +204,15 @@ def apply_block(state, block):
         assert validate_header(state, block.header)
         assert validate_transaction_tree(state, block)
         # Process transactions
+        cached = {}  # cached = cached changes in balances, to be added later in the patricia
         for tx in block.transactions:
-            apply_transaction(state, tx)
+            apply_transaction(state, tx, cached)
         # Post-finalize (ie. add the block header to the state for now)
         state.add_block_header(block.header)
+
+        # now that all transactions are correct, we can apply cached to patricia tree
+        for key in cached:
+            patricia.set_value(key, cached[key])
 
     except (ValueError, AssertionError) as e:
         state.revert(snapshot)
