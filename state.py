@@ -5,7 +5,7 @@ import trie
 from trie import Trie
 from securetrie import SecureTrie
 from config import default_config, Env
-from db import RefcountDB
+from db import RefcountDB, OverlayDB
 import copy
 from account import Account
 from trie import BLANK_ROOT
@@ -318,6 +318,18 @@ class State():
         for k in STATE_DEFAULTS:
             setattr(self, k, copy.copy(auxvars[k]))
 
+    def clone(self):
+        snapshot = self.to_snapshot(root_only=True, no_prevblocks=True)
+        env2 = Env(OverlayDB(self.env.db), self.env.config)
+        s = State.from_snapshot(snapshot, env2)
+        for param in STATE_DEFAULTS:
+            setattr(s, param, getattr(self, param))
+        s.prev_headers = self.prev_headers
+        for acct in self.cache.values():
+            assert not acct.touched
+        s.journal = copy.copy(self.journal)
+        s.cache = {}
+        return s
 
 def prev_header_to_dict(h):
     return {

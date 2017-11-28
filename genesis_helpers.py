@@ -6,6 +6,7 @@ from db import RefcountDB
 import json
 import rlp
 from balance import Balance
+from netaddr import IPNetwork
 from utils import int_to_big_endian
 
 
@@ -15,7 +16,7 @@ def block_from_genesis_declaration(genesis_data, env):
 
 
 def state_from_genesis_declaration(
-        genesis_data, env, block=None, allow_empties=False, executing_on_head=False):
+        genesis_data, env, block=None, allow_empties=False, executing_on_head=False, pytricia={}):
     if block:
         assert isinstance(block, Block)
     else:
@@ -28,6 +29,8 @@ def state_from_genesis_declaration(
         if 'balance' in data:
             balance = Balance(data['balance']['own_ips'])
             state.set_balance(addr, balance)
+            for ip in data['balance']['own_ips']:
+                pytricia[ip] = normalize_address(addr)
     if executing_on_head:
         state.executing_on_head = True
 
@@ -65,7 +68,7 @@ def mk_basic_state(alloc, header=None, env=None, executing_on_head=False):
 def mk_genesis_data(env):
     assert isinstance(env, Env)
 
-    with open('genesis.json') as json_data:
+    with open('../genesis.json') as json_data:
         d = json.load(json_data)
         genesis_data = {
             "parentHash": d["parentHash"],

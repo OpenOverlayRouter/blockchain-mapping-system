@@ -70,9 +70,14 @@ class Block(rlp.Serializable):
     ]
     _signer = None
 
-    def __init__(self, header, transactions=None):
+    def __init__(self, header, transactions=None, v=0,r=0,s=0):
         self.header = header
         self.transactions = transactions or []
+        self.v = v
+        self.r = r
+        self.s = s
+
+
 
     def sign(self, key, network_id=None):
         if network_id is None:
@@ -129,8 +134,5 @@ class Block(rlp.Serializable):
     @property
     def transaction_count(self):
         return len(self.transactions)
-
-    def get_timestamp(self):
-        return getattr(self.header, "timestamp")
 
 UnsignedBlock = Block.exclude(['v', 'r', 's'])

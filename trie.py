@@ -757,7 +757,6 @@ class Trie(object):
 
         if not utils.is_string(value):
             raise Exception("Value must be string")
-
         self.root_node = self._update_and_delete_storage(
             self.root_node,
             bin_to_nibbles(utils.to_string(key)),

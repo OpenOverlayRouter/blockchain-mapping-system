@@ -24,11 +24,11 @@ import netaddr
 from netaddr import IPNetwork, IPAddress, IPSet
 from utils import address, normalize_address
 from chain_service import ChainService
-"""
+import sys
+
 db = LevelDB("./chain")
 env = Env(db)
-"""
-env = Env(_EphemDB())
+#env = Env(_EphemDB())
 
 add1 = "094a2c9f5b46416b9b9bd9f1efa1f3a73d46cec2"
 add2 = "7719818983cb546d1badee634621dad4214cba25"
@@ -61,9 +61,18 @@ tx7.sign(ks2.privkey)
 
 chain = ChainService(env)
 
-chain.add_pending_transaction(tx1)
-chain.add_pending_transaction(tx8)
+block = chain.create_block(add1)
+print(block.v,block.r,block.s)
+block.sign(ks1.privkey)
 
+
+block_rlp = rlp.encode(block)
+rlp.decode(block_rlp,Block)
+try:
+     chain.add_pending_transaction(tx1)
+     chain.add_pending_transaction(tx8)
+except:
+     pass
 #
 #chain.add_pending_transaction(tx3)
 #chain.add_pending_transaction(tx4)
@@ -73,40 +82,69 @@ chain.add_pending_transaction(tx8)
 
 block = chain.create_block(add1)
 block.sign(ks1.privkey)
+print(sys.getsizeof(block))
 #print(block.signer.encode("HEX"))
 print(chain.verify_block_signature(block,"192.128.0.0"))
 chain.add_block(block)
+
+print("block.header.state_root")
+print(block.header.state_root.encode("HEX"))
+print("db.uncommitted")
+#print(env.db.uncommitted)
 #print(chain.verify_block_signature(block,"192.144.0.0"))
+try:
+     time.sleep(2)
+     chain.add_pending_transaction(tx2)
+     block = chain.create_block(add1)
+     block.sign(ks1.privkey)
+     chain.add_block(block)
+except:
+     pass
 
-"""
+try:
+     time.sleep(2)
+     chain.add_pending_transaction(tx3)
+     block = chain.create_block(add1)
+     block.sign(ks1.privkey)
+     chain.add_block(block)
+except:
+     pass
 
-time.sleep(2)
-chain.add_pending_transaction(tx2)
-block = chain.create_block(add1)
-chain.add_block(block)
+try:
+     time.sleep(2)
+     chain.add_pending_transaction(tx4)
+     block = chain.create_block(add1)
+     block.sign(ks1.privkey)
+     chain.add_block(block)
+except:
+     pass
 
-time.sleep(2)
-chain.add_pending_transaction(tx3)
-block = chain.create_block(add1)
-chain.add_block(block)
+try:
+     time.sleep(2)
+     chain.add_pending_transaction(tx5)
+     block = chain.create_block(add1)
+     block.sign(ks1.privkey)
+     chain.add_block(block)
+except:
+     pass
+
+try:
+     time.sleep(2)
+     chain.add_pending_transaction(tx7)
+     chain.add_pending_transaction(tx6)
+     block = chain.create_block(add1)
+     block.sign(ks1.privkey)
+     chain.add_block(block)
+except:
+     pass
 
 
-time.sleep(2)
-chain.add_pending_transaction(tx4)
-block = chain.create_block(add1)
-chain.add_block(block)
+print "el patricia contiene:"
+for key in chain.chain.patricia.patricia:
+    print str(key) + ": " + str(chain.chain.patricia.get_value(key))
+    print chain.chain.patricia.get_value(key)
 
-time.sleep(2)
-chain.add_pending_transaction(tx5)
-block = chain.create_block(add1)
-chain.add_block(block)
 
-time.sleep(2)
-chain.add_pending_transaction(tx7)
-chain.add_pending_transaction(tx6)
-block = chain.create_block(add1)
-chain.add_block(block)
-"""
 print("ADDRESS1")
 print "Own IPS"
 print(chain.get_own_ips(add1))
@@ -144,3 +182,10 @@ print "Map Server"
 print(chain.get_map_server(add3))
 print "Locator"
 print(chain.get_locator(add3))
+
+
+print "HEAD HASH"
+print(block.header.hash.encode("HEX"))
+print(chain.chain.head_hash.encode("HEX"))
+print(env.db.get('head_hash').encode("HEX"))
+

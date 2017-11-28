@@ -16,20 +16,24 @@ class Consensus():
 	def get_next_signer(self):
 		return self.next_signer
 
-	def calculate_next_signer(self, ips, timestamp):
+	def calculate_next_signer(self, ips, timestamp, block_number):
+		if block_number % 2 == 0:
+			protocol = "IPv4"
+		else:
+			protocol = "IPv6"
 		if timestamp == self.last_timestamp:
 			# Check that there is a new block in 30 seconds
 			current_timestamp = get_timestamp()
 			if (current_timestamp-timestamp) >= 30:
 				timestamp = timestamp+30
-				new_signer = who_signs("IPv4", timestamp)
+				new_signer = who_signs(protocol, timestamp)
 			else:
 				new_signer = None
 				# If the timestamp is the same, we need to wait until NIST or Ethereum
 				# hashes changes. So we put next_signer to None until we get a
 				# valid signer. i.e. adding 30s to timestamp
 		else:
-			new_signer= who_signs("IPv4", timestamp)
+			new_signer= who_signs(protocol, timestamp)
 		self.next_signer = new_signer
 		self.last_timestamp = timestamp
 		self.ips = ips
@@ -84,7 +88,7 @@ def get_block_from_timestamp(last_block_number,timestamp):
 	json_block = get_block_by_number(last_block_number)
 	block_timestamp = from_hex_to_int(get_timestamp_from_json_block(json_block))
 	while (timestamp < block_timestamp):
-		#print block_timestamp
+		print "Getting old blocks..."
 		block_number = sub_to_hex(block_number,1)
 		json_block = get_block_by_number(block_number)
 		block_timestamp = from_hex_to_int(get_timestamp_from_json_block(json_block))
@@ -107,7 +111,7 @@ def get_random_hash(timestamp):
 	nist_hash_bits = from_hex_to_bits(nist_hash,512)
 
 	# Mix both hashes
-	xor = long(eth_hash_bits,2)^long(nist_hash_bits,2)
+	xor = long(eth_hash_bits+eth_hash_bits,2)^long(nist_hash_bits,2)
 	return from_long_to_bits(xor)
 
 # Returns the IP Address in a readable format

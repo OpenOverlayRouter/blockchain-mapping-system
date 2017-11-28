@@ -13,6 +13,7 @@ import rlp
 from apply import apply_transaction
 from utils import normalize_address
 from own_exceptions import UnsignedTransaction
+from state import State
 
 
 class ChainService():
@@ -53,7 +54,8 @@ class ChainService():
         s = state.State().from_snapshot(snapshot, Env(_EphemDB()))
         for tx in self.transactions:
             try:
-                apply_transaction(s, tx)
+                dictionary = {}
+                apply_transaction(s, tx, dictionary)
                 block.transactions.append(tx)
             except Exception as e:
                 print (e)
@@ -74,12 +76,20 @@ class ChainService():
     def _create_tries(self, block):
         t = trie.Trie(_EphemDB())
         snapshot = self.chain.state.to_snapshot()
-        s = state.State().from_snapshot(snapshot, Env(_EphemDB()))
+        print(snapshot)
+        print("self.chain.state.trie.root_hash")
+        print(self.chain.state.trie.root_hash.encode("HEX"))
+
+        temp_state = self.chain.state.clone()
+
+        print("temp_state.trie.root_hash")
+        print(temp_state.trie.root_hash.encode("HEX"))
+        dictionary = {}
         for index, tx in enumerate(block.transactions):
             t.update(rlp.encode(index), rlp.encode(tx))
-            apply_transaction(s, tx)
+            apply_transaction(temp_state, tx, dictionary)
         block.header.tx_root = t.root_hash
-        block.header.state_root = s.trie.root_hash
+        block.header.state_root = temp_state.trie.root_hash
 
     # adds the block to the chain and eliminates from the pending transactions those transactions present in the block
     def add_block(self, block):
@@ -155,21 +165,13 @@ class ChainService():
                            transaction_data["metadata"])
 
     # queries the eid to the blockchain and returns the response
-    def query_eid(self, address, ipaddr):
+    def query_eid(self, ipaddr):
+        address = normalize_address(self.chain.patricia[str(ipaddr)])
         balance = self.chain.state.get_balance(address)
-        own_ips = balance.own_ips
-        for key in balance.delegated_ips.keys():  # substract delegated ips to list of own ips
-            own_ips = own_ips - balance.delegated_ips[key]
-        if own_ips.__contains__(ipaddr):
+        if balance is not None:
             if len(balance.map_server.keys()) > 0:
                 return balance.map_server
             elif len(balance.locator.keys()) > 0:
                 return balance.locator
-        for key in balance.received_ips:
-            if balance.received_ips[key].__contains__(ipaddr):
-                if len(balance.map_server.keys()) > 0:
-                    return balance.map_server
-                elif len(balance.locator.keys()) > 0:
-                    return balance.locator
-
+        
         return None
