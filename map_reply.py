@@ -77,6 +77,7 @@ class LocatorRecord(object):
 
         return bitstream
 
+
 class MapReplyRecord(object):
     # The actions defined are used by an ITR or PITR when a
     # destination EID matches a negative mapping cache entry.
@@ -162,3 +163,51 @@ class MapReplyRecord(object):
                 raise Exception('Bad locator in MapReplyRecord')
 
         return bitstream
+
+
+class MapServers(object):
+
+    def __init__(self, server_count=0, info=None):
+        self.server_count = server_count
+        self.info = info
+
+    def to_bitstream(self):
+        # Add the map_server count
+        bitstream = BitArray('uint:8=%d' % self.server_count)
+
+        # Add the list of map_servers
+        for i in range(0, len(self.info), 3):
+            bitstream += BitArray('uint:16=%d' % self.info[i])
+            if self.info[i] == 1:  # IPv4
+                bitstream += BitArray('uint:32=%d' % self.info[i + 1])
+            elif self.info[i] == 2:
+                bitstream += BitArray('uint:128=%d' % self.info[i + 1])
+
+        return bitstream
+
+    def to_bytes(self):
+        return self.to_bitstream().bytes
+
+
+class Response(object):
+
+    def __init__(self, nonce=0, flag=0, info=None):
+        self.nonce = nonce
+        self.flag = flag
+        self.info = info  # info can be MapServers or MapReplyRecord
+
+    def to_bitstream(self):
+
+        # Add the nonce
+        bitstream = BitArray('uint:32=%d' % self.nonce)
+
+        #Add the flag bit
+        bitstream += BitArray('uint:1=%d' % self.flag)
+
+        #Add the info
+        bitstream += self.info.to_bitstream()
+
+        return bitstream
+
+    def to_bytes(self):
+        return self.to_bitstream().bytes
