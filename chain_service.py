@@ -55,8 +55,12 @@ class ChainService():
         for tx in self.transactions:
             try:
                 dictionary = {}
-                apply_transaction(s, tx, dictionary)
-                block.transactions.append(tx)
+                if prevnumber % 2 == 0 and tx.afi == 2:  # the next block has to be an IPv6 one
+                    apply_transaction(s, tx, dictionary)
+                    block.transactions.append(tx)
+                elif prevnumber % 2 != 0 and tx.afi == 1:  # the next block has to be an IPv4 one
+                    apply_transaction(s, tx, dictionary)
+                    block.transactions.append(tx)
             except Exception as e:
                 print (e)
         self._create_tries(block)
