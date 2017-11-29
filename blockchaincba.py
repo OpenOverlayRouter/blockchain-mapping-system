@@ -17,8 +17,9 @@ import os
 import glob
 from keystore import Keystore
 from consensus import Consensus
-from map_reply import MapReplyRecord, LocatorRecord
+from map_reply import MapReplyRecord, LocatorRecord, Response
 from ipaddress import IPv4Network, IPv6Network, IPv4Address, IPv6Address
+
 
 HOST = ''
 REC_PORT = 16001
@@ -176,15 +177,32 @@ if __name__ == "__main__":
     chain.query_eid(keys[0].keystore['address'], IPv4Address('192.168.0.1'))
     '''#
     rec_socket, snd_socket = open_sockets()
+    mrr = LocatorRecord()
+    r = Response(nonce=12345678, flag=0,info=mrr)
+
     while 1:
-        #write_socket("Hola puto", snd_socket)
+        """
+        rec_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        rec_socket.bind((HOST, SND_PORT))
+        """
+        print len(r.to_bitstream())
+        print r.to_bytes().encode('HEX')
+        write_socket(r.to_bytes(), snd_socket)
+        """
+        res = rec_socket.recvfrom(8)
+        if res is not None:
+            print("RES")
+            print(res[0].encode('HEX'))
+"""
+        time.sleep(1)
         #time.sleep(5)
+        """
         res = rec_socket.recvfrom(64)
         if res is not None:
             print(res[0].encode('utf8'))
         res = None
             #write_socket("Respondiendo a..." + str(res), snd_socket)
-
+        """
 
 
     chain = init_chain()
