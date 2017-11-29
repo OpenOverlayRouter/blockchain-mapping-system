@@ -38,10 +38,10 @@ ks1 = Keystore.load("./keystore/094a2c9f5b46416b9b9bd9f1efa1f3a73d46cec2","TFG12
 ks2 = Keystore.load("./keystore/7719818983cb546d1badee634621dad4214cba25","TFG1234")
 ks3 = Keystore.load("./keystore/a3e04410f475b813c01ca77ff12cb277991e62d2","TFG1234")
 
-tx1 = Transaction(0, 0, add2, 1, '192.152.0.0/12')
+tx1 = Transaction(1, 0, add2, 1, '192.152.0.0/12')
 tx1.sign(ks1.privkey)
 
-tx8 = Transaction(1, 0, add2, 2, '2001:cdba::3257:9652')
+tx8 = Transaction(0, 0, add2, 2, '2001:cdba::3257:9652')
 tx8.sign(ks1.privkey)
 
 tx2 = Transaction(0, 0, add3, 1, '192.152.0.0/16')
@@ -65,10 +65,10 @@ chain = ChainService(env)
 
 
 try:
-     chain.add_pending_transaction(tx1)
      chain.add_pending_transaction(tx8)
-except:
-     pass
+
+except Exception as e:
+     print e
 
 
 trans = chain.transactions
@@ -86,9 +86,12 @@ block = chain.create_block(add1)
 block.sign(ks1.privkey)
 chain.add_block(block)
 
+
 #print(env.db.uncommitted)
 #print(chain.verify_block_signature(block,"192.144.0.0"))
 print "UNO"
+print "bloque actual " + str(chain.chain.state.block_number)
+print chain.chain.get_block_by_number(1).transactions[0].afi
 trans = chain.transactions
 print str(len(trans)) + " transacciones en espera"
 for tx in trans:
@@ -96,44 +99,72 @@ for tx in trans:
 
 try:
      time.sleep(2)
-     chain.add_pending_transaction(tx2)
+     chain.add_pending_transaction(tx1)
      block = chain.create_block(add1)
      block.sign(ks1.privkey)
      chain.add_block(block)
-except:
-     pass
-trans = chain.transactions
-print str(len(trans)) + " transacciones en espera"
-for tx in trans:
-     print tx.nonce, tx.to, tx.afi
+     chain.add_pending_transaction(tx2)
+     print "creando el primer bloque, no deberia anadir nada (no hay ipv6)"
+     time.sleep(2)
+     block = chain.create_block(add1)
+     block.sign(ks1.privkey)
+     chain.add_block(block)
+     print "bloque actual " + str(chain.chain.state.block_number)
+     print "creando el primer bloque, ahora si deberia"
+     time.sleep(2)
+     block = chain.create_block(add1)
+     block.sign(ks1.privkey)
+     chain.add_block(block)
+     trans = chain.transactions
+     print "bloque actual " + str(chain.chain.state.block_number)
+     print str(len(trans)) + " transacciones en espera"
+     for tx in trans:
+          print tx.nonce, tx.to, tx.afi
+
+     time.sleep(2)
+     block = chain.create_block(add1)
+     block.sign(ks1.privkey)
+     chain.add_block(block)
+except Exception as e:
+     print e
+
 
 print "DOS"
+print "bloque actual " + str(chain.chain.state.block_number)
 try:
      time.sleep(2)
-     chain.add_pending_transaction(tx8)
      chain.add_pending_transaction(tx3)
+
+     trans = chain.transactions
+     print str(len(trans)) + " transacciones en espera"
+     for tx in trans:
+          print tx.nonce, tx.to, tx.afi
+
+
      block = chain.create_block(add1)
      block.sign(ks1.privkey)
      chain.add_block(block)
-except:
-     pass
-trans = chain.transactions
-print str(len(trans)) + " transacciones en espera"
-for tx in trans:
-     print tx.nonce, tx.to, tx.afi
+except Exception as e:
+     print e
+
 
 print "TRES"
+print "bloque actual " + str(chain.chain.state.block_number)
 try:
      time.sleep(2)
      chain.add_pending_transaction(tx4)
      chain.add_pending_transaction(tx5)
      chain.add_pending_transaction(tx7)
      chain.add_pending_transaction(tx6)
+     trans = chain.transactions
+     print str(len(trans)) + " transacciones en espera"
+     for tx in trans:
+          print tx.nonce, tx.to, tx.afi
      block = chain.create_block(add1)
      block.sign(ks1.privkey)
      chain.add_block(block)
-except:
-     pass
+except Exception as e:
+     print e
 trans = chain.transactions
 print str(len(trans)) + " transacciones en espera"
 for tx in trans:
