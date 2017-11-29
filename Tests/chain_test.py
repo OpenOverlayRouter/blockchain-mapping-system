@@ -41,7 +41,7 @@ ks3 = Keystore.load("./keystore/a3e04410f475b813c01ca77ff12cb277991e62d2","TFG12
 tx1 = Transaction(0, 0, add2, 1, '192.152.0.0/12')
 tx1.sign(ks1.privkey)
 
-tx8 = Transaction(0, 0, add2, 1, '192.152.0.0/5')
+tx8 = Transaction(0, 0, add2, 2, '2001:cdba::3257:9652')
 tx8.sign(ks1.privkey)
 
 tx2 = Transaction(0, 0, add3, 1, '192.152.0.0/16')
@@ -58,6 +58,8 @@ tx7 = Transaction(1, 2, add3, 1, '192.152.0.0/16',[1, '1.1.1.2', '54dbb737eac500
      2, '2001:cdba::3257:9652', '89b44e4d3c81ede05d0f5de8d1a68f754d73d997',
      1, '3.3.3.3', '3a1e02d9ea25349c47fe2e94f4265cd261c5c7ca'])
 tx7.sign(ks2.privkey)
+
+
 
 chain = ChainService(env)
 
@@ -103,6 +105,7 @@ except:
 
 try:
      time.sleep(2)
+     chain.add_pending_transaction(tx8)
      chain.add_pending_transaction(tx3)
      block = chain.create_block(add1)
      block.sign(ks1.privkey)
