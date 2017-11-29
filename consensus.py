@@ -5,6 +5,7 @@ from netaddr import IPAddress
 
 IPv4_PREFIX_LENGTH = 32
 IPv6_PREFIX_LENGTH = 128
+ETH_BPS = 14
 
 class Consensus():
 
@@ -51,6 +52,7 @@ def get_hash_from_json_block(json_block):
 
 # Returns the Timestamp of a block
 def get_timestamp_from_json_block(json_block):
+	#TODO: If json_block is NoneType
 	return json_block['result']['timestamp']
 
 def get_timestamp():
@@ -87,11 +89,38 @@ def get_block_from_timestamp(last_block_number,timestamp):
 	block_number = last_block_number
 	json_block = get_block_by_number(last_block_number)
 	block_timestamp = from_hex_to_int(get_timestamp_from_json_block(json_block))
-	while (timestamp < block_timestamp):
+	actual_timestamp = get_timestamp()
+	variance = int((actual_timestamp-timestamp)/ETH_BPS)
+	print variance
+	candidate_block_number = from_hex_to_int(last_block_number)-variance
+	candidate_block = get_block_by_number(hex(candidate_block_number))
+
+	candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_block))
+	if ((timestamp - candidate_timestamp) > 0):
+		print "Entering IF"
+		while (timestamp-candidate_timestamp) > ETH_BPS:
+			print "LOOP1"
+			candidate_block_number = candidate_block_number+((timestamp-candidate_timestamp)/ETH_BPS)
+			candidate_block = get_block_by_number(hex(candidate_block_number))
+			candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_block))
+		print candidate_block_number
+		json_block = get_block_by_number(hex(candidate_block_number-1))
+	else:
+		print "Entering ELSE"
+		while (candidate_timestamp-timestamp) > ETH_BPS:
+			print "LOOP2"
+			candidate_block_number = candidate_block_number+((timestamp-candidate_timestamp)/ETH_BPS)
+			candidate_block = get_block_by_number(hex(candidate_block_number))
+			candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_block))
+		print candidate_block_number
+		json_block = get_block_by_number(hex(candidate_block_number+1))
+
+	'''while (timestamp < block_timestamp):
 		print "Getting old blocks..."
 		block_number = sub_to_hex(block_number,1)
 		json_block = get_block_by_number(block_number)
 		block_timestamp = from_hex_to_int(get_timestamp_from_json_block(json_block))
+	'''
 	return json_block
 
 # Returns a random HASH mixing NIST and ETHEREUM HASH block
@@ -146,6 +175,7 @@ def consensus_for_IPv4(hash):
 # Given the protocol type, returns the selected address in the correct format
 def who_signs(protocol, timestamp):
 	hash = get_random_hash(timestamp)
+	#TODO: Extractor(hash)
 	if protocol == "IPv6":
 		return formalize_IP(consensus_for_IPv6(hash))
 	else:
