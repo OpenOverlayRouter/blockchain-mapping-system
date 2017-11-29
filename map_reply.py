@@ -202,10 +202,10 @@ class Response(object):
         bitstream = BitArray('uint:32=%d' % self.nonce)
 
         #Add the flag bit
-        bitstream += BitArray('uint:1=%d' % self.flag)
+        #bitstream += BitArray('uint:1=%d' % self.flag)
 
         #Add the info
-        bitstream += self.info.to_bitstream()
+        #bitstream += self.info.to_bitstream()
 
         return bitstream
 
