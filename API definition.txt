@@ -15,6 +15,18 @@ broadcast_block(block bl)
 broadcast_tx(transaction tx)
 #send a new transaction to the network
 
+block_numbers get_block_queries()
+#returns a list of block numbers queried by the network or None if no queries are pending
+
+transaction tx_pool_query()
+#returns True if the network requests the transaction pool, False otherwise
+
+answer_block_queries(blocks bls)
+#list of the blocks asked from the network
+
+answer_tx_pool_query(transactions txs)
+#response with transactions in the transaction pool (to send to the network)
+
 
 #####################
 #consensus
@@ -28,8 +40,10 @@ calculate_next_signer(myIPs ip)
 #myIPs is the set of IPs owned by the node, updated each time a block is added
 #if myIPs is None, means that it the previous block was incorrect
 
-signer amIsigner(myIPs ip)
-#returns a sign object that says if the node has to sign
+signer, me amIsigner(myIPs ip)
+#returns the following two variables:
+#	me: True if the node has to sign the new block
+#       signer: IP that has to sign the new block
 
 block get_solid_block()
 #returns a definitve block to be added to the chain, or None if there is no data
@@ -67,6 +81,12 @@ info query_eid(query q)
 verify_block_signature(block bl, ip_addres ip)
 #Returns True if the block bl is signed with the key associated with ip address ip, False otherwise
 
+block get_block(block_number num)
+#returns the block with number num
+
+transactions get_transaction_pool()
+#returns the transactions in the pool of pending transactions
+
 #####################
 #user
 ##################### 
@@ -89,10 +109,5 @@ send(info i)
 block
 signer: IP that has to sign the new block
 transaction
-        tx: the transaction
-	more: true if the buffer has more transactions
-sign
-	me: True if the node has to sign
-        signer: IP that has to sign the new block
 myIPs: Two python lists of IP addresses owned by the node (one for IPv4, one for IPv6)
 

@@ -106,10 +106,10 @@ def run():
 
     while(not end):
         
-        #Process a new block
+        #Process new blocks
         try:
             block = p2p.get_block()
-            if block is not None:
+            while block is not None:
                 signer = consensus.get_next_signer()
                 res = chain.verify_block_signature(block, signer)
                 if res:
@@ -118,11 +118,12 @@ def run():
                     timestamp = chain.get_head_block().get_timestamp()
                     consensus.calculate_next_signer(myIPs, timestamp)
                     #Maybe not necessary, depends on P2P implementation
-                    p2p.broadcast_block(block)
+                    #p2p.broadcast_block(block)
                 else:
                     #reset consensus alg
                     #@Eric: really needed?? Or we can assume incorrect block == non-existent block?
                     consensus.calculate_next_signer(None)
+                block = p2p.get_block()
         except Exception as e:
             print "Exception while processing a received block"
             print e
@@ -143,14 +144,13 @@ def run():
 
 
         #Check if the node has to sign the next block
-        sign = consensus.amIsinger(myIPs)
-        if sign.me is True:
-            new_block = chain.create_block(sign.signer)
+        signer, me = consensus.amIsinger(myIPs)
+        if me:
+            new_block = chain.create_block(signer)
             #Like receiving a new block
             myIPs = chain.add_block(new_block)
             timestamp = chain.get_head_block().get_timestamp()
             consensus.calculate_next_signer(myIPs, timestamp)
-            #Maybe not necessary, depends on P2P implementation
             p2p.broadcast_block(new_block)
 
         #Process transactions from the user
@@ -166,7 +166,20 @@ def run():
         if query is not None:
             info = chain.query_eid(query)
             oor.send(info)
-
+            
+        #answer queries from the network
+        #blocks
+        block_numbers = p2p.get_block_queries()
+        if block_numbers is not None:
+            response = []
+            for block in block_numbers:
+                response.append(chain.get_block(block))
+            p2p.answer_block_queries(response)
+            
+        #transaction pool
+        if p2p.tx_pool_query():
+            pool = chain.get_transaction_pool()
+            p2p.answer_tx_pool_query(pool)
 
 if __name__ == "__main__":
     #init()
