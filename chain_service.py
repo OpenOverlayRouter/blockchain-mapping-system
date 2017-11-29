@@ -52,13 +52,16 @@ class ChainService():
         block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber + 1, coinbase=coinbase))
         snapshot = self.chain.state.to_snapshot()
         s = state.State().from_snapshot(snapshot, Env(_EphemDB()))
+        print "creating block number " + str(prevnumber+1)
         for tx in self.transactions:
             try:
                 dictionary = {}
-                if prevnumber % 2 == 0 and tx.afi == 2:  # the next block has to be an IPv6 one
+                if (prevnumber+1) % 2 == 0 and int(tx.afi) == 1:  # the next block has to be an IPv4 one
+                    print "with transaction with afi " + str(tx.afi)
                     apply_transaction(s, tx, dictionary)
                     block.transactions.append(tx)
-                elif prevnumber % 2 != 0 and tx.afi == 1:  # the next block has to be an IPv4 one
+                elif (prevnumber+1) % 2 != 0 and int(tx.afi) == 2:  # the next block has to be an IPv6 one
+                    print "with transaction with afi " + str(tx.afi)
                     apply_transaction(s, tx, dictionary)
                     block.transactions.append(tx)
             except Exception as e:
@@ -98,6 +101,15 @@ class ChainService():
     # adds the block to the chain and eliminates from the pending transactions those transactions present in the block
     def add_block(self, block):
         assert isinstance(block, Block)
+        blocknumber = block.header.number
+        if blocknumber % 2 == 0:  # received block has to be IPv6
+            for tx in block.transactions:
+                if tx.afi != 2:
+                    raise Exception("IPv6 block with an IPv4 transaction, afi detected: " + str(tx.afi))
+        elif blocknumber % 2 != 0:
+            for tx in block.transactions:
+                if tx.afi != 1:
+                    raise Exception("IPv4 block with an IPv6 transaction, afi detected: " + str(tx.afi))
         self.chain.add_block(block)
         for tx in block.transactions:
             if tx in self.transactions:

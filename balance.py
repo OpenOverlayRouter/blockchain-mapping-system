@@ -80,6 +80,7 @@ class Balance(rlp.Serializable):
             ip = ipaddr_to_netaddr(afi, map_server[i + 1])
             address = map_server[i + 2]
             self.map_server[ip] = address
+        self.locator = {}
 
     def get_map_server(self):
         return self.map_server
@@ -95,6 +96,7 @@ class Balance(rlp.Serializable):
             l[0] = priority
             l[1] = weight
             self.locator[ip] = l
+        self.map_server = {}
 
     def get_locator(self):
         return self.locator
