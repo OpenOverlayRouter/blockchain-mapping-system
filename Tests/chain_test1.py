@@ -41,7 +41,7 @@ ks3 = Keystore.load("./keystore/a3e04410f475b813c01ca77ff12cb277991e62d2","TFG12
 tx1 = Transaction(0, 0, add2, 1, '192.152.0.0/12')
 tx1.sign(ks1.privkey)
 
-tx8 = Transaction(0, 0, add2, 2, '2001:cdba::3257:9652')
+tx8 = Transaction(1, 0, add2, 2, '2001:cdba::3257:9652')
 tx8.sign(ks1.privkey)
 
 tx2 = Transaction(0, 0, add3, 1, '192.152.0.0/16')
@@ -69,6 +69,12 @@ try:
      chain.add_pending_transaction(tx8)
 except:
      pass
+
+
+trans = chain.transactions
+print str(len(trans)) + " transacciones en espera"
+for tx in trans:
+     print tx.nonce, tx.to, tx.afi
 #
 #chain.add_pending_transaction(tx3)
 #chain.add_pending_transaction(tx4)
@@ -78,16 +84,16 @@ except:
 
 block = chain.create_block(add1)
 block.sign(ks1.privkey)
-print(sys.getsizeof(block))
-#print(block.signer.encode("HEX"))
-print(chain.verify_block_signature(block,"192.128.0.0"))
 chain.add_block(block)
 
-print("block.header.state_root")
-print(block.header.state_root.encode("HEX"))
-print("db.uncommitted")
 #print(env.db.uncommitted)
 #print(chain.verify_block_signature(block,"192.144.0.0"))
+print "UNO"
+trans = chain.transactions
+print str(len(trans)) + " transacciones en espera"
+for tx in trans:
+     print tx.nonce, tx.to, tx.afi
+
 try:
      time.sleep(2)
      chain.add_pending_transaction(tx2)
@@ -96,7 +102,12 @@ try:
      chain.add_block(block)
 except:
      pass
+trans = chain.transactions
+print str(len(trans)) + " transacciones en espera"
+for tx in trans:
+     print tx.nonce, tx.to, tx.afi
 
+print "DOS"
 try:
      time.sleep(2)
      chain.add_pending_transaction(tx8)
@@ -106,7 +117,12 @@ try:
      chain.add_block(block)
 except:
      pass
+trans = chain.transactions
+print str(len(trans)) + " transacciones en espera"
+for tx in trans:
+     print tx.nonce, tx.to, tx.afi
 
+print "TRES"
 try:
      time.sleep(2)
      chain.add_pending_transaction(tx4)
@@ -118,6 +134,10 @@ try:
      chain.add_block(block)
 except:
      pass
+trans = chain.transactions
+print str(len(trans)) + " transacciones en espera"
+for tx in trans:
+     print tx.nonce, tx.to, tx.afi
 
 for i in range (0, chain.chain.state.block_number):
     block = chain.get_block_by_number(i)
