@@ -29,7 +29,9 @@ class ChainService():
 
     def add_pending_transaction(self, tx):
         assert isinstance(tx, Transaction)
+        print "add_pending 1"
         validate_transaction(self.chain.state, tx)
+        print "add pending 2"
         # validate transaction
         try:
             # Transaction validation for broadcasting. Transaction is validated
@@ -102,13 +104,13 @@ class ChainService():
     def add_block(self, block):
         assert isinstance(block, Block)
         blocknumber = block.header.number
-        if blocknumber % 2 == 0:  # received block has to be IPv6
-            for tx in block.transactions:
-                if tx.afi != 2:
-                    raise Exception("IPv6 block with an IPv4 transaction, afi detected: " + str(tx.afi))
-        elif blocknumber % 2 != 0:
+        if blocknumber % 2 == 0:  # received block has to be IPv4
             for tx in block.transactions:
                 if tx.afi != 1:
+                    raise Exception("IPv6 block with an IPv4 transaction, afi detected: " + str(tx.afi))
+        elif blocknumber % 2 != 0: # received block has to be IPv6
+            for tx in block.transactions:
+                if tx.afi != 2:
                     raise Exception("IPv4 block with an IPv6 transaction, afi detected: " + str(tx.afi))
         self.chain.add_block(block)
         for tx in block.transactions:

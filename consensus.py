@@ -1,10 +1,12 @@
 import time
 import datetime
+import hashlib
 from ethapi import *
 from netaddr import IPAddress
 
 IPv4_PREFIX_LENGTH = 32
 IPv6_PREFIX_LENGTH = 128
+ETH_BPS = 14
 
 class Consensus():
 
@@ -42,8 +44,8 @@ class Consensus():
 		# TODO: calcular 30 segons desde el timestamp (self.timestamp?)
 		self.ips = ips
 		if self.next_signer in self.ips:
-			return true
-		return false
+			return true, self.next_signer
+		return false, self.next_signer
 
 # Returns the HASH of a block
 def get_hash_from_json_block(json_block):
@@ -51,6 +53,7 @@ def get_hash_from_json_block(json_block):
 
 # Returns the Timestamp of a block
 def get_timestamp_from_json_block(json_block):
+	#TODO: If json_block is NoneType
 	return json_block['result']['timestamp']
 
 def get_timestamp():
@@ -82,16 +85,104 @@ def from_hex_to_int(h):
 def sub_to_hex(h,decr):
 	return "0x"+'{:x}'.format(int(h,0)-decr)
 
+# Add sum times to an hexa value
+def add_to_hex(h,sum):
+	return "0x"+'{:x}'.format(int(h,0)+sum)
+
 # Returns the block that was in the chain at timestamp time
 def get_block_from_timestamp(last_block_number,timestamp):
+	found = False
 	block_number = last_block_number
 	json_block = get_block_by_number(last_block_number)
 	block_timestamp = from_hex_to_int(get_timestamp_from_json_block(json_block))
-	while (timestamp < block_timestamp):
+
+	if timestamp >= block_timestamp:
+		json_block = None
+	else:
+		while not found:
+			if timestamp < block_timestamp:
+				if (block_timestamp-timestamp)/ETH_BPS >= 14:
+					variance = int((block_timestamp-timestamp)/ETH_BPS)
+					block_number = sub_to_hex(block_number,variance)
+					json_block = get_block_by_number(block_number)
+					block_timestamp = from_hex_to_int(get_timestamp_from_json_block(json_block))
+				else:
+					candidate_block_number = sub_to_hex(block_number,1)
+					candidate_json_block = get_block_by_number(candidate_block_number)
+					candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
+					while candidate_timestamp > timestamp:
+						candidate_block_number = sub_to_hex(candidate_block_number,1)
+						candidate_json_block = get_block_by_number(candidate_block_number)
+						candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
+					if candidate_timestamp == timestamp:
+						json_block = candidate_json_block
+						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(json_block)), timestamp
+					else:
+						json_block = get_block_by_number(add_to_hex(candidate_block_number,1))
+						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(json_block)), timestamp
+						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(get_block_by_number(sub_to_hex(candidate_block_number,1)))), timestamp
+					found = True
+			elif block_timestamp < timestamp:
+				if (timestamp-block_timestamp)/ETH_BPS >= 14:
+					variance = int((timestamp-block_timestamp)/ETH_BPS)
+					block_number = add_to_hex(block_number,variance)
+					json_block = get_block_by_number(block_number)
+					block_timestamp = from_hex_to_int(get_timestamp_from_json_block(json_block))
+				else:
+					candidate_block_number = add_to_hex(block_number,1)
+					candidate_json_block = get_block_by_number(candidate_block_number)
+					candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
+					while candidate_timestamp < timestamp:
+						candidate_block_number = add_to_hex(candidate_block_number,1)
+						candidate_json_block = get_block_by_number(candidate_block_number)
+						candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
+					if candidate_timestamp == timestamp:
+						json_block = candidate_json_block
+						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(json_block)), timestamp
+					else:
+						json_block = get_block_by_number(sub_to_hex(candidate_block_number,1))
+						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(json_block)), timestamp
+						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(get_block_by_number(add_to_hex(candidate_block_number,1)))), timestamp
+					found = True
+
+		#if timestamp > block_timestamp:
+
+		#elif timestamp < block_timestamp:
+
+
+
+	'''actual_timestamp = get_timestamp()
+	variance = int((actual_timestamp-timestamp)/ETH_BPS)
+	print variance
+	candidate_block_number = from_hex_to_int(last_block_number)-variance
+	candidate_block = get_block_by_number(hex(candidate_block_number))
+
+	candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_block))
+	if ((timestamp - candidate_timestamp) > 0):
+		print "Entering IF"
+		while (timestamp-candidate_timestamp) > ETH_BPS:
+			print "LOOP1"
+			candidate_block_number = candidate_block_number+((timestamp-candidate_timestamp)/ETH_BPS)
+			candidate_block = get_block_by_number(hex(candidate_block_number))
+			candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_block))
+		print candidate_block_number
+		json_block = get_block_by_number(hex(candidate_block_number-1))
+	else:
+		print "Entering ELSE"
+		while (candidate_timestamp-timestamp) > ETH_BPS:
+			print "LOOP2"
+			candidate_block_number = candidate_block_number+((timestamp-candidate_timestamp)/ETH_BPS)
+			candidate_block = get_block_by_number(hex(candidate_block_number))
+			candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_block))
+		print candidate_block_number
+		json_block = get_block_by_number(hex(candidate_block_number+1))
+	'''
+	'''while (timestamp < block_timestamp):
 		print "Getting old blocks..."
 		block_number = sub_to_hex(block_number,1)
 		json_block = get_block_by_number(block_number)
 		block_timestamp = from_hex_to_int(get_timestamp_from_json_block(json_block))
+	'''
 	return json_block
 
 # Returns a random HASH mixing NIST and ETHEREUM HASH block
@@ -102,8 +193,12 @@ def get_random_hash(timestamp):
 	# Get Ethereum hash
 	last_block_number = get_last_block_number()
 	selected_block_number = get_block_from_timestamp(last_block_number,timestamp)
-	eth_hash = get_hash_from_json_block(selected_block_number)
-	eth_hash_bits = from_hex_to_bits(eth_hash,256)
+	if selected_block_number == None:
+		print "No new ETH block yet"
+		# TODO: Exception
+	else: 
+		eth_hash = get_hash_from_json_block(selected_block_number)
+		eth_hash_bits = from_hex_to_bits(eth_hash,256)
 
 	# Get Nist hash
 	nist_hash = get_hash_from_NIST(int(timestamp))
@@ -128,7 +223,6 @@ def consensus_for_IPv6(hash):
 		for j in range (i+1,i+ngroup):
 			ini_xor = ini_xor^int(hash[j],2)
 		address = address+str(ini_xor)
-
 	return address
 
 # Given a random HASH, returns the selected address in a list
@@ -140,16 +234,20 @@ def consensus_for_IPv4(hash):
 		for j in range (i,i+ngroup):
 			ini_xor = ini_xor^int(hash[j],2)
 		address = address+str(ini_xor)
-
 	return address
+
+def extractor(hash_string):
+	new_hash = hashlib.sha256(hash_string).hexdigest()
+	return from_hex_to_bits(new_hash,256)
 
 # Given the protocol type, returns the selected address in the correct format
 def who_signs(protocol, timestamp):
-	hash = get_random_hash(timestamp)
+	hash_res = get_random_hash(timestamp)
+	entropy_hash = extractor(hash_res)
 	if protocol == "IPv6":
-		return formalize_IP(consensus_for_IPv6(hash))
+		return formalize_IP(consensus_for_IPv6(entropy_hash))
 	else:
-		return formalize_IP(consensus_for_IPv4(hash))
+		return formalize_IP(consensus_for_IPv4(entropy_hash))
 
 #print who_signs("IPv4")
 #TODO:
