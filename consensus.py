@@ -116,8 +116,11 @@ def get_block_from_timestamp(last_block_number,timestamp):
 						candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
 					if candidate_timestamp == timestamp:
 						json_block = candidate_json_block
+						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(json_block)), timestamp
 					else:
 						json_block = get_block_by_number(add_to_hex(candidate_block_number,1))
+						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(json_block)), timestamp
+						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(get_block_by_number(sub_to_hex(candidate_block_number,1)))), timestamp
 					found = True
 			elif block_timestamp < timestamp:
 				if (timestamp-block_timestamp)/ETH_BPS >= 14:
@@ -135,8 +138,11 @@ def get_block_from_timestamp(last_block_number,timestamp):
 						candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
 					if candidate_timestamp == timestamp:
 						json_block = candidate_json_block
+						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(json_block)), timestamp
 					else:
 						json_block = get_block_by_number(sub_to_hex(candidate_block_number,1))
+						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(json_block)), timestamp
+						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(get_block_by_number(add_to_hex(candidate_block_number,1)))), timestamp
 					found = True
 
 		#if timestamp > block_timestamp:
