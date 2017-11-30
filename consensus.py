@@ -1,5 +1,6 @@
 import time
 import datetime
+import hashlib
 from ethapi import *
 from netaddr import IPAddress
 
@@ -216,7 +217,6 @@ def consensus_for_IPv6(hash):
 		for j in range (i+1,i+ngroup):
 			ini_xor = ini_xor^int(hash[j],2)
 		address = address+str(ini_xor)
-
 	return address
 
 # Given a random HASH, returns the selected address in a list
@@ -228,17 +228,20 @@ def consensus_for_IPv4(hash):
 		for j in range (i,i+ngroup):
 			ini_xor = ini_xor^int(hash[j],2)
 		address = address+str(ini_xor)
-
 	return address
+
+def extractor(hash_string):
+	new_hash = hashlib.sha256(hash_string).hexdigest()
+	return from_hex_to_bits(new_hash,256)
 
 # Given the protocol type, returns the selected address in the correct format
 def who_signs(protocol, timestamp):
-	hash = get_random_hash(timestamp)
-	#TODO: Extractor(hash)
+	hash_res = get_random_hash(timestamp)
+	entropy_hash = extractor(hash_res)
 	if protocol == "IPv6":
-		return formalize_IP(consensus_for_IPv6(hash))
+		return formalize_IP(consensus_for_IPv6(entropy_hash))
 	else:
-		return formalize_IP(consensus_for_IPv4(hash))
+		return formalize_IP(consensus_for_IPv4(entropy_hash))
 
 #print who_signs("IPv4")
 #TODO:
