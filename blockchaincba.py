@@ -143,7 +143,7 @@ def run():
 
 
         #Check if the node has to sign the next block
-        signer, me = consensus.amIsinger(myIPs)
+        me, signer = consensus.amIsinger(myIPs)
         if me:
             new_block = chain.create_block(signer)
             #Like receiving a new block
@@ -204,7 +204,7 @@ if __name__ == "__main__":
     #block_number = chain.get_head_block().__getattribute__("number")
     #print block_number
     #print timestamp
-    timestamp = 1511994271
+    timestamp = 1512056786
     block_number = 0
     consensus = init_consensus()
     consensus.calculate_next_signer(0,timestamp,block_number)

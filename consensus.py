@@ -43,8 +43,8 @@ class Consensus():
 		# TODO: calcular 30 segons desde el timestamp (self.timestamp?)
 		self.ips = ips
 		if self.next_signer in self.ips:
-			return true
-		return false
+			return true, self.next_signer
+		return false, self.next_signer
 
 # Returns the HASH of a block
 def get_hash_from_json_block(json_block):
@@ -84,12 +84,67 @@ def from_hex_to_int(h):
 def sub_to_hex(h,decr):
 	return "0x"+'{:x}'.format(int(h,0)-decr)
 
+# Add sum times to an hexa value
+def add_to_hex(h,sum):
+	return "0x"+'{:x}'.format(int(h,0)+sum)
+
 # Returns the block that was in the chain at timestamp time
 def get_block_from_timestamp(last_block_number,timestamp):
+	found = False
 	block_number = last_block_number
 	json_block = get_block_by_number(last_block_number)
 	block_timestamp = from_hex_to_int(get_timestamp_from_json_block(json_block))
-	actual_timestamp = get_timestamp()
+
+	if timestamp >= block_timestamp:
+		json_block = None
+	else:
+		while not found:
+			if timestamp < block_timestamp:
+				if (block_timestamp-timestamp)/ETH_BPS >= 14:
+					variance = int((block_timestamp-timestamp)/ETH_BPS)
+					block_number = sub_to_hex(block_number,variance)
+					json_block = get_block_by_number(block_number)
+					block_timestamp = from_hex_to_int(get_timestamp_from_json_block(json_block))
+				else:
+					candidate_block_number = sub_to_hex(block_number,1)
+					candidate_json_block = get_block_by_number(candidate_block_number)
+					candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
+					while candidate_timestamp > timestamp:
+						candidate_block_number = sub_to_hex(candidate_block_number,1)
+						candidate_json_block = get_block_by_number(candidate_block_number)
+						candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
+					if candidate_timestamp == timestamp:
+						json_block = candidate_json_block
+					else:
+						json_block = get_block_by_number(add_to_hex(candidate_block_number,1))
+					found = True
+			elif block_timestamp < timestamp:
+				if (timestamp-block_timestamp)/ETH_BPS >= 14:
+					variance = int((timestamp-block_timestamp)/ETH_BPS)
+					block_number = add_to_hex(block_number,variance)
+					json_block = get_block_by_number(block_number)
+					block_timestamp = from_hex_to_int(get_timestamp_from_json_block(json_block))
+				else:
+					candidate_block_number = add_to_hex(block_number,1)
+					candidate_json_block = get_block_by_number(candidate_block_number)
+					candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
+					while candidate_timestamp < timestamp:
+						candidate_block_number = add_to_hex(candidate_block_number,1)
+						candidate_json_block = get_block_by_number(candidate_block_number)
+						candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
+					if candidate_timestamp == timestamp:
+						json_block = candidate_json_block
+					else:
+						json_block = get_block_by_number(sub_to_hex(candidate_block_number,1))
+					found = True
+
+		#if timestamp > block_timestamp:
+
+		#elif timestamp < block_timestamp:
+
+
+
+	'''actual_timestamp = get_timestamp()
 	variance = int((actual_timestamp-timestamp)/ETH_BPS)
 	print variance
 	candidate_block_number = from_hex_to_int(last_block_number)-variance
@@ -114,7 +169,7 @@ def get_block_from_timestamp(last_block_number,timestamp):
 			candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_block))
 		print candidate_block_number
 		json_block = get_block_by_number(hex(candidate_block_number+1))
-
+	'''
 	'''while (timestamp < block_timestamp):
 		print "Getting old blocks..."
 		block_number = sub_to_hex(block_number,1)
@@ -131,8 +186,12 @@ def get_random_hash(timestamp):
 	# Get Ethereum hash
 	last_block_number = get_last_block_number()
 	selected_block_number = get_block_from_timestamp(last_block_number,timestamp)
-	eth_hash = get_hash_from_json_block(selected_block_number)
-	eth_hash_bits = from_hex_to_bits(eth_hash,256)
+	if selected_block_number == None:
+		print "No new ETH block yet"
+		# TODO: Exception
+	else: 
+		eth_hash = get_hash_from_json_block(selected_block_number)
+		eth_hash_bits = from_hex_to_bits(eth_hash,256)
 
 	# Get Nist hash
 	nist_hash = get_hash_from_NIST(int(timestamp))
