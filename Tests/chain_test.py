@@ -100,7 +100,8 @@ try:
      block = chain.create_block(add1)
      block.sign(ks1.privkey)
      chain.add_block(block)
-except:
+except Exception as e:
+     print e
      pass
 
 try:
@@ -110,7 +111,8 @@ try:
      block = chain.create_block(add1)
      block.sign(ks1.privkey)
      chain.add_block(block)
-except:
+except Exception as e:
+     print e
      pass
 
 try:
@@ -119,7 +121,8 @@ try:
      block = chain.create_block(add1)
      block.sign(ks1.privkey)
      chain.add_block(block)
-except:
+except Exception as e:
+     print e
      pass
 
 try:
@@ -128,7 +131,8 @@ try:
      block = chain.create_block(add1)
      block.sign(ks1.privkey)
      chain.add_block(block)
-except:
+except Exception as e:
+     print e
      pass
 
 try:
@@ -138,7 +142,8 @@ try:
      block = chain.create_block(add1)
      block.sign(ks1.privkey)
      chain.add_block(block)
-except:
+except Exception as e:
+     print e
      pass
 
 

@@ -67,7 +67,8 @@ chain = ChainService(env)
 try:
      chain.add_pending_transaction(tx1)
      chain.add_pending_transaction(tx8)
-except:
+except Exception as e:
+     print e
      pass
 
 

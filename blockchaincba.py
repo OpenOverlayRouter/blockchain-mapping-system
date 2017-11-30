@@ -194,28 +194,11 @@ if __name__ == "__main__":
     r = Response(nonce=12345678, flag=0,info=mrr)
 
     while 1:
-        """
-        rec_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        rec_socket.bind((HOST, SND_PORT))
-        """
-        print len(r.to_bitstream())
-        print r.to_bytes().encode('HEX')
-        write_socket(r.to_bytes(), snd_socket)
-        """
-        res = rec_socket.recvfrom(8)
+
+        res = rec_socket.recvfrom(9)
         if res is not None:
             print("RES")
             print(res[0].encode('HEX'))
-"""
-        time.sleep(1)
-        #time.sleep(5)
-        """
-        res = rec_socket.recvfrom(64)
-        if res is not None:
-            print(res[0].encode('utf8'))
-        res = None
-            #write_socket("Respondiendo a..." + str(res), snd_socket)
-        """
 
 
     chain = init_chain()
