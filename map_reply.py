@@ -18,18 +18,11 @@ def get_bitstream_for_afi_address(address):
         return BitArray(16)
 
     # IPv4
-    if isinstance(address, IPv4Address):
-        return BitArray('uint:16=1, uint:32=%d' % int(address))
+    if address.version == 4:
+        return BitArray('uint:16=1, uint:32=%d' % int(address.ip.ip))
 
-    elif isinstance(address, IPv4Network):
-        return BitArray('uint:16=1, uint:32=%d' % int(address[0]))
-
-    # IPv6
-    elif isinstance(address, IPv6Address):
-        return BitArray('uint:16=2, uint:128=%d' % int(address))
-
-    elif isinstance(address, IPv6Network):
-        return BitArray('uint:16=2, uint:128=%d' % int(address[0]))
+    elif address.version == 6:
+        return BitArray('uint:16=2, uint:128=%d' % int(address.ip.ip))
 
     else:
         raise ValueError('Unsupported address type')
@@ -176,12 +169,16 @@ class MapServers(object):
         bitstream = BitArray('uint:8=%d' % self.server_count)
 
         # Add the list of map_servers
-        for i in range(0, len(self.info), 3):
-            bitstream += BitArray('uint:16=%d' % self.info[i])
-            if self.info[i] == 1:  # IPv4
-                bitstream += BitArray('uint:32=%d' % self.info[i + 1])
-            elif self.info[i] == 2:
-                bitstream += BitArray('uint:128=%d' % self.info[i + 1])
+        for key in self.info:
+            if key.version == 4:
+                afi = 1
+            elif key.version == 6:
+                afi = 2
+            bitstream += BitArray('uint:16=%d' % afi)
+            if afi == 1:  # IPv4
+                bitstream += BitArray('uint:32=%d' % str(key))
+            elif afi == 2:
+                bitstream += BitArray('uint:128=%d' % str(key))
 
         return bitstream
 
