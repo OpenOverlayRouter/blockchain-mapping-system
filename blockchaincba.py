@@ -183,8 +183,10 @@ if __name__ == "__main__":
             #print(res)
             #write_socket("Respondiendo a..." + str(res), snd_socket)
 
-
-
+    reply = MapReplyRecord()
+    bits = reply.to_bitstream()
+    print(bits)
+"""
     chain = init_chain()
     #timestamp = chain.get_head_block().get_timestamp()
     timestamp = chain.get_head_block().__getattribute__("timestamp")
@@ -196,6 +198,6 @@ if __name__ == "__main__":
     consensus = init_consensus()
     consensus.calculate_next_signer(0,timestamp,block_number)
     print consensus.get_next_signer()
-
+"""
     #consensus.calculate_next_signer(0,timestamp)
     #print consensus.get_next_signer()
