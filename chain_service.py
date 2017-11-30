@@ -14,7 +14,8 @@ from apply import apply_transaction
 from utils import normalize_address
 from own_exceptions import UnsignedTransaction
 from state import State
-
+from map_reply import Response, LocatorRecord, MapReplyRecord, MapServers
+from netaddr import IPNetwork
 
 class ChainService():
     """
@@ -183,13 +184,27 @@ class ChainService():
                            transaction_data["metadata"])
 
     # queries the eid to the blockchain and returns the response
-    def query_eid(self, ipaddr):
-        address = normalize_address(self.chain.patricia[str(ipaddr)])
-        balance = self.chain.state.get_balance(address)
-        if balance is not None:
-            if len(balance.map_server.keys()) > 0:
-                return balance.map_server
-            elif len(balance.locator.keys()) > 0:
-                return balance.locator
+    def query_eid(self, ipaddr, nonce):
+        try:
+            address = normalize_address(self.chain.patricia.get_value(str(ipaddr)))
+            balance = self.chain.state.get_balance(address)
+            if balance is not None:
+                if len(balance.map_server.keys()) > 0:
+                    map_servers = MapServers(server_count=len(balance.map_server.keys()), info=balance.map_server)
+                    resp = Response(nonce=nonce, flag=1, info=map_servers)
+                    return resp
+                elif len(balance.locator.keys()) > 0:
+                    locator_records = []
+                    for key in balance.locator.keys():
+                        locator_records.append(LocatorRecord(priority=balance.locator[key][0],
+                                                             weight=balance.locator[key][1],
+                                                             locator=key))
+                    map_reply = MapReplyRecord(eid_prefix=IPNetwork(ipaddr), locator_records=locator_records)
+                    resp = Response(nonce=nonce, flag=0, info=map_reply)
+                    return resp
+            else:
+                print "Address " + str(address) + " has no balance"
+        except:
+            print "IP address " + str(ipaddr) + " is not owned by anybody"
         
         return None
