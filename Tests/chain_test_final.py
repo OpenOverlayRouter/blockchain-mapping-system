@@ -40,15 +40,16 @@ ip6List = list(IPNetwork('2001:db8:0:1:1:1:1:1/124'))
 i = 0
 nonce = 0
 blockNum = 1
+"""
+print "Adding some Own IP TXs"
+
 while i < len(ip4List):
     if(blockNum%2 == 0):
-        print("444444444444444444444444444444444444444444444444444444444444444444444444")
         tx = Transaction(nonce, 0, add2, 1, str(ip4List[i]))
         tx.sign(ks1.privkey)
         chain.add_pending_transaction(tx)
         i += 1
     else:
-        print("666666666666666666666666666666666666666666666666666666666666666666666666")
         tx = Transaction(nonce, 0, add2, 2, str(ip6List[i]))
         tx.sign(ks1.privkey)
         chain.add_pending_transaction(tx)
@@ -68,13 +69,106 @@ i = 0
 nonce = 0
 while i < len(ip4List):
     if(blockNum%2 == 0):
-        print("444444444444444444444444444444444444444444444444444444444444444444444444")
+        tx = Transaction(nonce, 0, add3, 1, str(ip4List[i]))
+        tx.sign(ks2.privkey)
+        chain.add_pending_transaction(tx)
+        i += 1
+    else:
+        tx = Transaction(nonce, 0, add3, 2, str(ip6List[i]))
+        tx.sign(ks2.privkey)
+        chain.add_pending_transaction(tx)
+    block = chain.create_block(add1)
+    block.sign(ks2.privkey)
+    chain.add_block(block)
+    nonce += 1
+    blockNum += 1
+    time.sleep(1)
+"""
+
+print "Adding some Delegated IP TXs"
+
+print(chain.get_own_ips(add1))
+ip4List = list(IPNetwork('192.168.2.0/28'))
+ip6List = list(IPNetwork('2001:db9:0:1:1:1:1:1/124'))
+
+nonce = 0
+while i < len(ip4List):
+    if(blockNum%2 == 0):
+        tx = Transaction(nonce, 1, add2, 1, str(ip4List[i]))
+        tx.sign(ks1.privkey)
+        chain.add_pending_transaction(tx)
+        i += 1
+    else:
+        tx = Transaction(nonce, 1, add2, 2, str(ip6List[i]))
+        tx.sign(ks1.privkey)
+        chain.add_pending_transaction(tx)
+    block = chain.create_block(add1)
+    block.sign(ks1.privkey)
+    chain.add_block(block)
+    nonce += 1
+    blockNum += 1
+    time.sleep(1)
+
+
+ip4List = list(IPNetwork('193.168.2.0/28'))
+ip6List = list(IPNetwork('2002:db9:0:1:1:1:1:1/124'))
+
+
+i = 0
+while i < len(ip4List):
+    if(blockNum%2 == 0):
+        tx = Transaction(nonce, 1, add3, 1, str(ip4List[i]))
+        tx.sign(ks1.privkey)
+        chain.add_pending_transaction(tx)
+        i += 1
+    else:
+        tx = Transaction(nonce, 1, add3, 2, str(ip6List[i]))
+        tx.sign(ks1.privkey)
+        chain.add_pending_transaction(tx)
+    block = chain.create_block(add1)
+    block.sign(ks1.privkey)
+    chain.add_block(block)
+    nonce += 1
+    blockNum += 1
+    time.sleep(1)
+
+print "Overlaping som IPs"
+
+print(chain.get_own_ips(add1))
+ip4List = list(IPNetwork('192.168.2.0/28'))
+ip6List = list(IPNetwork('2001:db9:0:1:1:1:1:1/124'))
+
+nonce = 64
+while i < len(ip4List):
+    if(blockNum%2 == 0):
+        tx = Transaction(nonce, 0, add3, 1, str(ip4List[i]))
+        tx.sign(ks1.privkey)
+        chain.add_pending_transaction(tx)
+        i += 1
+    else:
+        tx = Transaction(nonce, 0, add3, 2, str(ip6List[i]))
+        tx.sign(ks1.privkey)
+        chain.add_pending_transaction(tx)
+    block = chain.create_block(add1)
+    block.sign(ks1.privkey)
+    chain.add_block(block)
+    nonce += 1
+    blockNum += 1
+    time.sleep(1)
+
+
+ip4List = list(IPNetwork('193.168.2.0/28'))
+ip6List = list(IPNetwork('2002:db9:0:1:1:1:1:1/124'))
+
+
+i = 0
+while i < len(ip4List):
+    if(blockNum%2 == 0):
         tx = Transaction(nonce, 0, add2, 1, str(ip4List[i]))
         tx.sign(ks1.privkey)
         chain.add_pending_transaction(tx)
         i += 1
     else:
-        print("666666666666666666666666666666666666666666666666666666666666666666666666")
         tx = Transaction(nonce, 0, add2, 2, str(ip6List[i]))
         tx.sign(ks1.privkey)
         chain.add_pending_transaction(tx)
@@ -84,6 +178,8 @@ while i < len(ip4List):
     nonce += 1
     blockNum += 1
     time.sleep(1)
+
+chain.query_eid("193.168.2.0",0)
 
 print("ADDRESS1")
 print "Own IPS"
