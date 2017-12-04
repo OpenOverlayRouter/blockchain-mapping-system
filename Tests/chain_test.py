@@ -101,7 +101,6 @@ try:
      chain.add_block(block)
 except Exception as e:
      print e
-     pass
 
 try:
      time.sleep(2)
@@ -112,7 +111,6 @@ try:
      chain.add_block(block)
 except Exception as e:
      print e
-     pass
 
 try:
      time.sleep(2)
@@ -122,7 +120,6 @@ try:
      chain.add_block(block)
 except Exception as e:
      print e
-     pass
 
 try:
      time.sleep(2)
@@ -132,7 +129,6 @@ try:
      chain.add_block(block)
 except Exception as e:
      print e
-     pass
 
 try:
      time.sleep(2)
@@ -143,7 +139,6 @@ try:
      chain.add_block(block)
 except Exception as e:
      print e
-     pass
 
 
 print "el patricia contiene:"

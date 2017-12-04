@@ -196,13 +196,13 @@ class Response(object):
     def to_bitstream(self):
 
         # Add the nonce
-        bitstream = BitArray('uint:32=%d' % self.nonce)
+        bitstream = BitArray('uint:64=%d' % self.nonce)
 
         #Add the flag bit
-        #bitstream += BitArray('uint:1=%d' % self.flag)
+        bitstream += BitArray('uint:1=%d' % self.flag)
 
         #Add the info
-        #bitstream += self.info.to_bitstream()
+        bitstream += self.info.to_bitstream()
 
         return bitstream
 
