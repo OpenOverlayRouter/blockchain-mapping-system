@@ -193,12 +193,20 @@ if __name__ == "__main__":
     mrr = LocatorRecord()
     r = Response(nonce=12345678, flag=0,info=mrr)
 
+    write_socket(snd_socket)
     while 1:
-
-        res = rec_socket.recvfrom(9)
+        res = rec_socket.recvfrom(50)[0]
         if res is not None:
-            print("RES")
-            print(res[0].encode('HEX'))
+            print(struct.pack('>I',(int(struct.unpack("I",res[0:4])[0]))).encode('HEX'))
+            print(struct.pack('>I',(int(struct.unpack("I",res[4:8])[0]))).encode('HEX'))
+            afi = int(struct.unpack("H",res[8:10])[0])
+            if afi == 1:
+                ip = IPv4Address(res[18:])
+                print(ip)
+            elif afi == 2:
+                ip = IPv6Address(res[18:])
+                print(ip)
+
 
 
     #chain = init_chain()
