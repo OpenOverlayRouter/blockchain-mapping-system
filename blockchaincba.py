@@ -185,15 +185,14 @@ if __name__ == "__main__":
     #init()
     #run
     #test_map_reply()
+    """
     keys = init_keystore()
     chain = init_chain()
     chain.query_eid(keys[0].keystore['address'], IPv4Address('192.168.0.1'))
-    '''#
-    '''rec_socket, snd_socket = open_sockets()
+    """
+    rec_socket, snd_socket = open_sockets()
     mrr = LocatorRecord()
     r = Response(nonce=12345678, flag=0,info=mrr)
-
-    write_socket(snd_socket)
     while 1:
         res = rec_socket.recvfrom(50)[0]
         if res is not None:
@@ -206,7 +205,9 @@ if __name__ == "__main__":
             elif afi == 2:
                 ip = IPv6Address(res[18:])
                 print(ip)
-
+            msg = struct.pack('>I',(int(struct.unpack("I",res[0:4])[0]))) + struct.pack('>I',(int(struct.unpack("I",res[4:8])[0]))) + struct.pack('H',int(struct.unpack("H",res[8:10])[0]))
+            write_socket(msg,snd_socket)
+        time.sleep(0.5)
 
 
     #chain = init_chain()
