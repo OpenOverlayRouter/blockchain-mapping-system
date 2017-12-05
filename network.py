@@ -312,9 +312,6 @@ if __name__ == '__main__':
         sys.exit(1)
     '''if len(sys.argv) == 2:
         HOST = sys.argv[1]'''
-    elif len(sys.argv) > 2:
-        print ("Error: too many arguments")
-        sys.exit(1)
 
     try:
         factory = myFactory()
