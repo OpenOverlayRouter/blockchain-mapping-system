@@ -45,13 +45,15 @@ signer, me amIsigner(myIPs ip)
 #	me: True if the node has to sign the new block
 #       signer: IP that has to sign the new block
 
+#DEPRECATED
 block get_solid_block()
 #returns a definitve block to be added to the chain, or None if there is no data
 
+#DEPRECATED
 store_block(block bl)
 #adds a block to the structure that handles forks
 
-
+#DEPRECATED
 string get_last_block_hash()
 #returns the hash of the block in the tip of the chain
 #used when creating a new block

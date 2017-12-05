@@ -117,12 +117,6 @@ def run():
                     myIPs = chain.add_block(block)
                     timestamp = chain.get_head_block().get_timestamp()
                     consensus.calculate_next_signer(myIPs, timestamp)
-                    #Maybe not necessary, depends on P2P implementation
-                    #p2p.broadcast_block(block)
-                else:
-                    #reset consensus alg
-                    #@Eric: really needed?? Or we can assume incorrect block == non-existent block?
-                    consensus.calculate_next_signer(None)
                 block = p2p.get_block()
         except Exception as e:
             print "Exception while processing a received block"
