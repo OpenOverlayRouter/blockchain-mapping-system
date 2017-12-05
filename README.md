@@ -17,3 +17,5 @@
 **bitcoin:** *Keystore and bitcoin utils* (tested 1.1.42)
 
 **:** *Database library* (tested v0.194)
+
+**twisted** *Event-driven networking engine* (tested 17.9.0)
