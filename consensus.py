@@ -144,10 +144,8 @@ def get_random_hash(timestamp):
 	last_block_number = get_last_block_number()
 	selected_block_number = get_block_from_timestamp(last_block_number,timestamp)
 	if selected_block_number == None:
-		#print "No new ETH block yet"
-		raise Exception("No new ETH block yet")
+		print "No new ETH block yet"
 		return None
-		# TODO: Exception
 	else: 
 		eth_hash = get_hash_from_json_block(selected_block_number)
 		eth_hash_bits = from_hex_to_bits(eth_hash,256)

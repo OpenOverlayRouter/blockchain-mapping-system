@@ -203,14 +203,13 @@ if __name__ == "__main__":
         time.sleep(0.5)
     '''
 
-    #chain = init_chain()
-    #timestamp = chain.get_head_block().get_timestamp()
-    #timestamp = chain.get_head_block().__getattribute__("timestamp")
-    #block_number = chain.get_head_block().__getattribute__("number")
-    #print block_number
-    #print timestamp
-    timestamp = 1512331226
-    block_number = 0
+    chain = init_chain()
+    timestamp = chain.get_head_block().get_timestamp()
+    timestamp = chain.get_head_block().__getattribute__("timestamp")
+    block_number = chain.get_head_block().__getattribute__("number")
+    print block_number
+    print timestamp
+    #block_number = 0
     consensus = init_consensus()
     consensus.calculate_next_signer(0,timestamp,block_number)
     print consensus.get_next_signer()
