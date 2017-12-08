@@ -101,7 +101,6 @@ def get_block_from_timestamp(last_block_number,timestamp):
 	else:
 		while not found:
 			if timestamp < block_timestamp:
-				#print "timestamp < block_timestamp"
 				if (block_timestamp-timestamp)/ETH_BPS >= 14:
 					variance = int((block_timestamp-timestamp)/ETH_BPS)
 					block_number = sub_to_hex(block_number,variance)
@@ -115,13 +114,7 @@ def get_block_from_timestamp(last_block_number,timestamp):
 						candidate_block_number = sub_to_hex(candidate_block_number,1)
 						candidate_json_block = get_block_by_number(candidate_block_number)
 						candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
-					#if candidate_timestamp == timestamp:
 					json_block = candidate_json_block
-					#	print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(json_block)), timestamp
-					#else:
-						#json_block = get_block_by_number(add_to_hex(candidate_block_number,1))
-						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(json_block)), timestamp
-						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(get_block_by_number(sub_to_hex(candidate_block_number,1)))), timestamp
 					found = True
 			elif block_timestamp < timestamp:
 				if (timestamp-block_timestamp)/ETH_BPS >= 14:
@@ -139,11 +132,8 @@ def get_block_from_timestamp(last_block_number,timestamp):
 						candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
 					if candidate_timestamp == timestamp:
 						json_block = candidate_json_block
-						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(json_block)), timestamp
 					else:
 						json_block = get_block_by_number(sub_to_hex(candidate_block_number,1))
-						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(json_block)), timestamp
-						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(get_block_by_number(add_to_hex(candidate_block_number,1)))), timestamp
 					found = True
 
 	return json_block
@@ -153,11 +143,17 @@ def get_random_hash(timestamp):
 	# Get timestamp to work with
 	#timestamp = get_timestamp()
 
+except Exception as e:
+            print "Exception while processing a received block"
+            print e
+
+
 	# Get Ethereum hash
 	last_block_number = get_last_block_number()
 	selected_block_number = get_block_from_timestamp(last_block_number,timestamp)
 	if selected_block_number == None:
-		print "No new ETH block yet"
+		#print "No new ETH block yet"
+		raise Exception("No new ETH block yet")
 		return None
 		# TODO: Exception
 	else: 

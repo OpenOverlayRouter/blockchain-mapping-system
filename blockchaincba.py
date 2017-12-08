@@ -176,7 +176,7 @@ def run():
             p2p.answer_tx_pool_query(pool)
 
 if __name__ == "__main__":
-    run()
+    #run()
 
     """
     keys = init_keystore()
@@ -209,11 +209,11 @@ if __name__ == "__main__":
     #block_number = chain.get_head_block().__getattribute__("number")
     #print block_number
     #print timestamp
-    '''timestamp = 1512331226
+    timestamp = 1512331226
     block_number = 0
     consensus = init_consensus()
     consensus.calculate_next_signer(0,timestamp,block_number)
-    print consensus.get_next_signer()'''
+    print consensus.get_next_signer()
 
     #consensus.calculate_next_signer(0,timestamp)
     #print consensus.get_next_signer()
