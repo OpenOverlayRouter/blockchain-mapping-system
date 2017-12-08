@@ -100,6 +100,7 @@ def get_block_from_timestamp(last_block_number,timestamp):
 		json_block = None
 	else:
 		while not found:
+			print "Consensus: Searching old block timestamp"
 			if timestamp < block_timestamp:
 				if (block_timestamp-timestamp)/ETH_BPS >= 14:
 					variance = int((block_timestamp-timestamp)/ETH_BPS)
@@ -111,6 +112,7 @@ def get_block_from_timestamp(last_block_number,timestamp):
 					candidate_json_block = get_block_by_number(candidate_block_number)
 					candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
 					while candidate_timestamp > timestamp:
+						print "Consensus: block timestamp is close..."
 						candidate_block_number = sub_to_hex(candidate_block_number,1)
 						candidate_json_block = get_block_by_number(candidate_block_number)
 						candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
@@ -127,6 +129,7 @@ def get_block_from_timestamp(last_block_number,timestamp):
 					candidate_json_block = get_block_by_number(candidate_block_number)
 					candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
 					while candidate_timestamp < timestamp:
+						print "Consensus: block timestamp is close..."
 						candidate_block_number = add_to_hex(candidate_block_number,1)
 						candidate_json_block = get_block_by_number(candidate_block_number)
 						candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))

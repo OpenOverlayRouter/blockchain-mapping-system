@@ -55,6 +55,7 @@ class Chain(object):
             header = self.state.prev_headers[0]
 
         self.genesis = Block(header)
+	print header.timestamp
         self.state.prev_headers[0] = header
         initialize_genesis_keys(self.state, self.genesis)
 
@@ -145,7 +146,7 @@ class Chain(object):
         try:
             block_rlp = self.db.get(self.head_hash)
             if block_rlp == 'GENESIS':
-                return self.genesis
+		return self.genesis
             else:
                 return rlp.decode(block_rlp, Block)
         except Exception:

@@ -27,7 +27,7 @@ class BlockHeader(rlp.Serializable):
                  state_root=trie.BLANK_ROOT,
                  tx_root=trie.BLANK_ROOT,
                  number=0,
-                 timestamp=1512746789,
+                 timestamp=0,
                  coinbase=default_config['GENESIS_COINBASE'],
                  extra_data=''):
         self.prevhash = prevhash
