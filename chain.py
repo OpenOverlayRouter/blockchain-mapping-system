@@ -55,7 +55,6 @@ class Chain(object):
             header = self.state.prev_headers[0]
 
         self.genesis = Block(header)
-	print header.timestamp
         self.state.prev_headers[0] = header
         initialize_genesis_keys(self.state, self.genesis)
 
