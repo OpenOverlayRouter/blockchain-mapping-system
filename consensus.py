@@ -140,14 +140,6 @@ def get_block_from_timestamp(last_block_number,timestamp):
 
 # Returns a random HASH mixing NIST and ETHEREUM HASH block
 def get_random_hash(timestamp):
-	# Get timestamp to work with
-	#timestamp = get_timestamp()
-
-except Exception as e:
-            print "Exception while processing a received block"
-            print e
-
-
 	# Get Ethereum hash
 	last_block_number = get_last_block_number()
 	selected_block_number = get_block_from_timestamp(last_block_number,timestamp)
