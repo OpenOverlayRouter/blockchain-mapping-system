@@ -16,9 +16,9 @@ QUERY_PORT = 5006
 
 class P2P():
 
-    def __init__(self, last_block, ip):
+    def __init__(self, last_block):
         #self.p = subprocess.Popen([sys.executable, "network.py", last_block, ip])
-        self.p = subprocess.Popen(["nohup", "python", "network.py", last_block, ip])
+        self.p = subprocess.Popen(["nohup", "python", "network.py", last_block])
         time.sleep(5)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((HOST, QUERY_PORT))
