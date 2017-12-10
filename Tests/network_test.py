@@ -29,7 +29,7 @@ def gen_tx_pool():
 if __name__ == '__main__':
     gen_blocks(100)
     gen_tx_pool()
-    p2p = P2P(str(num_blocks), sys.argv[1])
+    p2p = P2P(str(num_blocks))
     while (p2p.bootstrap()):
         pass
     p2p.start_notifications()
