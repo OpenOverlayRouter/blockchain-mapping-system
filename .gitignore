@@ -14,3 +14,7 @@ __pycache__/
 docs/_build/
 
 .idea/*
+
+# Network files
+*.swp
+nohup.out
