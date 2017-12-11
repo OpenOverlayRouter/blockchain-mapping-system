@@ -118,6 +118,7 @@ def get_block_from_timestamp(last_block_number,timestamp):
 						candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
 					json_block = candidate_json_block
 					found = True
+					print "CANDIDATE: ", candidate_block_number
 			elif block_timestamp < timestamp:
 				if (timestamp-block_timestamp)/ETH_BPS >= 14:
 					variance = int((timestamp-block_timestamp)/ETH_BPS)
@@ -137,8 +138,9 @@ def get_block_from_timestamp(last_block_number,timestamp):
 						json_block = candidate_json_block
 					else:
 						json_block = get_block_by_number(sub_to_hex(candidate_block_number,1))
+						print "Candidate: ", sub_to_hex(candidate_block_number,1)
 					found = True
-
+	print timestamp
 	return json_block
 
 # Returns a random HASH mixing NIST and ETHEREUM HASH block

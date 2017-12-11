@@ -15,6 +15,7 @@ import select, socket, sys, Queue
 import struct
 import os
 import glob
+import rlp
 from keystore import Keystore
 from consensus import Consensus
 from map_reply import MapReplyRecord, LocatorRecord, Response
@@ -203,13 +204,34 @@ if __name__ == "__main__":
         time.sleep(0.5)
     '''
 
+    # Consensus Test
+
+    add1 = "094a2c9f5b46416b9b9bd9f1efa1f3a73d46cec2"
+    add2 = "7719818983cb546d1badee634621dad4214cba25"
+
+    ks1 = Keystore.load("./Tests/keystore/094a2c9f5b46416b9b9bd9f1efa1f3a73d46cec2","TFG1234")
+
     chain = init_chain()
+    block = chain.create_block(add1)
+    block.sign(ks1.privkey)
+
+    block_rlp = rlp.encode(block)
+    rlp.decode(block_rlp,Block)
+    try:
+        chain.add_pending_transaction(tx1)
+        chain.add_pending_transaction(tx8)
+    except:
+        pass
+
+    block = chain.create_block(add1)
+    block.sign(ks1.privkey)
+
+    chain.add_block(block)
+
     timestamp = chain.get_head_block().__getattribute__("timestamp")
     block_number = chain.get_head_block().__getattribute__("number")
     #block_number = 0
     consensus = init_consensus()
-    consensus.calculate_next_signer(0,timestamp,block_number)
-    print consensus.get_next_signer()
-
-    #consensus.calculate_next_signer(0,timestamp)
-    #print consensus.get_next_signer()
+    while(1):
+        consensus.calculate_next_signer(0,timestamp,block_number)
+        print consensus.get_next_signer()
