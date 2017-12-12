@@ -19,9 +19,11 @@ def get_bitstream_for_afi_address(address):
 
     # IPv4
     if address.version == 4:
+        print("IPV4: " , BitArray('uint:16=1, uint:32=%d' % int(address.ip)))
         return BitArray('uint:16=1, uint:32=%d' % int(address.ip))
 
     elif address.version == 6:
+        print("IPV6")
         return BitArray('uint:16=2, uint:128=%d' % int(address.ip))
 
     else:
@@ -66,7 +68,7 @@ class LocatorRecord(object):
         bitstream += BitArray('uint:3=%d' % self.LpR)
 
         #Add the locator-afi and locator
-        get_bitstream_for_afi_address(self.locator)
+        bitstream += get_bitstream_for_afi_address(self.locator)
 
         return bitstream
 
