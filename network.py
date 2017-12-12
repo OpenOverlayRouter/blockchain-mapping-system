@@ -253,7 +253,7 @@ class localProtocol(Protocol):
 
     def dataReceived(self, data):
         self.buffer += data
-        if self.buffer[-2:0] == "\r\n":
+        if self.buffer[-2:] == "\r\n":
             for line in self.buffer.splitlines():
                 line = line.strip()
                 try:
