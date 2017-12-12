@@ -118,6 +118,7 @@ def get_block_from_timestamp(last_block_number,timestamp):
 						candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
 					json_block = candidate_json_block
 					found = True
+					print "CANDIDATE: ", candidate_block_number
 			elif block_timestamp < timestamp:
 				if (timestamp-block_timestamp)/ETH_BPS >= 14:
 					variance = int((timestamp-block_timestamp)/ETH_BPS)
@@ -137,8 +138,9 @@ def get_block_from_timestamp(last_block_number,timestamp):
 						json_block = candidate_json_block
 					else:
 						json_block = get_block_by_number(sub_to_hex(candidate_block_number,1))
+						print "Candidate: ", sub_to_hex(candidate_block_number,1)
 					found = True
-
+	print timestamp
 	return json_block
 
 # Returns a random HASH mixing NIST and ETHEREUM HASH block
@@ -146,12 +148,18 @@ def get_random_hash(timestamp):
 	# Get Ethereum hash
 	last_block_number = get_last_block_number()
 	selected_block_number = get_block_from_timestamp(last_block_number,timestamp)
-	if selected_block_number == None:
-		print "No new ETH block yet"
-		return None
-	else: 
+	while selected_block_number == None:
+		print "Consensus: No new ETH block yet, waiting for Ethereum chain..."
+			# sleep??
+		last_block_number = get_last_block_number()
+		selected_block_number = get_block_from_timestamp(last_block_number,timestamp)
+	print "Consensus: New block found"
+	eth_hash = get_hash_from_json_block(selected_block_number)
+	eth_hash_bits = from_hex_to_bits(eth_hash,256)
+
+	'''else: 
 		eth_hash = get_hash_from_json_block(selected_block_number)
-		eth_hash_bits = from_hex_to_bits(eth_hash,256)
+		eth_hash_bits = from_hex_to_bits(eth_hash,256)'''
 
 	# Get Nist hash
 	nist_hash = get_hash_from_NIST(int(timestamp))

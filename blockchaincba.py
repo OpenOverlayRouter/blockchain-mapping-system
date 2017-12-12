@@ -15,6 +15,7 @@ import select, socket, sys, Queue
 import struct
 import os
 import glob
+import rlp
 from keystore import Keystore
 from consensus import Consensus
 from map_reply import MapReplyRecord, LocatorRecord, Response
@@ -183,7 +184,7 @@ if __name__ == "__main__":
     chain = init_chain()
     chain.query_eid(keys[0].keystore['address'], IPv4Address('192.168.0.1'))
     """
-    '''rec_socket, snd_socket = open_sockets()
+    rec_socket, snd_socket = open_sockets()
     mrr = LocatorRecord()
     r = Response(nonce=12345678, flag=0,info=mrr)
     while 1:
@@ -201,15 +202,4 @@ if __name__ == "__main__":
             msg = struct.pack('>I',(int(struct.unpack("I",res[0:4])[0]))) + struct.pack('>I',(int(struct.unpack("I",res[4:8])[0]))) + struct.pack('H',int(struct.unpack("H",res[8:10])[0]))
             write_socket(msg,snd_socket)
         time.sleep(0.5)
-    '''
-
-    chain = init_chain()
-    timestamp = chain.get_head_block().__getattribute__("timestamp")
-    block_number = chain.get_head_block().__getattribute__("number")
-    #block_number = 0
-    consensus = init_consensus()
-    consensus.calculate_next_signer(0,timestamp,block_number)
-    print consensus.get_next_signer()
-
-    #consensus.calculate_next_signer(0,timestamp)
-    #print consensus.get_next_signer()
+    
