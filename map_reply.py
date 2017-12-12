@@ -188,10 +188,13 @@ class MapServers(object):
 
 class Response(object):
 
-    def __init__(self, nonce=0, flag=0, info=None):
+    def __init__(self, nonce=0, info=None):
         self.nonce = nonce
-        self.flag = flag
         self.info = info  # info can be MapServers or MapReplyRecord
+        if isinstance(self.info, MapServers):
+            self.flag = 0
+        elif isinstance(self.info, MapReplyRecord):
+            self.flag = 1
 
     def to_bitstream(self):
 
@@ -199,7 +202,7 @@ class Response(object):
         bitstream = BitArray('uint:64=%d' % self.nonce)
 
         #Add the flag bit
-        bitstream += BitArray('uint:1=%d' % self.flag)
+        bitstream += BitArray('uint:8=%d' % self.flag)
 
         #Add the info
         bitstream += self.info.to_bitstream()
