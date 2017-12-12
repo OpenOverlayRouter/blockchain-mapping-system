@@ -19,6 +19,7 @@ import rlp
 from keystore import Keystore
 from consensus import Consensus
 from map_reply import MapReplyRecord, LocatorRecord, Response
+from netaddr import IPNetwork, IPAddress
 from ipaddress import IPv4Network, IPv6Network, IPv4Address, IPv6Address
 
 
@@ -185,21 +186,25 @@ if __name__ == "__main__":
     chain.query_eid(keys[0].keystore['address'], IPv4Address('192.168.0.1'))
     """
     rec_socket, snd_socket = open_sockets()
-    mrr = LocatorRecord()
+    mrr = LocatorRecord(priority=0, weight=0, mpriority=0, mweight=0, unusedflags=0, LpR=0,
+                            locator=IPNetwork('192.168.0.1'))
     r = Response(nonce=12345678, flag=0,info=mrr)
-    while 1:
-        res = rec_socket.recvfrom(50)[0]
-        if res is not None:
-            print(struct.pack('>I',(int(struct.unpack("I",res[0:4])[0]))).encode('HEX'))
-            print(struct.pack('>I',(int(struct.unpack("I",res[4:8])[0]))).encode('HEX'))
-            afi = int(struct.unpack("H",res[8:10])[0])
-            if afi == 1:
-                ip = IPv4Address(res[18:])
-                print(ip)
-            elif afi == 2:
-                ip = IPv6Address(res[18:])
-                print(ip)
-            msg = struct.pack('>I',(int(struct.unpack("I",res[0:4])[0]))) + struct.pack('>I',(int(struct.unpack("I",res[4:8])[0]))) + struct.pack('H',int(struct.unpack("H",res[8:10])[0]))
-            write_socket(msg,snd_socket)
-        time.sleep(0.5)
+    #while 1:
+    msg = r.to_bytes()
+    """res = rec_socket.recvfrom(50)[0]
+    if res is not None:
+        print(struct.pack('>I',(int(struct.unpack("I",res[0:4])[0]))).encode('HEX'))
+        print(struct.pack('>I',(int(struct.unpack("I",res[4:8])[0]))).encode('HEX'))
+        afi = int(struct.unpack("H",res[8:10])[0])
+        if afi == 1:
+            ip = IPv4Address(res[18:])
+            print(ip)
+        elif afi == 2:
+            ip = IPv6Address(res[18:])
+            print(ip)
+        msg = struct.pack('>I',(int(struct.unpack("I",res[0:4])[0]))) + struct.pack('>I',(int(struct.unpack("I",res[4:8])[0]))) + struct.pack('H',int(struct.unpack("H",res[8:10])[0]))
+        write_socket(msg,snd_socket)"""
+    print(len(msg))
+    write_socket(msg, snd_socket)
+    time.sleep(0.5)
     
