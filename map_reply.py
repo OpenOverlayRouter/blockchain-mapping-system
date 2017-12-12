@@ -19,10 +19,10 @@ def get_bitstream_for_afi_address(address):
 
     # IPv4
     if address.version == 4:
-        return BitArray('uint:16=1, uint:32=%d' % int(address.ip.ip))
+        return BitArray('uint:16=1, uint:32=%d' % str(address.ip))
 
     elif address.version == 6:
-        return BitArray('uint:16=2, uint:128=%d' % int(address.ip.ip))
+        return BitArray('uint:16=2, uint:128=%d' % str(address.ip))
 
     else:
         raise ValueError('Unsupported address type')
@@ -176,9 +176,9 @@ class MapServers(object):
                 afi = 2
             bitstream += BitArray('uint:16=%d' % afi)
             if afi == 1:  # IPv4
-                bitstream += BitArray('uint:32=%d' % str(key))
+                bitstream += BitArray('uint:32=%d' % str(key.ip))
             elif afi == 2:
-                bitstream += BitArray('uint:128=%d' % str(key))
+                bitstream += BitArray('uint:128=%d' % str(key.ip))
 
         return bitstream
 
