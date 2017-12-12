@@ -42,6 +42,7 @@ class p2pProtocol(Protocol):
         self.state = 'NODEID'
         self.pingcall = task.LoopingCall(self.sendPing)
         self.pong = False
+        self.buffer = ''
 
     def connectionMade(self):
         self.transport.write(self.factory.nodeid.encode('utf-8') + b'\r\n')
@@ -58,134 +59,137 @@ class p2pProtocol(Protocol):
             _print("Connection Error: {}".format(self.transport.getPeer()))
 
     def dataReceived(self, data):
-        for line in data.splitlines():
-            line = line.strip()
-            if self.state == 'NODEID':
-                if self.factory.peers.get(line) is None:
-                    self.nodeid = line
-                    self.factory.peers[self.nodeid] = self
-                    self.factory.peers_ip[self.nodeid] = self.transport.getPeer().host
-                    _print("New Peer: {} {}".format(line, self.transport.getPeer()))
-                    self.state = None
+        self.buffer += data
+        if self.buffer[-2:] == "\r\n":
+            for line in self.buffer.splitlines():
+                line = line.strip()
+                if self.state == 'NODEID':
+                    if self.factory.peers.get(line) is None:
+                        self.nodeid = line
+                        self.factory.peers[self.nodeid] = self
+                        self.factory.peers_ip[self.nodeid] = self.transport.getPeer().host
+                        _print("New Peer: {} {}".format(line, self.transport.getPeer()))
+                        self.state = None
+                    else:
+                        _print("Peer Already Known: {} {}".format(line, self.transport.getPeer()))
+                        self.transport.loseConnection()
                 else:
-                    _print("Peer Already Known: {} {}".format(line, self.transport.getPeer()))
-                    self.transport.loseConnection()
-            else:
-                try:
-                    data = messages.read_envelope(line)
-                    _print (data["msgtype"])
-                    if data["msgtype"] == "ping":
-                        #print self.transport.getPeer().host
-                        self.sendPong()
-                    elif data["msgtype"] == "pong":
-                        #print self.transport.getPeer().host
-                        self.pong = True
-                    elif data["msgtype"] == "get_peers":
-                        self.sendMsg(messages.set_peers(self.factory.peers_ip))
-                    elif data["msgtype"] == "set_peers":
-                        if self.factory.bootstrap == True:
-                            print data.get("peers")
-                            peers = data.get("peers")
-                            for key in peers:
-                                exists = self.factory.peers_ip.get(key)
-                                if exists is None and key != self.factory.nodeid:
-                                    point = TCP4ClientEndpoint(reactor, peers.get(key), P2P_PORT)
-                                    #point = TCP4ClientEndpoint(reactor, peers.get(key), P2P_PORT, bindAddress=(LOCALHOST, 0))
-                                    connectProtocol(point, p2pProtocol(self.factory))
-                            self.sendGetNumBlocks()
-                    elif data["msgtype"] == "get_num_blocks":
-                        self.sendMsg(messages.set_num_blocks(self.factory.num_block))
-                    elif data["msgtype"] == "set_num_blocks":
-                        if self.factory.bootstrap:
-                            if data["num"] > self.factory.num_block:
-                                self.factory.num_block = data["num"]
-                                #print data["num"]
-                            self.factory.ck_num = True
-                    elif data["msgtype"] == "set_tx":
-                        try:
-                            tx = rlp.decode(data["tx"].decode('hex'), Transaction)
-                            self.factory.transactions.add(data["tx"])
-                            if self.factory.notify is not None:
-                                self.factory.notify.sendMsg(b'1')
-                        except:
-                            print "Wrong Tx"
-                    elif data["msgtype"] == "set_block":
-                        try:
-                            block = rlp.decode(data["block"].decode('hex'), Block)
-                            if self.factory.num_block == block.header.number - 1:
-                                self.factory.blocks[block.header.number] = block
-                                self.factory.num_block += 1
-                                #print block.header.number
-                            if self.factory.notify is not None:
-                                self.factory.notify.sendMsg(b'0')
-                        except:
-                            print "Wrong Block"
-                    elif data["msgtype"] == "set_blocks":
-                        if self.factory.bootstrap:
-                            for b in data["blocks"]:
-                                try:
-                                    block = rlp.decode(b.decode('hex'), Block)
-                                    if block.header.number > self.factory.last_served_block and \
-                                    self.factory.blocks.get(block.header.number) is None:
-                                        self.factory.blocks[block.header.number] = b
-                                        #print block.header.number
-                                except:
-                                    print "Wrong Block"
-                    elif data["msgtype"] == "get_block_num":
-                        num = data["num"]
-                        if num <= self.factory.last_served_block and not self.factory.bootstrap:
-                            if self.factory.block_queries.get(self) is None:
-                                self.factory.block_queries[self] = set([num])
-                            else:
-                                self.factory.block_queries[self].add(num)
-                            if self.factory.notify is not None:
-                                self.factory.notify.sendMsg(b'2')
-                        elif num <= self.factory.num_block:
-                            block = self.factory.blocks.get(num)
-                            if block is not None:
-                                self.sendMsg(messages.set_blocks([block]))
-                    elif data["msgtype"] == "get_blocks":
-                        num = data["num"]
-                        chunk = data["chunk"]
-                        blocks = []
-                        notify = False
-                        for n in range(num, num+chunk):
-                            if n <= self.factory.last_served_block and not self.factory.bootstrap:
+                    try:
+                        data = messages.read_envelope(line)
+                        _print (data["msgtype"])
+                        if data["msgtype"] == "ping":
+                            #print self.transport.getPeer().host
+                            self.sendPong()
+                        elif data["msgtype"] == "pong":
+                            #print self.transport.getPeer().host
+                            self.pong = True
+                        elif data["msgtype"] == "get_peers":
+                            self.sendMsg(messages.set_peers(self.factory.peers_ip))
+                        elif data["msgtype"] == "set_peers":
+                            if self.factory.bootstrap == True:
+                                print data.get("peers")
+                                peers = data.get("peers")
+                                for key in peers:
+                                    exists = self.factory.peers_ip.get(key)
+                                    if exists is None and key != self.factory.nodeid:
+                                        point = TCP4ClientEndpoint(reactor, peers.get(key), P2P_PORT)
+                                        #point = TCP4ClientEndpoint(reactor, peers.get(key), P2P_PORT, bindAddress=(LOCALHOST, 0))
+                                        connectProtocol(point, p2pProtocol(self.factory))
+                                self.sendGetNumBlocks()
+                        elif data["msgtype"] == "get_num_blocks":
+                            self.sendMsg(messages.set_num_blocks(self.factory.num_block))
+                        elif data["msgtype"] == "set_num_blocks":
+                            if self.factory.bootstrap:
+                                if data["num"] > self.factory.num_block:
+                                    self.factory.num_block = data["num"]
+                                    #print data["num"]
+                                self.factory.ck_num = True
+                        elif data["msgtype"] == "set_tx":
+                            try:
+                                tx = rlp.decode(data["tx"].decode('hex'), Transaction)
+                                self.factory.transactions.add(data["tx"])
+                                if self.factory.notify is not None:
+                                    self.factory.notify.sendMsg(b'1')
+                            except:
+                                print "Wrong Tx"
+                        elif data["msgtype"] == "set_block":
+                            try:
+                                block = rlp.decode(data["block"].decode('hex'), Block)
+                                if self.factory.num_block == block.header.number - 1:
+                                    self.factory.blocks[block.header.number] = block
+                                    self.factory.num_block += 1
+                                    #print block.header.number
+                                if self.factory.notify is not None:
+                                    self.factory.notify.sendMsg(b'0')
+                            except:
+                                print "Wrong Block"
+                        elif data["msgtype"] == "set_blocks":
+                            if self.factory.bootstrap:
+                                for b in data["blocks"]:
+                                    try:
+                                        block = rlp.decode(b.decode('hex'), Block)
+                                        if block.header.number > self.factory.last_served_block and \
+                                        self.factory.blocks.get(block.header.number) is None:
+                                            self.factory.blocks[block.header.number] = b
+                                            #print block.header.number
+                                    except:
+                                        print "Wrong Block"
+                        elif data["msgtype"] == "get_block_num":
+                            num = data["num"]
+                            if num <= self.factory.last_served_block and not self.factory.bootstrap:
                                 if self.factory.block_queries.get(self) is None:
-                                    self.factory.block_queries[self] = set([n])
-                                    notify = True
+                                    self.factory.block_queries[self] = set([num])
                                 else:
-                                    self.factory.block_queries[self].add(n)
-                                    notify = True
-                            elif n <= self.factory.num_block:
-                                block = self.factory.blocks.get(n)
-                                if block is not None:
-                                    blocks.append(block)
-                        if blocks:
-                            self.sendMsg(messages.set_blocks(blocks))
-                        if notify:
-                            if self.factory.notify is not None:
+                                    self.factory.block_queries[self].add(num)
+                                if self.factory.notify is not None:
                                     self.factory.notify.sendMsg(b'2')
-                    elif data["msgtype"] == "get_tx_pool":
-                        if not self.factory.bootstrap:
-                            self.factory.tx_pool_query.add(self)
-                            if self.factory.notify is not None:
-                                self.factory.notify.sendMsg(b'3')
-                    elif data["msgtype"] == "set_tx_pool":
-                        if self.factory.bootstrap and not self.factory.tx_pool:
-                            txs = data["txs"]
-                            for raw_tx in txs:
-                                try:
-                                    tx = rlp.decode(raw_tx.decode('hex'), Transaction)
-                                    self.factory.transactions.add(raw_tx)
-                                except:
-                                    print "Wrong Tx"
-                            self.factory.tx_pool = True                
-                except Exception as exception:
-                    print "except", exception.__class__.__name__, exception
-                    self.transport.loseConnection()
-                #else:
-                    #print (line)
+                            elif num <= self.factory.num_block:
+                                block = self.factory.blocks.get(num)
+                                if block is not None:
+                                    self.sendMsg(messages.set_blocks([block]))
+                        elif data["msgtype"] == "get_blocks":
+                            num = data["num"]
+                            chunk = data["chunk"]
+                            blocks = []
+                            notify = False
+                            for n in range(num, num+chunk):
+                                if n <= self.factory.last_served_block and not self.factory.bootstrap:
+                                    if self.factory.block_queries.get(self) is None:
+                                        self.factory.block_queries[self] = set([n])
+                                        notify = True
+                                    else:
+                                        self.factory.block_queries[self].add(n)
+                                        notify = True
+                                elif n <= self.factory.num_block:
+                                    block = self.factory.blocks.get(n)
+                                    if block is not None:
+                                        blocks.append(block)
+                            if blocks:
+                                self.sendMsg(messages.set_blocks(blocks))
+                            if notify:
+                                if self.factory.notify is not None:
+                                        self.factory.notify.sendMsg(b'2')
+                        elif data["msgtype"] == "get_tx_pool":
+                            if not self.factory.bootstrap:
+                                self.factory.tx_pool_query.add(self)
+                                if self.factory.notify is not None:
+                                    self.factory.notify.sendMsg(b'3')
+                        elif data["msgtype"] == "set_tx_pool":
+                            if self.factory.bootstrap and not self.factory.tx_pool:
+                                txs = data["txs"]
+                                for raw_tx in txs:
+                                    try:
+                                        tx = rlp.decode(raw_tx.decode('hex'), Transaction)
+                                        self.factory.transactions.add(raw_tx)
+                                    except:
+                                        print "Wrong Tx"
+                                self.factory.tx_pool = True                
+                    except Exception as exception:
+                        print "except", exception.__class__.__name__, exception
+                        self.transport.loseConnection()
+                    #else:
+                        #print (line)
+            self.buffer = ''
 
     def sendMsg(self, msg):
         self.transport.write(msg)
@@ -212,6 +216,7 @@ class p2pProtocol(Protocol):
 class localProtocol(Protocol):
     def __init__(self, factory):
         self.factory = factory
+        self.buffer = ''
 
     def connectionMade(self):
         port = self.transport.getHost().port
@@ -247,71 +252,74 @@ class localProtocol(Protocol):
         _print("Local Connection Lost")
 
     def dataReceived(self, data):
-        for line in data.splitlines():
-            line = line.strip()
-            try:
-                data = messages.read_envelope(line)
-                #print data
-                if data["msgtype"] == "quit":
-                    reactor.stop()
-                elif data["msgtype"] == "bootstrap":
-                    if self.factory.bootstrap:
-                        self.sendMsg(messages.true())
+        self.buffer += data
+        if self.buffer[-2:0] == "\r\n":
+            for line in self.buffer.splitlines():
+                line = line.strip()
+                try:
+                    data = messages.read_envelope(line)
+                    #print data
+                    if data["msgtype"] == "quit":
+                        reactor.stop()
+                    elif data["msgtype"] == "bootstrap":
+                        if self.factory.bootstrap:
+                            self.sendMsg(messages.true())
+                        else:
+                            self.sendMsg(messages.false())
+                    elif data["msgtype"] == "get_tx":
+                        if not self.factory.transactions:
+                            self.sendMsg(messages.none())
+                        else:
+                            tx = self.factory.transactions.pop().encode('utf-8')
+                            self.sendMsg(messages.set_tx_local(tx))
+                    elif data["msgtype"] == "set_tx":
+                        self.sendPeers(line)
+                    elif data["msgtype"] == "get_block":
+                        if not self.factory.blocks:
+                            self.sendMsg(messages.none())
+                        else:
+                            block = self.factory.blocks.get(self.factory.last_served_block + 1).encode('utf-8')
+                            self.sendMsg(messages.set_block_local(block))
+                            self.factory.last_served_block += 1
+                    elif data["msgtype"] == "set_block":
+                        self.sendPeers(line)
+                        self.factory.num_block += 1
+                    elif data["msgtype"] == "get_block_queries":
+                        if not self.factory.block_queries:
+                            self.sendMsg(messages.none())
+                        else:
+                            blocks = set()
+                            for v in self.factory.block_queries.values():
+                                blocks.update(v)
+                            self.sendMsg(messages.set_block_queries(list(blocks)))
+                    elif data["msgtype"] == "answer_block_queries":
+                        peers = self.factory.block_queries.keys()
+                        for peer in peers:
+                            blocks = []
+                            for b in data["blocks"]:
+                                block = rlp.decode(b.decode('hex'), Block)
+                                if block.header.number in self.factory.block_queries[peer]:
+                                    blocks.append(b)
+                                    self.factory.block_queries[peer].discard(block.header.number)
+                            if not self.factory.block_queries[peer]:
+                                del self.factory.block_queries[peer]
+                            peer.sendMsg(messages.set_blocks(blocks))
+                    elif data["msgtype"] == "tx_pool_query":
+                        if not self.factory.tx_pool_query:
+                            self.sendMsg(messages.false())
+                        else:
+                            self.sendMsg(messages.true())
+                    elif data["msgtype"] == "answer_tx_pool_query":
+                        while self.factory.tx_pool_query:
+                            peer = self.factory.tx_pool_query.pop()
+                            peer.sendMsg(messages.set_tx_pool(data["txs"]))
                     else:
-                        self.sendMsg(messages.false())
-                elif data["msgtype"] == "get_tx":
-                    if not self.factory.transactions:
-                        self.sendMsg(messages.none())
-                    else:
-                        tx = self.factory.transactions.pop().encode('utf-8')
-                        self.sendMsg(messages.set_tx_local(tx))
-                elif data["msgtype"] == "set_tx":
-                    self.sendPeers(line)
-                elif data["msgtype"] == "get_block":
-                    if not self.factory.blocks:
-                        self.sendMsg(messages.none())
-                    else:
-                        block = self.factory.blocks.get(self.factory.last_served_block + 1).encode('utf-8')
-                        self.sendMsg(messages.set_block_local(block))
-                        self.factory.last_served_block += 1
-                elif data["msgtype"] == "set_block":
-                    self.sendPeers(line)
-                    self.factory.num_block += 1
-                elif data["msgtype"] == "get_block_queries":
-                    if not self.factory.block_queries:
-                        self.sendMsg(messages.none())
-                    else:
-                        blocks = set()
-                        for v in self.factory.block_queries.values():
-                            blocks.update(v)
-                        self.sendMsg(messages.set_block_queries(list(blocks)))
-                elif data["msgtype"] == "answer_block_queries":
-                    peers = self.factory.block_queries.keys()
-                    for peer in peers:
-                        blocks = []
-                        for b in data["blocks"]:
-                            block = rlp.decode(b.decode('hex'), Block)
-                            if block.header.number in self.factory.block_queries[peer]:
-                                blocks.append(b)
-                                self.factory.block_queries[peer].discard(block.header.number)
-                        if not self.factory.block_queries[peer]:
-                            del self.factory.block_queries[peer]
-                        peer.sendMsg(messages.set_blocks(blocks))
-                elif data["msgtype"] == "tx_pool_query":
-                    if not self.factory.tx_pool_query:
-                        self.sendMsg(messages.false())
-                    else:
-                        self.sendMsg(messages.true())
-                elif data["msgtype"] == "answer_tx_pool_query":
-                    while self.factory.tx_pool_query:
-                        peer = self.factory.tx_pool_query.pop()
-                        peer.sendMsg(messages.set_tx_pool(data["txs"]))
-                else:
-                    for nodeid, address in self.factory.peers.items():
-                        address.sendMsg(line)
-            except Exception as exception:
-                    print "except", exception.__class__.__name__, exception
-                    self.transport.loseConnection()
+                        for nodeid, address in self.factory.peers.items():
+                            address.sendMsg(line)
+                except Exception as exception:
+                        print "except", exception.__class__.__name__, exception
+                        self.transport.loseConnection()
+            self.buffer = ''
 
     def sendMsg(self, msg):
         self.transport.write(msg + b'\r\n')
