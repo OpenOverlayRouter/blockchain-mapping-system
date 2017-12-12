@@ -190,7 +190,7 @@ class ChainService():
             balance = self.chain.state.get_balance(address)
             if balance is not None:
                 if len(balance.map_server.keys()) > 0:
-                    map_servers = MapServers(server_count=len(balance.map_server.keys()), info=balance.map_server)
+                    map_servers = MapServers(server_count=len(balance.map_server.keys()), info=balance.map_server.keys())
                     resp = Response(nonce=nonce, flag=1, info=map_servers)
                     return resp
                 elif len(balance.locator.keys()) > 0:
