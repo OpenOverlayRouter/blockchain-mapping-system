@@ -108,7 +108,7 @@ def run():
     consensus = init_consensus()
     keys = init_keystore()
     end = 0
-    myIPs = chain.get_own_ips(keys[0])
+    myIPs = chain.get_own_ips(keys[0].address)
 
     while(not end):
         
@@ -122,7 +122,7 @@ def run():
                     if res:
                         # correct block
                         chain.add_block(block)
-                        myIPs = chain.get_own_ips(keys[0])
+                        myIPs = chain.get_own_ips(keys[0].address)
                         timestamp = chain.get_head_block().get_timestamp()
                         consensus.calculate_next_signer(myIPs, timestamp)
                     block = p2p.get_block()
@@ -151,7 +151,7 @@ def run():
                 new_block = chain.create_block(signer)
                 #Like receiving a new block
                 chain.add_block(new_block)
-                myIPs = chain.get_own_ips(keys[0])
+                myIPs = chain.get_own_ips(keys[0].address)
                 timestamp = chain.get_head_block().get_timestamp()
                 consensus.calculate_next_signer(myIPs, timestamp)
                 p2p.broadcast_block(new_block)
