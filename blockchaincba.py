@@ -146,43 +146,65 @@ def run():
 
 
             #Check if the node has to sign the next block
-            me, signer = consensus.amISigner(myIPs)
-            if me:
-                new_block = chain.create_block(signer)
-                #Like receiving a new block
-                chain.add_block(new_block)
-                myIPs = chain.get_own_ips(keys[0].address)
-                timestamp = chain.get_head_block().get_timestamp()
-                consensus.calculate_next_signer(myIPs, timestamp)
-                p2p.broadcast_block(new_block)
+            try:
+                me, signer = consensus.amISigner(myIPs)
+                if me:
+                    new_block = chain.create_block(signer)
+                    #Like receiving a new block
+                    chain.add_block(new_block)
+                    myIPs = chain.get_own_ips(keys[0].address)
+                    timestamp = chain.get_head_block().get_timestamp()
+                    consensus.calculate_next_signer(myIPs, timestamp)
+                    p2p.broadcast_block(new_block)
+            except Exception as e:
+                print "Exception while checkinf if the node has to sign the next block"
+                print e
 
             #Process transactions from the user
-            tx_int = user.get_tx()
-            if tx_int is not None:
-                res = chain.add_pending_transaction(tx_int)
-                if res:
-                    #correct tx
-                    p2p.broadcast_tx(tx_int)
+            try:
+                tx_int = user.get_tx()
+                if tx_int is not None:
+                    res = chain.add_pending_transaction(tx_int)
+                    if res:
+                        #correct tx
+                        p2p.broadcast_tx(tx_int)
+            except:
+                print "Exception while processing transactions from the user"
+                print e  
 
             #answer queries from OOR
-            query = oor.get_query()
-            if query is not None:
-                info = chain.query_eid(query)
-                oor.send(info)
-                
+            try:
+                query = oor.get_query()
+                if query is not None:
+                    info = chain.query_eid(query)
+                    oor.send(info)
+            except:
+                print "Exception while answering queries from OOR"
+                print e  
+
             #answer queries from the network
             #blocks
-            block_numbers = p2p.get_block_queries()
-            if block_numbers is not None:
-                response = []
-                for block in block_numbers:
-                    response.append(chain.get_block(block))
-                p2p.answer_block_queries(response)
+            try:
+                block_numbers = p2p.get_block_queries()
+                if block_numbers is not None:
+                    response = []
+                    for block in block_numbers:
+                        response.append(chain.get_block(block))
+                    p2p.answer_block_queries(response)
+            except:
+                print "Exception while answering queries from the network"
+                print e  
+
                 
             #transaction pool
-            if p2p.tx_pool_query():
-                pool = chain.get_transaction_pool()
-                p2p.answer_tx_pool_query(pool)
+            try:
+                if p2p.tx_pool_query():
+                    pool = chain.get_transaction_pool()
+                    p2p.answer_tx_pool_query(pool)
+            except:
+                print "Exception while answering the transaction pool"
+                print e  
+
         except Exception as e:
             print e
             # Stop P2P
