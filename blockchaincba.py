@@ -135,10 +135,12 @@ def run():
         try:
             tx_ext = p2p.get_tx()
             while tx_ext is not None:
-                res = chain.add_pending_transaction(tx_ext)
-                if res:
-                    #correct tx
+                try:
+                    chain.add_pending_transaction(tx_ext)
+                    # Correct tx
                     p2p.broadcast_tx(tx_ext)
+                except Exception as e::
+                    pass
                 #get new transactions to process
                 tx_ext = p2p.get_tx()
         except Exception as e:
