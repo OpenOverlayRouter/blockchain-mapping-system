@@ -20,6 +20,7 @@ from keystore import Keystore
 from consensus import Consensus
 from map_reply import MapReplyRecord, LocatorRecord, Response
 from ipaddress import IPv4Network, IPv6Network, IPv4Address, IPv6Address
+from p2p import P2P
 
 
 HOST = ''
@@ -82,9 +83,12 @@ def init_chain():
     return ChainService(env)
 
 
-def init_p2p():
+def init_p2p(last_block_num):
     # P2P initialization
-    return 0
+    p2p = P2P(last_block_num)
+    while (p2p.bootstrap()):
+        time.sleep(1)
+    return p2p
 
 
 def init_consensus():
@@ -100,7 +104,7 @@ def init_keystore(keys_dir='./Tests/keystore/'):
 
 def run():
     chain = init_chain()
-    p2p = init_p2p()
+    p2p = init_p2p(chain.get_head_block().header.number)
     consensus = init_consensus()
     keys = init_keystore()
     end = 0
