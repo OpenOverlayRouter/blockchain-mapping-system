@@ -171,11 +171,13 @@ def run():
         try:
             tx_int = user.get_tx()
             if tx_int is not None:
-                res = chain.add_pending_transaction(tx_int)
-                if res:
+                try:
+                    chain.add_pending_transaction(tx_int)
                     #correct tx
                     p2p.broadcast_tx(tx_int)
-        except:
+                except:
+                    pass
+        except Exception as e:
             print "Exception while processing transactions from the user"
             print e  
             p2p.stop()
