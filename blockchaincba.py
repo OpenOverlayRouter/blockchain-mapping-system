@@ -139,7 +139,7 @@ def run():
                     chain.add_pending_transaction(tx_ext)
                     # Correct tx
                     p2p.broadcast_tx(tx_ext)
-                except Exception as e::
+                except:
                     pass
                 #get new transactions to process
                 tx_ext = p2p.get_tx()
@@ -189,7 +189,7 @@ def run():
             if query is not None:
                 info = chain.query_eid(query)
                 oor.send(info)
-        except:
+        except Exception as e:
             print "Exception while answering queries from OOR"
             print e 
             p2p.stop()
@@ -204,7 +204,7 @@ def run():
                 for block in block_numbers:
                     response.append(chain.get_block(block))
                 p2p.answer_block_queries(response)
-        except:
+        except Exception as e:
             print "Exception while answering queries from the network"
             print e 
             p2p.stop()
@@ -216,7 +216,7 @@ def run():
             if p2p.tx_pool_query():
                 pool = chain.get_transaction_pool()
                 p2p.answer_tx_pool_query(pool)
-        except:
+        except Exception as e:
             print "Exception while answering the transaction pool"
             print e  
             # Stop P2P
