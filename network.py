@@ -291,9 +291,9 @@ class localProtocol(Protocol):
                             blocks = set()
                             for v in self.factory.block_queries.values():
                                 blocks.update(v)
-                                if len(blocks) == 10: # Max Blocks Query
+                                if len(blocks) >= 10: # Max Blocks Query
                                     break
-                            self.sendMsg(messages.set_block_queries(list(blocks)))
+                            self.sendMsg(messages.set_block_queries(list(blocks)[:10]))
                     elif data["msgtype"] == "answer_block_queries":
                         peers = self.factory.block_queries.keys()
                         for peer in peers:
