@@ -183,9 +183,11 @@ def run():
             if p2p.tx_pool_query():
                 pool = chain.get_transaction_pool()
                 p2p.answer_tx_pool_query(pool)
-        except:
+        except Exception as e:
+            print e
             # Stop P2P
             p2p.stop()
+            sys.exit(0)
 
 
 if __name__ == "__main__":
