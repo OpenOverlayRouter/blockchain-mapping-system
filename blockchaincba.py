@@ -21,6 +21,7 @@ from consensus import Consensus
 from map_reply import MapReplyRecord, LocatorRecord, Response
 from netaddr import IPNetwork, IPAddress
 from ipaddress import IPv4Network, IPv6Network, IPv4Address, IPv6Address
+from bitstring import BitArray
 
 
 HOST = ''
@@ -186,12 +187,23 @@ if __name__ == "__main__":
     chain.query_eid(keys[0].keystore['address'], IPv4Address('192.168.0.1'))
     """
     rec_socket, snd_socket = open_sockets()
-    mrr = LocatorRecord(priority=1, weight=2, mpriority=3, mweight=4, unusedflags=5, LpR=6,
+    locator = LocatorRecord(priority=0, weight=0, mpriority=0, mweight=0, unusedflags=0, LpR=0,
                             locator=IPNetwork('192.168.0.1'))
-    r = Response(nonce=12345678, flag=0,info=mrr)
+    locators = []
+    locators.append(locator)
+    reply = MapReplyRecord(eid_prefix=IPNetwork('192.168.1.0/24'), locator_records=locators)
+    r = Response(nonce=12345678, info=reply)
+    nonce = 12345678
+    flag = 1
+    address = IPNetwork('1.1.1.3/32')
+    bitstream = BitArray('uint:64=%d' % nonce)
+    bitstream += BitArray('uint:8=%d' % flag)
+    bitstream += BitArray('uint:16=1, uint:32=%d' % int(address.ip))
+    bytes = bitstream.bytes
+
     while 1:
         msg = r.to_bytes()
-        print(msg.encode("HEX"))
+        #print(msg.encode("HEX"))
         """res = rec_socket.recvfrom(50)[0]
         if res is not None:
             print(struct.pack('>I',(int(struct.unpack("I",res[0:4])[0]))).encode('HEX'))
@@ -205,7 +217,7 @@ if __name__ == "__main__":
                 print(ip)
             msg = struct.pack('>I',(int(struct.unpack("I",res[0:4])[0]))) + struct.pack('>I',(int(struct.unpack("I",res[4:8])[0]))) + struct.pack('H',int(struct.unpack("H",res[8:10])[0]))
             write_socket(msg,snd_socket)"""
-        print(len(msg))
+        print(msg.encode("HEX"))
         write_socket(msg, snd_socket)
         time.sleep(2)
     
