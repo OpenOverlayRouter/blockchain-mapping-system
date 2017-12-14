@@ -41,6 +41,8 @@ class Consensus():
 		self.ips = ips
 
 	def amISigner(self, ips):
+		if self.next_signer == None: 
+			return false, None
 		self.ips = ips
 		ip_next_signer = IPAddress(self.next_signer)
 		for i in ips:
