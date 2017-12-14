@@ -56,11 +56,11 @@ def read_socket(rec_socket):
     if (afi == 1):
         # address IPv4
         res = rec_socket.recv(8)
-        address = IPv4Address(res)
+        address = str(IPv4Address(res))
     elif (afi == 2):
         # address IPv6
         res = rec_socket.recv(32)
-        address = IPv6Address(res)
+        address = str(IPv6Address(res))
     else:
         raise Exception('Incorrect AFI read from socket')
     return nonce, afi, address
