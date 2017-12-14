@@ -190,8 +190,8 @@ class ChainService():
             balance = self.chain.state.get_balance(address)
             if balance is not None:
                 if len(balance.map_server.keys()) > 0:
-                    map_servers = MapServers(server_count=len(balance.map_server.keys()), info=balance.map_server.keys())
-                    resp = Response(nonce=nonce, flag=1, info=map_servers)
+                    map_servers = MapServers(info=balance.map_server.keys())
+                    resp = Response(nonce=nonce, info=map_servers)
                     return resp
                 elif len(balance.locator.keys()) > 0:
                     locator_records = []
@@ -200,7 +200,7 @@ class ChainService():
                                                              weight=balance.locator[key][1],
                                                              locator=key))
                     map_reply = MapReplyRecord(eid_prefix=IPNetwork(ipaddr), locator_records=locator_records)
-                    resp = Response(nonce=nonce, flag=0, info=map_reply)
+                    resp = Response(nonce=nonce, info=map_reply)
                     return resp
             else:
                 print "Address " + str(address) + " has no balance"

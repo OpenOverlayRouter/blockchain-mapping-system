@@ -50,16 +50,18 @@ def open_sockets():
 
 # reads the fields nonce, AFI and the IP from the socket
 def read_socket(rec_socket):
-    nonce = rec_socket.recv(64)
-    afi = rec_socket.recv(16)
-    if (afi == '1'*16):
+    res = rec_socket.recv(10)
+    nonce = struct.pack('>I', (int(struct.unpack("I", res[0:8])[0]))).encode('HEX')
+    afi = int(struct.unpack("H", res[8:10])[0])
+    if (afi == 1):
         # address IPv4
-        address = IPv4Address(rec_socket.recv(32))
-    elif (afi == '2'*16):
+        res = rec_socket.recv(8)
+        address = IPv4Address(res)
+    elif (afi == 2):
         # address IPv6
-        address = IPv6Address(rec_socket.recv(128))
+        res = rec_socket.recv(32)
+        address = IPv6Address(res)
     else:
-        rec_socket.recv(1024)  # used to empty socket
         raise Exception('Incorrect AFI read from socket')
     return nonce, afi, address
 
@@ -223,7 +225,14 @@ def run():
             p2p.stop()
             sys.exit(0)
 
-            
+def read_request_and_process(chain):
+    nonce, afi, address = read_socket(rec_socket)
+    try:
+        res = chain.query_eid(address, nonce)
+    except Exception as e:
+        print e
+    write_socket(res, snd_socket)
+
 
 
 if __name__ == "__main__":
