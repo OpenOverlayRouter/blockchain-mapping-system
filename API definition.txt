@@ -35,28 +35,15 @@ answer_tx_pool_query(transactions txs)
 signer get_next_signer()
 #returns the next IP that has to sign a block
 
-calculate_next_signer(myIPs ip)
+calculate_next_signer(myIPs ip, timestamp t)
 #calculates the next IP that will sign a block. It is stored in an internal variable that get_next_signer() uses
 #myIPs is the set of IPs owned by the node, updated each time a block is added
-#if myIPs is None, means that it the previous block was incorrect
+#timestamp is the timestamp of the last block added to the chain, used to randomly select the new signer
 
 signer, me amIsigner(myIPs ip)
 #returns the following two variables:
 #	me: True if the node has to sign the new block
 #       signer: IP that has to sign the new block
-
-#DEPRECATED
-block get_solid_block()
-#returns a definitve block to be added to the chain, or None if there is no data
-
-#DEPRECATED
-store_block(block bl)
-#adds a block to the structure that handles forks
-
-#DEPRECATED
-string get_last_block_hash()
-#returns the hash of the block in the tip of the chain
-#used when creating a new block
 
 
 #####################
@@ -64,18 +51,17 @@ string get_last_block_hash()
 ##################### 
 
 add_pending_transaction (transaction tx)
-#returns True if the transaction is correct, False otherwise
 #adds a transaction to the pool of unconfirmed transactions
+#raises an exception if there is an error
 
 add_block (block bl)
-#adds a new block to the chain. DOES NOT CHECK if the block is correct
-#returns True if the block is correct, False otherwise
-#Internally, checks the block signature and ALL transactions
+#adds a new block to the chain. DOES NOT CHECK if the block signature is correct
+#Internally, checks ALL transactions
+#raises an exception if there is an error
 
-
-create_block(signer sig, string last_block_hash)
-#Creates and signs a new block with the IP in sig and the  
-#hash of the previous block as last_block_hash
+block create_block(signer sig)
+#Creates and signs a new block with the IP in sig 
+#returns the new block but does not add it to the chain
 
 info query_eid(query q)
 #returns an RLOC record or a MS list corresponding to the EID in q
@@ -88,6 +74,9 @@ block get_block(block_number num)
 
 transactions get_transaction_pool()
 #returns the transactions in the pool of pending transactions
+
+block get_head_block()
+#returns the last block of the chain
 
 #####################
 #user

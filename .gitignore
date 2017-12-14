@@ -18,3 +18,4 @@ docs/_build/
 # Network files
 *.swp
 nohup.out
+network.out

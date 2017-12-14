@@ -18,7 +18,8 @@ class P2P():
 
     def __init__(self, last_block):
         #self.p = subprocess.Popen([sys.executable, "network.py", last_block, ip])
-        self.p = subprocess.Popen(["nohup", "python", "network.py", last_block])
+        self.p = subprocess.Popen(["nohup", "python", "network.py", str(last_block)],
+                                  stdout=open('network.out', mode='w+'), shell=False)
         time.sleep(5)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((HOST, QUERY_PORT))
@@ -103,7 +104,8 @@ class P2P():
     
     def get_tx(self):
         try:
-            self.data_avalaible()
+            if not self.txs:
+                self.data_avalaible()
             if self.txs:
                 self.sock.send(messages.get_tx())
                 data = self.read()
@@ -126,7 +128,8 @@ class P2P():
 
     def get_block(self):
         try:
-            self.data_avalaible()
+            if not self.blocks:
+                self.data_avalaible()
             if self.blocks:
                 self.sock.send(messages.get_block())
                 data = self.read()
@@ -149,7 +152,8 @@ class P2P():
     
     def get_block_queries(self):
         try:
-            self.data_avalaible()
+            if not self.blocks_queries:
+                self.data_avalaible()
             if self.blocks_queries:
                 self.sock.send(messages.get_block_queries())
                 data = self.read()
@@ -171,7 +175,8 @@ class P2P():
     
     def tx_pool_query(self):
         try:
-            self.data_avalaible()
+            if not self.pool_queries:
+                self.data_avalaible()
             if self.pool_queries:
                 self.sock.send(messages.tx_pool_query())
                 data = self.read()

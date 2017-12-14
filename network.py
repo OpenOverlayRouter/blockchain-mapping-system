@@ -291,7 +291,9 @@ class localProtocol(Protocol):
                             blocks = set()
                             for v in self.factory.block_queries.values():
                                 blocks.update(v)
-                            self.sendMsg(messages.set_block_queries(list(blocks)))
+                                if len(blocks) >= 10: # Max Blocks Query
+                                    break
+                            self.sendMsg(messages.set_block_queries(list(blocks)[:10]))
                     elif data["msgtype"] == "answer_block_queries":
                         peers = self.factory.block_queries.keys()
                         for peer in peers:
@@ -446,7 +448,7 @@ if __name__ == '__main__':
         _print("LISTEN QUERY: {}".format(QUERY_PORT))
         endpoint_notify = TCP4ServerEndpoint(reactor, NOTIFY_PORT)
         endpoint_notify.listen(factory)
-        _print("LISTEN NOTIFY: {}".format(QUERY_PORT))
+        _print("LISTEN NOTIFY: {}".format(NOTIFY_PORT))
         endpoint_p2p = TCP4ServerEndpoint(reactor, P2P_PORT)
         #endpoint_p2p = TCP4ServerEndpoint(reactor, P2P_PORT, interface=LOCALHOST)
         endpoint_p2p.listen(factory)

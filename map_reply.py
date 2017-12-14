@@ -160,13 +160,12 @@ class MapReplyRecord(object):
 
 class MapServers(object):
 
-    def __init__(self, server_count=0, info=None):
-        self.server_count = server_count
+    def __init__(self, info=None):
         self.info = info
 
     def to_bitstream(self):
         # Add the map_server count
-        bitstream = BitArray('uint:8=%d' % self.server_count)
+        bitstream = BitArray('uint:8=%d' % len(self.info))
 
         # Add the list of map_servers
         for key in self.info:
