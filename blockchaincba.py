@@ -23,6 +23,7 @@ from keystore import Keystore
 from consensus import Consensus
 from map_reply import MapReplyRecord, LocatorRecord, Response
 from ipaddress import IPv4Network, IPv6Network, IPv4Address, IPv6Address
+from netaddr import IPAddress
 from p2p import P2P
 
 
@@ -59,11 +60,11 @@ def read_socket(rec_socket):
     if (afi == 1):
         # address IPv4
         res = rec_socket.recv(8)
-        address = str(IPv4Address(res))
+        address = str(IPAddress(res))
     elif (afi == 2):
         # address IPv6
         res = rec_socket.recv(32)
-        address = str(IPv6Address(res))
+        address = str(IPAddress(res))
     else:
         raise Exception('Incorrect AFI read from socket')
     return nonce, afi, address
