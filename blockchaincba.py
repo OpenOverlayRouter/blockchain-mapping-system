@@ -193,14 +193,6 @@ if __name__ == "__main__":
     locators.append(locator)
     reply = MapReplyRecord(eid_prefix=IPNetwork('192.168.1.0/24'), locator_records=locators)
     r = Response(nonce=12345678, info=reply)
-    nonce = 12345678
-    flag = 1
-    address = IPNetwork('1.1.1.3/32')
-    bitstream = BitArray('uint:64=%d' % nonce)
-    bitstream += BitArray('uint:8=%d' % flag)
-    bitstream += BitArray('uint:16=1, uint:32=%d' % int(address.ip))
-    bytes = bitstream.bytes
-
     while 1:
         msg = r.to_bytes()
         #print(msg.encode("HEX"))
