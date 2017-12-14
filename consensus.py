@@ -42,14 +42,14 @@ class Consensus():
 
 	def amISigner(self, ips):
 		if self.next_signer == None: 
-			return false, None
+			return False, None
 		self.ips = ips
 		ip_next_signer = IPAddress(self.next_signer)
 		for i in ips:
 			net = IPNetwork(i)
 			if ip_next_signer in net:
-				return true, self.next_signer
-		return false, self.next_signer
+				return True, self.next_signer
+		return False, self.next_signer
 
 # Returns the HASH of a block
 def get_hash_from_json_block(json_block):
