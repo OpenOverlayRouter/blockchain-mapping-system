@@ -20,6 +20,7 @@ from keystore import Keystore
 from consensus import Consensus
 from map_reply import MapReplyRecord, LocatorRecord, Response
 from ipaddress import IPv4Network, IPv6Network, IPv4Address, IPv6Address
+from netaddr import IPAddress
 from p2p import P2P
 
 
@@ -51,16 +52,16 @@ def open_sockets():
 # reads the fields nonce, AFI and the IP from the socket
 def read_socket(rec_socket):
     res = rec_socket.recv(10)
-    nonce = struct.pack('>I', (int(struct.unpack("I", res[0:8])[0]))).encode('HEX')
+    nonce = struct.pack('>Q', (int(struct.unpack("Q", res[0:8])[0]))).encode('HEX')
     afi = int(struct.unpack("H", res[8:10])[0])
     if (afi == 1):
         # address IPv4
         res = rec_socket.recv(8)
-        address = str(IPv4Address(res))
+        address = str(IPAddress(res))
     elif (afi == 2):
         # address IPv6
         res = rec_socket.recv(32)
-        address = str(IPv6Address(res))
+        address = str(IPAddress(res))
     else:
         raise Exception('Incorrect AFI read from socket')
     return nonce, afi, address
