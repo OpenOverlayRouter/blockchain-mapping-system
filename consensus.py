@@ -2,7 +2,7 @@ import time
 import datetime
 import hashlib
 from ethapi import *
-from netaddr import IPAddress, IPNetwork
+from netaddr import IPAddress, IPNetwork, IPSet
 
 IPv4_PREFIX_LENGTH = 32
 IPv6_PREFIX_LENGTH = 128
@@ -40,16 +40,24 @@ class Consensus():
 		self.last_timestamp = timestamp
 		self.ips = ips
 
-	def amISigner(self, ips):
+	def amISigner(self, ips, block_number):
 		if self.next_signer == None: 
 			return False, None
 		self.ips = ips
 		ip_next_signer = IPAddress(self.next_signer)
-		for i in ips:
+		'''for i in ips:
 			net = IPNetwork(i)
 			if ip_next_signer in net:
 				return True, self.next_signer
+		return False, self.next_signer'''
+		if block_number % 2 == 0:
+			f = lambda x: x.version == 4
+		else:
+			f = lambda x: x.version == 6
+		if ip_next_signer in IPSet(filter(f, ips.iter_cidrs())):
+			return True, self.next_signer
 		return False, self.next_signer
+
 
 # Returns the HASH of a block
 def get_hash_from_json_block(json_block):

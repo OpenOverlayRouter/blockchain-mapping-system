@@ -160,7 +160,7 @@ def run():
 
         #Check if the node has to sign the next block
         try:
-            me, signer = consensus.amISigner(myIPs)
+            me, signer = consensus.amISigner(myIPs, block_num)
             if me:
                 new_block = chain.create_block(signer)
                 #Like receiving a new block
