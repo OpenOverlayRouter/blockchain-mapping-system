@@ -127,7 +127,7 @@ def run():
                     chain.add_block(block)
                     myIPs = chain.get_own_ips(keys[0].address)
                     timestamp = chain.get_head_block().get_timestamp()
-                    consensus.calculate_next_signer(myIPs, timestamp)
+                    consensus.calculate_next_signer(myIPs, timestamp, chain.get_head_block().header.number)
                 block = p2p.get_block()
         except Exception as e:
             print "Exception while processing a received block"
@@ -163,7 +163,7 @@ def run():
                 chain.add_block(new_block)
                 myIPs = chain.get_own_ips(keys[0].address)
                 timestamp = chain.get_head_block().get_timestamp()
-                consensus.calculate_next_signer(myIPs, timestamp)
+                consensus.calculate_next_signer(myIPs, timestamp, chain.get_head_block().header.number)
                 p2p.broadcast_block(new_block)
         except Exception as e:
             print "Exception while checking if the node has to sign the next block"
@@ -172,7 +172,7 @@ def run():
             sys.exit(0)
 
         #Process transactions from the user
-        try:
+        '''try:
             tx_int = user.get_tx()
             if tx_int is not None:
                 try:
@@ -185,10 +185,10 @@ def run():
             print "Exception while processing transactions from the user"
             print e  
             p2p.stop()
-            sys.exit(0)
+            sys.exit(0)'''
 
         #answer queries from OOR
-        try:
+        '''try:
             query = oor.get_query()
             if query is not None:
                 info = chain.query_eid(query)
@@ -197,7 +197,7 @@ def run():
             print "Exception while answering queries from OOR"
             print e 
             p2p.stop()
-            sys.exit(0) 
+            sys.exit(0)'''
 
         #answer queries from the network
         #blocks
