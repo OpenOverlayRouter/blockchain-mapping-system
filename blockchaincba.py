@@ -91,6 +91,7 @@ def init_p2p(last_block_num):
     p2p = P2P(last_block_num)
     while (p2p.bootstrap()):
         time.sleep(1)
+    p2p.start_notifications()
     return p2p
 
 
