@@ -218,7 +218,7 @@ def run():
         #transaction pool
         try:
             if p2p.tx_pool_query():
-                pool = chain.get_transaction_pool()
+                pool = chain.get_pending_transactions()
                 p2p.answer_tx_pool_query(pool)
         except Exception as e:
             print "Exception while answering the transaction pool"
