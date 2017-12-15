@@ -315,9 +315,9 @@ class localProtocol(Protocol):
                         while self.factory.tx_pool_query:
                             peer = self.factory.tx_pool_query.pop()
                             peer.sendMsg(messages.set_tx_pool(data["txs"]))
-                    else:
+                    '''else:
                         for nodeid, address in self.factory.peers.items():
-                            address.sendMsg(line + '\r\n')
+                            address.sendMsg(line + '\r\n')'''
                 except Exception as exception:
                         print "except", exception.__class__.__name__, exception
                         self.transport.loseConnection()
@@ -328,7 +328,7 @@ class localProtocol(Protocol):
     
     def sendPeers(self, msg):
         for nodeid, address in self.factory.peers.items():
-            address.sendMsg(msg + b'\r\n')
+            address.sendMsg(msg)
 
 
 class myFactory(Factory):
