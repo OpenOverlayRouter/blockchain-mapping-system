@@ -162,7 +162,7 @@ def run():
         try:
             me, signer = consensus.amISigner(myIPs, block_num)
             if me:
-                new_block = chain.create_block(signer)
+                new_block = chain.create_block(keys[0].address)
                 #Like receiving a new block
                 chain.add_block(new_block)
                 myIPs = chain.get_own_ips(keys[0].address)
