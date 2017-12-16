@@ -169,10 +169,6 @@ def get_random_hash(timestamp):
 	eth_hash = get_hash_from_json_block(selected_block_number)
 	eth_hash_bits = from_hex_to_bits(eth_hash,256)
 
-	'''else: 
-		eth_hash = get_hash_from_json_block(selected_block_number)
-		eth_hash_bits = from_hex_to_bits(eth_hash,256)'''
-
 	# Get Nist hash
 	nist_hash = get_hash_from_NIST(int(timestamp))
 	nist_hash = hex(int(nist_hash.replace('L', '').zfill(8), 16))[:-1]
