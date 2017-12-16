@@ -19,7 +19,7 @@ class Consensus():
 		return self.next_signer
 
 	def calculate_next_signer(self, ips, timestamp, block_number):
-		if block_number % 2 == 0:
+		if block_number % 2 != 0: # block_number is the previous one, so if it is even, next should be IPv6
 			protocol = "IPv4"
 		else:
 			protocol = "IPv6"
@@ -50,7 +50,7 @@ class Consensus():
 			if ip_next_signer in net:
 				return True, self.next_signer
 		return False, self.next_signer'''
-		if block_number % 2 == 0:
+		if block_number % 2 != 0:
 			f = lambda x: x.version == 4
 		else:
 			f = lambda x: x.version == 6
