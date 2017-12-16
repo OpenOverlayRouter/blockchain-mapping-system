@@ -66,6 +66,8 @@ def get_hash_from_json_block(json_block):
 # Returns the Timestamp of a block
 def get_timestamp_from_json_block(json_block):
 	#TODO: If json_block is NoneType
+	if json_block['result'] == None: 
+		return 0x00
 	return json_block['result']['timestamp']
 
 def get_timestamp():
