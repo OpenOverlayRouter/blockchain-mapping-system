@@ -167,6 +167,7 @@ def get_random_hash(timestamp):
 			# sleep??
 		last_block_number = get_last_block_number()
 		selected_block_number = get_block_from_timestamp(last_block_number,timestamp)
+		# return None
 	print "Consensus: New block found"
 	eth_hash = get_hash_from_json_block(selected_block_number)
 	eth_hash_bits = from_hex_to_bits(eth_hash,256)

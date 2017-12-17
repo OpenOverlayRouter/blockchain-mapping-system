@@ -123,7 +123,8 @@ def run():
         try:
             block = p2p.get_block()
             while block is not None:
-                signer = consensus.get_next_signer()
+                signer = consensus.get_next_signer() 
+                # if signer != None:  
                 res = chain.verify_block_signature(block, signer)
                 if res:
                     # correct block
