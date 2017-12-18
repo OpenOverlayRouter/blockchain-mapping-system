@@ -141,11 +141,6 @@ def ecsign(rawhash, key):
     v, r, s = ecdsa_raw_sign(rawhash, key)
     return v, r, s
 
-def privtoaddr(k):
-    k = normalize_key(k)
-    x, y = privtopub(k)
-    return sha3(encode_int32(x) + encode_int32(y))[12:]
-
 def random_privkey():
     key = hex(random.SystemRandom().getrandbits(256))
     key = key[2:-1].zfill(64)

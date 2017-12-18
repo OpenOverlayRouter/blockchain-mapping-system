@@ -181,12 +181,12 @@ class P2P():
                 self.sock.send(messages.tx_pool_query())
                 data = self.read()
                 if data["msgtype"] == "true":
-                    self.pool_queries = False
                     return True
                 else:
+                    self.pool_queries = False
                     return False
             else:
-                return None
+                return False
         except:
             print "P2P tx_pool_query error"
 

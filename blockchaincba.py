@@ -110,6 +110,7 @@ def init_p2p(last_block_num):
     p2p = P2P(last_block_num)
     while (p2p.bootstrap()):
         time.sleep(1)
+    p2p.start_notifications()
     return p2p
 
 
@@ -131,6 +132,9 @@ def run():
     keys = init_keystore()
     end = 0
     myIPs = chain.get_own_ips(keys[0].address)
+    block_num = chain.get_head_block().header.number
+    timestamp = chain.get_head_block().header.timestamp
+    consensus.calculate_next_signer(myIPs, timestamp, block_num)
 
     while(not end):
         
@@ -138,14 +142,15 @@ def run():
         try:
             block = p2p.get_block()
             while block is not None:
-                signer = consensus.get_next_signer()
+                signer = consensus.get_next_signer() 
                 res = chain.verify_block_signature(block, signer)
                 if res:
                     # correct block
                     chain.add_block(block)
                     myIPs = chain.get_own_ips(keys[0].address)
                     timestamp = chain.get_head_block().get_timestamp()
-                    consensus.calculate_next_signer(myIPs, timestamp)
+                    block_num = chain.get_head_block().header.number
+                    consensus.calculate_next_signer(myIPs, timestamp, block_num)
                 block = p2p.get_block()
         except Exception as e:
             print "Exception while processing a received block"
@@ -174,15 +179,17 @@ def run():
 
         #Check if the node has to sign the next block
         try:
-            me, signer = consensus.amISigner(myIPs)
+            me, signer = consensus.amISigner(myIPs, block_num)
             if me:
-                new_block = chain.create_block(signer)
+                new_block = chain.create_block(keys[0].address)
                 #Like receiving a new block
                 chain.add_block(new_block)
-                myIPs = chain.get_own_ips(keys[0].address)
-                timestamp = chain.get_head_block().get_timestamp()
-                consensus.calculate_next_signer(myIPs, timestamp)
+                #Revisar
                 p2p.broadcast_block(new_block)
+            myIPs = chain.get_own_ips(keys[0].address)
+            timestamp = chain.get_head_block().header.timestamp
+            block_num = chain.get_head_block().header.number
+            consensus.calculate_next_signer(myIPs, timestamp, block_num)
         except Exception as e:
             print "Exception while checking if the node has to sign the next block"
             print e
@@ -190,7 +197,7 @@ def run():
             sys.exit(0)
 
         #Process transactions from the user
-        try:
+        '''try:
             tx_int = user.get_tx()
             if tx_int is not None:
                 try:
@@ -203,10 +210,10 @@ def run():
             print "Exception while processing transactions from the user"
             print e  
             p2p.stop()
-            sys.exit(0)
+            sys.exit(0)'''
 
         #answer queries from OOR
-        try:
+        '''try:
             query = oor.get_query()
             if query is not None:
                 info = chain.query_eid(query)
@@ -215,7 +222,7 @@ def run():
             print "Exception while answering queries from OOR"
             print e 
             p2p.stop()
-            sys.exit(0) 
+            sys.exit(0)'''
 
         #answer queries from the network
         #blocks
@@ -236,7 +243,7 @@ def run():
         #transaction pool
         try:
             if p2p.tx_pool_query():
-                pool = chain.get_transaction_pool()
+                pool = chain.get_pending_transactions()
                 p2p.answer_tx_pool_query(pool)
         except Exception as e:
             print "Exception while answering the transaction pool"

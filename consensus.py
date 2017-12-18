@@ -2,7 +2,7 @@ import time
 import datetime
 import hashlib
 from ethapi import *
-from netaddr import IPAddress
+from netaddr import IPAddress, IPNetwork, IPSet
 
 IPv4_PREFIX_LENGTH = 32
 IPv6_PREFIX_LENGTH = 128
@@ -19,7 +19,7 @@ class Consensus():
 		return self.next_signer
 
 	def calculate_next_signer(self, ips, timestamp, block_number):
-		if block_number % 2 == 0:
+		if block_number % 2 != 0: # block_number is the previous one, so if it is even, next should be IPv6
 			protocol = "IPv4"
 		else:
 			protocol = "IPv6"
@@ -40,12 +40,24 @@ class Consensus():
 		self.last_timestamp = timestamp
 		self.ips = ips
 
-	def amISigner(self, ips):
-		# TODO: calcular 30 segons desde el timestamp (self.timestamp?)
+	def amISigner(self, ips, block_number):
+		if self.next_signer == None: 
+			return False, None
 		self.ips = ips
-		if self.next_signer in self.ips:
-			return true, self.next_signer
-		return false, self.next_signer
+		ip_next_signer = IPAddress(self.next_signer)
+		'''for i in ips:
+			net = IPNetwork(i)
+			if ip_next_signer in net:
+				return True, self.next_signer
+		return False, self.next_signer'''
+		if block_number % 2 != 0:
+			f = lambda x: x.version == 4
+		else:
+			f = lambda x: x.version == 6
+		if ip_next_signer in IPSet(filter(f, ips.iter_cidrs())):
+			return True, self.next_signer
+		return False, self.next_signer
+
 
 # Returns the HASH of a block
 def get_hash_from_json_block(json_block):
@@ -54,6 +66,8 @@ def get_hash_from_json_block(json_block):
 # Returns the Timestamp of a block
 def get_timestamp_from_json_block(json_block):
 	#TODO: If json_block is NoneType
+	if json_block['result'] == None: 
+		return 0x00
 	return json_block['result']['timestamp']
 
 def get_timestamp():
@@ -148,18 +162,17 @@ def get_random_hash(timestamp):
 	# Get Ethereum hash
 	last_block_number = get_last_block_number()
 	selected_block_number = get_block_from_timestamp(last_block_number,timestamp)
-	while selected_block_number == None:
+	if selected_block_number == None:
+		print "Consensus: No new ETH block yet, waiting for Ethereum chain..."
+		return None
+	'''while selected_block_number == None:
 		print "Consensus: No new ETH block yet, waiting for Ethereum chain..."
 			# sleep??
 		last_block_number = get_last_block_number()
-		selected_block_number = get_block_from_timestamp(last_block_number,timestamp)
+		selected_block_number = get_block_from_timestamp(last_block_number,timestamp)'''
 	print "Consensus: New block found"
 	eth_hash = get_hash_from_json_block(selected_block_number)
 	eth_hash_bits = from_hex_to_bits(eth_hash,256)
-
-	'''else: 
-		eth_hash = get_hash_from_json_block(selected_block_number)
-		eth_hash_bits = from_hex_to_bits(eth_hash,256)'''
 
 	# Get Nist hash
 	nist_hash = get_hash_from_NIST(int(timestamp))

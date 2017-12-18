@@ -109,7 +109,7 @@ class p2pProtocol(Protocol):
                                 tx = rlp.decode(data["tx"].decode('hex'), Transaction)
                                 self.factory.transactions.add(data["tx"])
                                 if self.factory.notify is not None:
-                                    self.factory.notify.sendMsg(b'1')
+                                    self.factory.notify.sendMsg(b'1\r\n')
                             except:
                                 print "Wrong Tx"
                         elif data["msgtype"] == "set_block":
@@ -120,7 +120,7 @@ class p2pProtocol(Protocol):
                                     self.factory.num_block += 1
                                     #print block.header.number
                                 if self.factory.notify is not None:
-                                    self.factory.notify.sendMsg(b'0')
+                                    self.factory.notify.sendMsg(b'0\r\n')
                             except:
                                 print "Wrong Block"
                         elif data["msgtype"] == "set_blocks":
@@ -142,7 +142,7 @@ class p2pProtocol(Protocol):
                                 else:
                                     self.factory.block_queries[self].add(num)
                                 if self.factory.notify is not None:
-                                    self.factory.notify.sendMsg(b'2')
+                                    self.factory.notify.sendMsg(b'2\r\n')
                             elif num <= self.factory.num_block:
                                 block = self.factory.blocks.get(num)
                                 if block is not None:
@@ -168,12 +168,12 @@ class p2pProtocol(Protocol):
                                 self.sendMsg(messages.set_blocks(blocks))
                             if notify:
                                 if self.factory.notify is not None:
-                                        self.factory.notify.sendMsg(b'2')
+                                        self.factory.notify.sendMsg(b'2\r\n')
                         elif data["msgtype"] == "get_tx_pool":
                             if not self.factory.bootstrap:
                                 self.factory.tx_pool_query.add(self)
                                 if self.factory.notify is not None:
-                                    self.factory.notify.sendMsg(b'3')
+                                    self.factory.notify.sendMsg(b'3\r\n')
                         elif data["msgtype"] == "set_tx_pool":
                             if self.factory.bootstrap and not self.factory.tx_pool:
                                 txs = data["txs"]
@@ -231,14 +231,14 @@ class localProtocol(Protocol):
                 self.factory.notify = self
                 _print("Notify Connection")
                 if self.factory.blocks:
-                    self.sendMsg(b'0')
+                    self.sendMsg(b'0\r\n')
                 elif self.factory.transactions:
-                    self.sendMsg(b'1')
+                    self.sendMsg(b'1\r\n')
                 elif self.factory.block_queries:
-                    self.sendMsg(b'2')
+                    self.sendMsg(b'2\r\n')
                 elif self.factory.tx_pool_query:
-                    self.sendMsg(b'3')
-                self.sendMsg(b'-1')
+                    self.sendMsg(b'3\r\n')
+                self.sendMsg(b'-1\r\n')
             else:
                 self.transport.loseConnection()
         '''if self.factory.local is None:
@@ -273,7 +273,7 @@ class localProtocol(Protocol):
                             tx = self.factory.transactions.pop().encode('utf-8')
                             self.sendMsg(messages.set_tx_local(tx))
                     elif data["msgtype"] == "set_tx":
-                        self.sendPeers(line)
+                        self.sendPeers(line + '\r\n')
                     elif data["msgtype"] == "get_block":
                         if not self.factory.blocks:
                             self.sendMsg(messages.none())
@@ -282,7 +282,7 @@ class localProtocol(Protocol):
                             self.sendMsg(messages.set_block_local(block))
                             self.factory.last_served_block += 1
                     elif data["msgtype"] == "set_block":
-                        self.sendPeers(line)
+                        self.sendPeers(line + '\r\n')
                         self.factory.num_block += 1
                     elif data["msgtype"] == "get_block_queries":
                         if not self.factory.block_queries:
@@ -315,16 +315,16 @@ class localProtocol(Protocol):
                         while self.factory.tx_pool_query:
                             peer = self.factory.tx_pool_query.pop()
                             peer.sendMsg(messages.set_tx_pool(data["txs"]))
-                    else:
+                    '''else:
                         for nodeid, address in self.factory.peers.items():
-                            address.sendMsg(line)
+                            address.sendMsg(line + '\r\n')'''
                 except Exception as exception:
                         print "except", exception.__class__.__name__, exception
                         self.transport.loseConnection()
             self.buffer = ''
 
     def sendMsg(self, msg):
-        self.transport.write(msg + b'\r\n')
+        self.transport.write(msg)
     
     def sendPeers(self, msg):
         for nodeid, address in self.factory.peers.items():
