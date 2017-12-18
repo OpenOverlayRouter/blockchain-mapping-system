@@ -21,11 +21,15 @@ import glob
 import rlp
 from keystore import Keystore
 from consensus import Consensus
-from map_reply import MapReplyRecord, LocatorRecord, Response
+from map_reply import MapReplyRecord, LocatorRecord, Response, MapServers
 from ipaddress import IPv4Network, IPv6Network, IPv4Address, IPv6Address
 from netaddr import IPAddress
 from p2p import P2P
-
+import sys
+import socket
+import fcntl, os
+import errno
+from time import sleep
 
 HOST = ''
 REC_PORT = 16001
@@ -54,20 +58,32 @@ def open_sockets():
 
 # reads the fields nonce, AFI and the IP from the socket
 def read_socket(rec_socket):
-    res = rec_socket.recv(10)
-    nonce = struct.pack('>Q', (int(struct.unpack("Q", res[0:8])[0]))).encode('HEX')
-    afi = int(struct.unpack("H", res[8:10])[0])
-    if (afi == 1):
-        # address IPv4
-        res = rec_socket.recv(8)
-        address = str(IPAddress(res))
-    elif (afi == 2):
-        # address IPv6
-        res = rec_socket.recv(32)
-        address = str(IPAddress(res))
-    else:
-        raise Exception('Incorrect AFI read from socket')
-    return nonce, afi, address
+    try:
+        res = rec_socket.recv(26)
+        print(len(res))
+        print(res.encode('HEX'))
+        nonce = (struct.pack('>I', (int(struct.unpack("I", res[0:4])[0]))) + struct.pack('>I',(int(struct.unpack("I", res[4:8])[0])))).encode('HEX')
+        nonce = int(nonce,16)
+        afi = int(struct.unpack("H", res[8:10])[0])
+        address = ''
+        if (afi == 1):
+            address = str(IPAddress(int(res[10:14].encode('HEX'),16)))
+
+        elif (afi == 2):
+            address = str(IPAddress(int(res[10:26].encode('HEX'),16)))
+        else:
+            raise Exception('Incorrect AFI read from socket')
+        return nonce, afi, address
+
+    except socket.error, e:
+        err = e.args[0]
+        if err == errno.EAGAIN or err == errno.EWOULDBLOCK:
+            sleep(1)
+            print 'No data available'
+            return None,None,None
+        else:
+            # a "real" error occurred
+            print e
 
 
 def write_socket(res, snd_socket):
@@ -231,19 +247,23 @@ def run():
 
 def read_request_and_process():
     nonce, afi, address = read_socket(rec_socket)
-    """
-    try:
-        res = chain.query_eid(address, nonce)
-    except Exception as e:
-        print e
-    """
-    locator = LocatorRecord(priority=0, weight=0, mpriority=0, mweight=0, unusedflags=0, LpR=0,
-                            locator=IPNetwork('192.168.0.1'))
-    locators = []
-    locators.append(locator)
-    reply = MapReplyRecord(eid_prefix=IPNetwork('192.168.1.0/24'), locator_records=locators)
-    r = Response(nonce=nonce, info=reply)
-    write_socket(r.to_bytes(), snd_socket)
+
+    if(nonce is not None and afi is not None and address is not None):
+        """
+        try:
+            res = chain.query_eid(address, nonce)
+        except Exception as e:
+            print e
+        """
+        locator = LocatorRecord(priority=0, weight=0, mpriority=0, mweight=0, unusedflags=0, LpR=0,
+                                locator=IPNetwork('192.168.0.1'))
+        locators = []
+        locators.append(locator)
+        reply = MapReplyRecord(eid_prefix=IPNetwork('192.168.1.0/24'), locator_records=locators)
+        reply = MapServers(info = [IPNetwork("192.168.1.42/32"),IPNetwork("192.168.0.2/32"),IPNetwork("192.168.0.3/32")])
+        r = Response(nonce=nonce, info=reply)
+        print(r.to_bytes().encode('HEX'))
+        write_socket(r.to_bytes(), snd_socket)
 
 
 
@@ -256,8 +276,11 @@ if __name__ == "__main__":
     chain.query_eid(keys[0].keystore['address'], IPv4Address('192.168.0.1'))
     """
     rec_socket, snd_socket = open_sockets()
+    fcntl.fcntl(rec_socket, fcntl.F_SETFL, os.O_NONBLOCK)
+    fcntl.fcntl(snd_socket, fcntl.F_SETFL, os.O_NONBLOCK)
     while 1:
         read_request_and_process()
+        print("HOLA")
         """
         res = rec_socket.recvfrom(50)[0]
         if res is not None:
