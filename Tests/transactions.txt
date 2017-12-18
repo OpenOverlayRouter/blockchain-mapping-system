@@ -2,5 +2,6 @@ afi;1
 category;2
 metadata;1,192.168.0.1,094a2c9f5b46416b9b9bd9f1efa1f3a73d46cec2,2,2001:cdba::3257:9652,094a2c9f5b46416b9b9bd9f1efa1f3a73d46cec2
 to;094a2c9f5b46416b9b9bd9f1efa1f3a73d46cec2
+from;094a2c9f5b46416b9b9bd9f1efa1f3a73d46cec2
 value;192.152.0.0/24
 end;
