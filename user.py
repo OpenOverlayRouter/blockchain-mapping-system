@@ -107,7 +107,7 @@ class Parser():
     }
 
     # read from the file and get new transactions. Store in a list
-    def read_transactions(self, transactions_dir='./Tests/transactions.txt'):
+    def read_transactions(self, transactions_dir='./transactions.txt'):
         buffers = []
         with open(transactions_dir) as f:
             data_buffer = {}
@@ -124,14 +124,17 @@ class Parser():
                     data_buffer = {}
                 else:
                     self.types_dir[type](self, content, data_buffer)
+        self.transactions = buffers
 
         #open(transactions_dir, 'w').close()  # to remove all contents of the txt file
-        self.transactions = buffers
+
 
     # returns the first transaction of the "transactions" list
     def get_tx(self):
         if len(self.transactions) == 0:
             return None
         else:
-            return transactions.pop(0)
+            tx = self.transactions[0]
+            self.transactions.remove(tx)
+            return tx
 
