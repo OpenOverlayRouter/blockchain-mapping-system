@@ -162,12 +162,14 @@ def get_random_hash(timestamp):
 	# Get Ethereum hash
 	last_block_number = get_last_block_number()
 	selected_block_number = get_block_from_timestamp(last_block_number,timestamp)
-	while selected_block_number == None:
+	if selected_block_number == None:
+		print "Consensus: No new ETH block yet, waiting for Ethereum chain..."
+		return None
+	'''while selected_block_number == None:
 		print "Consensus: No new ETH block yet, waiting for Ethereum chain..."
 			# sleep??
 		last_block_number = get_last_block_number()
-		selected_block_number = get_block_from_timestamp(last_block_number,timestamp)
-		# return None
+		selected_block_number = get_block_from_timestamp(last_block_number,timestamp)'''
 	print "Consensus: New block found"
 	eth_hash = get_hash_from_json_block(selected_block_number)
 	eth_hash_bits = from_hex_to_bits(eth_hash,256)

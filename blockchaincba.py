@@ -124,7 +124,6 @@ def run():
             block = p2p.get_block()
             while block is not None:
                 signer = consensus.get_next_signer() 
-                # if signer != None:  
                 res = chain.verify_block_signature(block, signer)
                 if res:
                     # correct block
@@ -166,11 +165,12 @@ def run():
                 new_block = chain.create_block(keys[0].address)
                 #Like receiving a new block
                 chain.add_block(new_block)
-                myIPs = chain.get_own_ips(keys[0].address)
-                timestamp = chain.get_head_block().header.timestamp
-                block_num = chain.get_head_block().header.number
-                consensus.calculate_next_signer(myIPs, timestamp, block_num)
+                #Revisar
                 p2p.broadcast_block(new_block)
+            myIPs = chain.get_own_ips(keys[0].address)
+            timestamp = chain.get_head_block().header.timestamp
+            block_num = chain.get_head_block().header.number
+            consensus.calculate_next_signer(myIPs, timestamp, block_num)
         except Exception as e:
             print "Exception while checking if the node has to sign the next block"
             print e
