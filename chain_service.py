@@ -178,8 +178,8 @@ class ChainService():
         return self.chain.state
 
     # creates a transaction with de data in the transaction_data dictionary
-    def parse_transaction(self, transaction_data, transaction_num, address):
-        return Transaction(self.chain.state.get_nonce(address) + transaction_num + 1, transaction_data["category"],
+    def parse_transaction(self, transaction_data):
+        return Transaction(self.chain.state.get_nonce(transaction_data["from"]) + 1, transaction_data["category"],
                            transaction_data["to"], transaction_data["afi"], transaction_data["value"],
                            transaction_data["metadata"])
 

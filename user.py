@@ -21,6 +21,7 @@ changes_file = '/home/jordi/Documents/prefix-file/pref_data.txt'
 #                           category                                                                                   #
 #                           to                                                                                         #
 #                           afi                                                                                        #
+#                           from                                                                                       #
 #                           value                                                                                      #
 #                           metadata                                                                                   #
 #                           end  ->  this field indicates the end of the data of the transaction                       #
@@ -34,14 +35,9 @@ changes_file = '/home/jordi/Documents/prefix-file/pref_data.txt'
 
 class Parser():
 
-    def __init__(self, key, chain_service):
-        self.key = key
-        self.chain_service = chain_service
+    def __init__(self):
         self.transactions = []
 
-    # changes the key with which the Parser signs all the transactions read
-    def change_keystore(self, key):
-        self.key = key
 
     # sets the "category2 field of the data_buffer dict with the data in the data_string
     def category(self, data_string, data_buffer):
@@ -65,6 +61,11 @@ class Parser():
     # sets the "value" field of the data_buffer dict with the data in the data_string
     def value(self, data_string, data_buffer):
         data_buffer["value"] = data_string
+
+    # sets the "from" field of the data_buffer dict with the data in the data_string
+    def frm(self, data_string, data_buffer):
+        address = normalize_address(data_string)
+        data_buffer["from"] = address
 
     # sets the "metadata" field of the data_buffer dict with the data in the data_string
     def metadata(self, data_string, data_buffer):
@@ -100,6 +101,7 @@ class Parser():
     types_dir = {
         "category": category,
         "to": to,
+        "from": frm,
         "afi": afi,
         "value": value,
         "metadata": metadata
@@ -115,28 +117,27 @@ class Parser():
                 content = content.strip("\n")
                 if type == "end":
                     if data_buffer.get("afi") is not None and data_buffer.get("category") is not None and \
-                                    data_buffer.get("value") is not None and data_buffer.get("to") is not None:
+                                    data_buffer.get("value") is not None and data_buffer.get("to") is not None\
+                                    and data_buffer.get("from") is not None:
                         buffers.append(data_buffer)
                         print("All necessary fields are filled. Adding one transaction...")
                     else:
-                        raise Exception("One transaction contains errors. Ignoring it...")
+                        raise Exception("One transaction contains errors.")
                     data_buffer = {}
                 else:
                     self.types_dir[type](self, content, data_buffer)
+        for elem in buffers:
+            self.transactions.append(elem)
 
         #open(transactions_dir, 'w').close()  # to remove all contents of the txt file
-        transactions = []
-        for count, elem in enumerate(buffers):
-            transaction = self.chain_service.parse_transaction(elem, count, self.key.keystore["address"])
-            transaction.sign(self.key.privkey)
-            transactions.append(transaction)
 
-        self.transactions = transactions
 
     # returns the first transaction of the "transactions" list
     def get_tx(self):
         if len(self.transactions) == 0:
             return None
         else:
-            return transactions.pop(0)
+            tx = self.transactions[0]
+            self.transactions.remove(tx)
+            return tx
 
