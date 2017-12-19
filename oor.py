@@ -6,6 +6,8 @@ import sys
 from time import sleep
 import fcntl
 import os
+import logger
+import logging.config
 
 
 HOST = ''
@@ -17,6 +19,7 @@ class Oor:
 
     def __init__(self):
         self.rec_socket, self.snd_socket = self.open_sockets()
+        self.logger = logging.getLogger('OOR')
         fcntl.fcntl(self.rec_socket, fcntl.F_SETFL, os.O_NONBLOCK)
         fcntl.fcntl(self.snd_socket, fcntl.F_SETFL, os.O_NONBLOCK)
 
@@ -24,18 +27,18 @@ class Oor:
         try:
             rec_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             snd_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            print 'Socket created'
+            self.logger.info("Socket created.")
         except socket.error, msg:
-            print 'Failed to create socket. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
+            self.logger.exception('Failed to create socket. Error Code : ' + str(msg[0]) + ' Message ' + msg[1] + '.')
             sys.exit(1)
         # Bind socket to local host and port
         try:
             rec_socket.bind((HOST, REC_PORT))
         except socket.error:
-            print 'Bind failed.'
+            self.logger.exception("Bind failed.")
             sys.exit(1)
 
-        print 'Socket bind complete in ports ' + str(REC_PORT) + ' and ' + str(SND_PORT)
+        self.logger.info('Socket bind complete in ports ' + str(REC_PORT) + ' and ' + str(SND_PORT))
 
         return rec_socket, snd_socket
 
@@ -43,8 +46,6 @@ class Oor:
     def read_socket(self):
         try:
             res = self.rec_socket.recv(26)
-            print(len(res))
-            print(res.encode('HEX'))
             nonce = (struct.pack('>I', (int(struct.unpack("I", res[0:4])[0]))) + struct.pack('>I',(int(struct.unpack("I", res[4:8])[0])))).encode('HEX')
             nonce = int(nonce,16)
             afi = int(struct.unpack("H", res[8:10])[0])
@@ -55,18 +56,18 @@ class Oor:
             elif (afi == 2):
                 address = str(IPAddress(int(res[10:26].encode('HEX'),16)))
             else:
-                raise Exception('Incorrect AFI read from socket')
+                raise Exception('Incorrect AFI read from socket.')
             return nonce, afi, address
 
         except socket.error, e:
             err = e.args[0]
             if err == errno.EAGAIN or err == errno.EWOULDBLOCK:
                 sleep(1)
-                print 'No data available'
+                self.logger.info("No data available.")
                 return None,None,None
             else:
                 # a "real" error occurred
-                print e
+                self.logger.exception(e)
 
     def write_socket(self, res):
         self.snd_socket.sendto(res, (HOST, SND_PORT))

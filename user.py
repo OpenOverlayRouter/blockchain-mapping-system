@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from utils import normalize_address
 import logger
+import logging.config
 
 transactions = []
 changes_file = '/home/jordi/Documents/prefix-file/pref_data.txt'
@@ -34,6 +35,7 @@ class Parser():
 
     def __init__(self):
         self.transactions = []
+        self.logger = logging.getLogger('Parser')
 
 
     # sets the "category2 field of the data_buffer dict with the data in the data_string
@@ -117,12 +119,15 @@ class Parser():
                                     data_buffer.get("value") is not None and data_buffer.get("to") is not None\
                                     and data_buffer.get("from") is not None:
                         buffers.append(data_buffer)
-                        print("All necessary fields are filled. Adding one transaction...")
+                        self.logger.info("Transaction successfully added.")
                     else:
-                        raise Exception("One transaction contains errors.")
+                        self.logger.exception("Transaction %s contains errors. Ignoring it...", str(data_buffer))
                     data_buffer = {}
                 else:
-                    self.types_dir[type](self, content, data_buffer)
+                    try:
+                        self.types_dir[type](self, content, data_buffer)
+                    except Exception as e:
+                        self.logger.exception(e)
         for elem in buffers:
             self.transactions.append(elem)
 

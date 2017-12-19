@@ -35,6 +35,7 @@ import logging.config
 import logger
 from user import Parser
 from utils import normalize_address
+from oor import Oor
 
 mainLog = logging.getLogger('Main')
 
@@ -71,6 +72,9 @@ def init_keystore(keys_dir='./Tests/keystore/'):
         addresses.append(normalize_address(key.keystore['address']))
     return keys, addresses
 
+def init_oor():
+    return Oor()
+
 
 def init_logger():
     logger.setup_custom_logger('Main')
@@ -98,6 +102,9 @@ def run():
 
     mainLog.info("Initializing Parser")
     user = init_user()
+
+    mainLog.info("Initializing OOR")
+    oor = init_oor()
 
     end = 0
     myIPs = chain.get_own_ips(keys[0].address)
@@ -182,22 +189,21 @@ def run():
                 except:
                     pass
         except Exception as e:
-            print "Exception while processing transactions from the user"
-            print e
+            mainLog.exception(e)
             p2p.stop()
             sys.exit(0)
 
         #answer queries from OOR
-        '''try:
-            query = oor.get_query()
-            if query is not None:
-                info = chain.query_eid(query)
+        try:
+            nonce, afi, address = oor.get_query()
+            if nonce is not None and afi is not None and address is not None:
+                info = chain.query_eid(ipaddr=address, nonce=nonce)
                 oor.send(info)
         except Exception as e:
             mainLog.critical("Exception while answering queries from OOR")
             mainLog.exception(e)
             p2p.stop()
-            sys.exit(0)'''
+            sys.exit(0)
 
         #answer queries from the network
         #blocks
