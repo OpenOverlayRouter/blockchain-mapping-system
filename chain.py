@@ -10,10 +10,9 @@ from block import Block, BlockHeader, FakeHeader, UnsignedBlock
 from genesis_helpers import state_from_genesis_declaration, initialize, initialize_genesis_keys
 from apply import apply_block, update_block_env_variables, validate_block, validate_transaction, verify_block_signature
 from patricia_state import PatriciaState
+import logging
 
-
-
-
+databaseLog = logging.getLogger('Database')
 
 
 class Chain(object):
@@ -28,8 +27,7 @@ class Chain(object):
             print(self.db.get('head_hash').encode("HEX"))
             self.state = self.mk_poststate_of_blockhash(self.db.get('head_hash'))
             self.state.executing_on_head = True
-
-            print('Initializing chain from saved head, #%d (%s)' %
+            databaseLog.info('Initializing chain from saved head, #%d (%s)' %
                   (self.state.prev_headers[0].number, encode_hex(self.state.prev_headers[0].hash)))
         elif genesis is None:
             raise Exception("Need genesis decl!")
@@ -37,9 +35,9 @@ class Chain(object):
             assert env is None
             self.state = genesis
             self.env = self.state.env
-            print('Initializing chain from provided state')
+            databaseLog.info('Initializing chain from provided state')
         elif isinstance(genesis, dict):
-            print('Initializing chain from new state based on alloc')
+            databaseLog.info('Initializing chain from new state based on alloc')
             diction = {}
             self.state = state_from_genesis_declaration(
                 genesis, self.env, executing_on_head=True, pytricia=diction)

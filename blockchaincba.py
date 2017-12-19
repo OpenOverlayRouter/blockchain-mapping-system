@@ -30,6 +30,10 @@ import socket
 import fcntl, os
 import errno
 from time import sleep
+import logging
+import logging.config
+import logger
+
 
 HOST = ''
 REC_PORT = 16001
@@ -124,8 +128,20 @@ def init_keystore(keys_dir='./Tests/keystore/'):
         keys.append(Keystore.load(keys_dir + file[-40:], "TFG1234"))
     return keys
 
+def init_logger():
+    logger.setup_custom_logger('Main')
+    logger.setup_custom_logger('Database')
+    logger.setup_custom_logger('P2P')
+    logger.setup_custom_logger('OOR')
+    logger.setup_custom_logger('Consensus')
+    logger.setup_custom_logger('Parser')
 
 def run():
+    init_logger()
+
+    mainLog = logging.getLogger('Main')
+    mainLog.info("Initializing chain")
+
     chain = init_chain()
     p2p = init_p2p(chain.get_head_block().header.number)
     consensus = init_consensus()
@@ -135,6 +151,7 @@ def run():
     block_num = chain.get_head_block().header.number
     timestamp = chain.get_head_block().header.timestamp
     consensus.calculate_next_signer(myIPs, timestamp, block_num)
+
 
     while(not end):
         
@@ -262,12 +279,12 @@ def read_request_and_process():
         except Exception as e:
             print e
         """
-        locator = LocatorRecord(priority=0, weight=0, mpriority=0, mweight=0, unusedflags=0, LpR=0,
+        locator = LocatorRecord(priority=5, weight=8, mpriority=0, mweight=0, unusedflags=0, LpR=0,
                                 locator=IPNetwork('192.168.0.1'))
         locators = []
         locators.append(locator)
         reply = MapReplyRecord(eid_prefix=IPNetwork('192.168.1.0/24'), locator_records=locators)
-        reply = MapServers(info = [IPNetwork("192.168.1.42/32"),IPNetwork("192.168.0.2/32"),IPNetwork("192.168.0.3/32")])
+        #reply = MapServers(info = [IPNetwork("192.168.1.42/32"),IPNetwork("192.168.0.2/32"),IPNetwork("192.168.0.3/32")])
         r = Response(nonce=nonce, info=reply)
         print(r.to_bytes().encode('HEX'))
         write_socket(r.to_bytes(), snd_socket)
@@ -275,7 +292,11 @@ def read_request_and_process():
 
 
 if __name__ == "__main__":
-    #run()
+    #filename = '.log/blockchainCBA.log',
+    #filemode = 'w'
+    # create logger
+
+    run()
 
     """
     keys = init_keystore()
@@ -304,4 +325,3 @@ if __name__ == "__main__":
             write_socket(msg,snd_socket)"""
 
         time.sleep(0.5)
-    
