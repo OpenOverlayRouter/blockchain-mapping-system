@@ -33,75 +33,10 @@ from time import sleep
 import logging
 import logging.config
 import logger
-
-
-HOST = ''
-REC_PORT = 16001
-SND_PORT = 16002
+from user import Parser
+from utils import normalize_address
 
 mainLog = logging.getLogger('Main')
-
-def open_sockets():
-    try:
-        rec_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        snd_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        print 'Socket created'
-    except socket.error, msg:
-        print 'Failed to create socket. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
-        sys.exit(1)
-    # Bind socket to local host and port
-    try:
-        rec_socket.bind((HOST, REC_PORT))
-    except socket.error:
-        print 'Bind failed.'
-        sys.exit(1)
-
-    print 'Socket bind complete in ports ' + str(REC_PORT) + ' and ' + str(SND_PORT)
-
-    return rec_socket, snd_socket
-
-
-# reads the fields nonce, AFI and the IP from the socket
-def read_socket(rec_socket):
-    try:
-        res = rec_socket.recv(26)
-        print(len(res))
-        print(res.encode('HEX'))
-        nonce = (struct.pack('>I', (int(struct.unpack("I", res[0:4])[0]))) + struct.pack('>I',(int(struct.unpack("I", res[4:8])[0])))).encode('HEX')
-        nonce = int(nonce,16)
-        afi = int(struct.unpack("H", res[8:10])[0])
-        address = ''
-        if (afi == 1):
-            address = str(IPAddress(int(res[10:14].encode('HEX'),16)))
-
-        elif (afi == 2):
-            address = str(IPAddress(int(res[10:26].encode('HEX'),16)))
-        else:
-            raise Exception('Incorrect AFI read from socket')
-        return nonce, afi, address
-
-    except socket.error, e:
-        err = e.args[0]
-        if err == errno.EAGAIN or err == errno.EWOULDBLOCK:
-            sleep(1)
-            print 'No data available'
-            return None,None,None
-        else:
-            # a "real" error occurred
-            print e
-
-
-def write_socket(res, snd_socket):
-    snd_socket.sendto(res, (HOST, SND_PORT))
-
-
-def test_map_reply():
-    locator = LocatorRecord(priority=0, weight=0, mpriority=0, mweight=0, unusedflags=0, LpR=0,
-                            locator=IPv4Address(u'192.168.0.1'))
-    locators = []
-    locators.append(locator)
-    reply = MapReplyRecord(eid_prefix=IPv4Network(u'192.168.1.0/24'), locator_records=locators)
-    print(reply.to_bitstream())
 
 
 def init_chain():
@@ -123,11 +58,19 @@ def init_consensus():
     return Consensus()
 
 
+def init_user():
+    return Parser()
+
+
 def init_keystore(keys_dir='./Tests/keystore/'):
     keys = []
+    addresses = []
     for file in glob.glob(os.path.join(keys_dir, '*')):
-        keys.append(Keystore.load(keys_dir + file[-40:], "TFG1234"))
-    return keys
+        key = Keystore.load(keys_dir + file[-40:], "TFG1234")
+        keys.append(key)
+        addresses.append(normalize_address(key.keystore['address']))
+    return keys, addresses
+
 
 def init_logger():
     logger.setup_custom_logger('Main')
@@ -136,6 +79,7 @@ def init_logger():
     logger.setup_custom_logger('OOR')
     logger.setup_custom_logger('Consensus')
     logger.setup_custom_logger('Parser')
+
 
 def run():
     init_logger()
@@ -150,7 +94,10 @@ def run():
     consensus = init_consensus()
 
     mainLog.info("Initializing Keystore")
-    keys = init_keystore()
+    keys, addresses = init_keystore()
+
+    mainLog.info("Initializing Parser")
+    user = init_user()
 
     end = 0
     myIPs = chain.get_own_ips(keys[0].address)
@@ -158,9 +105,7 @@ def run():
     timestamp = chain.get_head_block().header.timestamp
     consensus.calculate_next_signer(myIPs, timestamp, block_num)
 
-
     while(not end):
-        
         #Process new blocks
         try:
             block = p2p.get_block()
@@ -219,21 +164,28 @@ def run():
             p2p.stop()
             sys.exit(0)
 
-        #Process transactions from the user
-        '''try:
+        # Process transactions from the user
+        try:
+            user.read_transactions()
             tx_int = user.get_tx()
             if tx_int is not None:
                 try:
-                    chain.add_pending_transaction(tx_int)
-                    #correct tx
-                    p2p.broadcast_tx(tx_int)
+                    try:
+                        key = addresses.index(tx_int["from"])
+                    except:
+                        raise Exception("Key indicated in from field is not in present in the keystore")
+                    key = keys[key]
+                    tx = chain.parse_transaction(tx_int)
+                    tx.sign(key.privkey)
+                    # correct tx
+                    p2p.broadcast_tx(tx)
                 except:
                     pass
         except Exception as e:
-            mainLog.critical("Exception while processing transactions from the user")
-            mainLog.exception(e)
+            print "Exception while processing transactions from the user"
+            print e
             p2p.stop()
-            sys.exit(0)'''
+            sys.exit(0)
 
         #answer queries from OOR
         '''try:
@@ -274,28 +226,6 @@ def run():
             # Stop P2P
             p2p.stop()
             sys.exit(0)
-
-def read_request_and_process():
-    nonce, afi, address = read_socket(rec_socket)
-
-    if(nonce is not None and afi is not None and address is not None):
-        """
-        try:
-            res = chain.query_eid(address, nonce)
-        except Exception as e:
-            print e
-        """
-        locator = LocatorRecord(priority=5, weight=8, mpriority=0, mweight=0, unusedflags=0, LpR=0,
-                                locator=IPNetwork('192.168.0.1'))
-        locators = []
-        locators.append(locator)
-        reply = MapReplyRecord(eid_prefix=IPNetwork('192.168.1.0/24'), locator_records=locators)
-        #reply = MapServers(info = [IPNetwork("192.168.1.42/32"),IPNetwork("192.168.0.2/32"),IPNetwork("192.168.0.3/32")])
-        r = Response(nonce=nonce, info=reply)
-        print(r.to_bytes().encode('HEX'))
-        write_socket(r.to_bytes(), snd_socket)
-
-
 
 if __name__ == "__main__":
     #filename = '.log/blockchainCBA.log',

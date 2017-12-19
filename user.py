@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 from utils import normalize_address
-from ipaddr import IPv6Address, IPv6Network, IPv4Address, IPv4Network
-from transactions import Transaction
-from chain_service import ChainService
-from keystore import Keystore
+import logger
 
 transactions = []
 changes_file = '/home/jordi/Documents/prefix-file/pref_data.txt'
