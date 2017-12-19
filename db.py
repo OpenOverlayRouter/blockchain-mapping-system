@@ -149,17 +149,14 @@ class RefcountDB(BaseDB):
             existing = self.db.get(key)
             assert existing[4:] == value
             self.db.put(key, add1(existing[:4]) + value)
-            # print('putin', key, utils.big_endian_to_int(existing[:4]) + 1)
         except KeyError:
             self.db.put(key, b'\x00\x00\x00\x01' + value)
 
     def delete(self, key):
         existing = self.db.get(key)
         if existing[:4] == b'\x00\x00\x00\x01':
-            # print('deletung')
             self.db.delete(key)
         else:
-            # print(repr(existing[:4]))
             self.db.put(key, sub1(existing[:4]) + existing[4:])
 
     def commit(self):

@@ -13,6 +13,7 @@ __pycache__/
 # Sphinx documentation
 docs/_build/
 
+.idea
 .idea/*
 
 # Network files

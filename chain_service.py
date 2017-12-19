@@ -16,6 +16,9 @@ from own_exceptions import UnsignedTransaction
 from state import State
 from map_reply import Response, LocatorRecord, MapReplyRecord, MapServers
 from netaddr import IPNetwork
+import logging
+
+databaseLog = logging.getLogger('Database')
 
 class ChainService():
     """
@@ -30,9 +33,7 @@ class ChainService():
 
     def add_pending_transaction(self, tx):
         assert isinstance(tx, Transaction)
-        print "add_pending 1"
         validate_transaction(self.chain.state, tx)
-        print "add pending 2"
         # validate transaction
         try:
             # Transaction validation for broadcasting. Transaction is validated
@@ -43,7 +44,7 @@ class ChainService():
                 if tx.sender == null_address:
                     raise UnsignedTransaction(tx)
         except Exception as e:
-            print(e)
+            databaseLog.info(e.message)
         self.transactions.append(tx)
 
     # creates a block with the list of pending transactions, creates its tries and returns it
@@ -55,20 +56,18 @@ class ChainService():
         block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber + 1, coinbase=coinbase))
         snapshot = self.chain.state.to_snapshot()
         s = state.State().from_snapshot(snapshot, Env(_EphemDB()))
-        print "creating block number " + str(prevnumber+1)
+        databaseLog.info("Creating block with block number %s", str(prevnumber+1))
         for tx in self.transactions:
             try:
                 dictionary = {}
                 if (prevnumber+1) % 2 == 0 and int(tx.afi) == 1:  # the next block has to be an IPv4 one
-                    print "with transaction with afi " + str(tx.afi)
                     apply_transaction(s, tx, dictionary)
                     block.transactions.append(tx)
                 elif (prevnumber+1) % 2 != 0 and int(tx.afi) == 2:  # the next block has to be an IPv6 one
-                    print "with transaction with afi " + str(tx.afi)
                     apply_transaction(s, tx, dictionary)
                     block.transactions.append(tx)
             except Exception as e:
-                print (e)
+                databaseLog.info(e.message)
         self._create_tries(block)
         return block
 
@@ -86,14 +85,9 @@ class ChainService():
     def _create_tries(self, block):
         t = trie.Trie(_EphemDB())
         snapshot = self.chain.state.to_snapshot()
-        print(snapshot)
-        print("self.chain.state.trie.root_hash")
-        print(self.chain.state.trie.root_hash.encode("HEX"))
 
         temp_state = self.chain.state.clone()
 
-        print("temp_state.trie.root_hash")
-        print(temp_state.trie.root_hash.encode("HEX"))
         dictionary = {}
         for index, tx in enumerate(block.transactions):
             t.update(rlp.encode(index), rlp.encode(tx))
@@ -108,7 +102,7 @@ class ChainService():
         if blocknumber % 2 == 0:  # received block has to be IPv4
             for tx in block.transactions:
                 if tx.afi != 1:
-                    raise Exception("IPv6 block with an IPv4 transaction, afi detected: " + str(tx.afi))
+                    raise Exception("IPv6 block with an IPv4 transaction, afi detected: %s", str(tx.afi))
         elif blocknumber % 2 != 0: # received block has to be IPv6
             for tx in block.transactions:
                 if tx.afi != 2:
@@ -125,7 +119,7 @@ class ChainService():
                 invalid_tx.append(tx)
         if invalid_tx:
             for tx in invalid_tx:
-                print "Deleted invalid transaction", tx.hash.encode('HEX')
+                databaseLog.debug("Deleted invalid transaction %s", tx.hash.encode('HEX'))
                 self.transactions.remove(tx)
 
 
@@ -203,8 +197,8 @@ class ChainService():
                     resp = Response(nonce=nonce, info=map_reply)
                     return resp
             else:
-                print "Address " + str(address) + " has no balance"
+                databaseLog.info("Address %s has no balance", str(address))
         except:
-            print "IP address " + str(ipaddr) + " is not owned by anybody"
+            databaseLog.info("IP address %s is not owned by anybody", str(ipaddr))
         
         return None
