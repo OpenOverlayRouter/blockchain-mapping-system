@@ -39,6 +39,7 @@ HOST = ''
 REC_PORT = 16001
 SND_PORT = 16002
 
+mainLog = logging.getLogger('Main')
 
 def open_sockets():
     try:
@@ -139,13 +140,18 @@ def init_logger():
 def run():
     init_logger()
 
-    mainLog = logging.getLogger('Main')
-    mainLog.info("Initializing chain")
-
+    mainLog.info("Initializing Chain")
     chain = init_chain()
+
+    mainLog.info("Initializing P2P")
     p2p = init_p2p(chain.get_head_block().header.number)
+
+    mainLog.info("Initializing Consensus")
     consensus = init_consensus()
+
+    mainLog.info("Initializing Keystore")
     keys = init_keystore()
+
     end = 0
     myIPs = chain.get_own_ips(keys[0].address)
     block_num = chain.get_head_block().header.number
@@ -170,8 +176,8 @@ def run():
                     consensus.calculate_next_signer(myIPs, timestamp, block_num)
                 block = p2p.get_block()
         except Exception as e:
-            print "Exception while processing a received block"
-            print e
+            mainLog.critical("Exception while processing a received block")
+            mainLog.exception(e)
             p2p.stop()
             sys.exit(0)
     
@@ -188,8 +194,8 @@ def run():
                 #get new transactions to process
                 tx_ext = p2p.get_tx()
         except Exception as e:
-            print "Exception while processing a received transaction"
-            print e
+            mainLog.critical("Exception while processing a received transaction")
+            mainLog.exception(e)
             p2p.stop()
             sys.exit(0)
 
@@ -208,8 +214,8 @@ def run():
             block_num = chain.get_head_block().header.number
             consensus.calculate_next_signer(myIPs, timestamp, block_num)
         except Exception as e:
-            print "Exception while checking if the node has to sign the next block"
-            print e
+            mainLog.critical("Exception while checking if the node has to sign the next block")
+            mainLog.exception(e)
             p2p.stop()
             sys.exit(0)
 
@@ -224,8 +230,8 @@ def run():
                 except:
                     pass
         except Exception as e:
-            print "Exception while processing transactions from the user"
-            print e  
+            mainLog.critical("Exception while processing transactions from the user")
+            mainLog.exception(e)
             p2p.stop()
             sys.exit(0)'''
 
@@ -236,8 +242,8 @@ def run():
                 info = chain.query_eid(query)
                 oor.send(info)
         except Exception as e:
-            print "Exception while answering queries from OOR"
-            print e 
+            mainLog.critical("Exception while answering queries from OOR")
+            mainLog.exception(e)
             p2p.stop()
             sys.exit(0)'''
 
@@ -251,8 +257,8 @@ def run():
                     response.append(chain.get_block(block))
                 p2p.answer_block_queries(response)
         except Exception as e:
-            print "Exception while answering queries from the network"
-            print e 
+            mainLog.critical("Exception while answering queries from the network")
+            mainLog.exception(e)
             p2p.stop()
             sys.exit(0)             
 
@@ -263,8 +269,8 @@ def run():
                 pool = chain.get_pending_transactions()
                 p2p.answer_tx_pool_query(pool)
         except Exception as e:
-            print "Exception while answering the transaction pool"
-            print e  
+            mainLog.critical("Exception while answering the transaction pool")
+            mainLog.exception(e)
             # Stop P2P
             p2p.stop()
             sys.exit(0)

@@ -24,11 +24,9 @@ class Chain(object):
         self.patricia.from_db()  # TODO: test
         # Initialize the state
         if 'head_hash' in self.db:  # new head tag
-            print(self.db.get('head_hash').encode("HEX"))
             self.state = self.mk_poststate_of_blockhash(self.db.get('head_hash'))
             self.state.executing_on_head = True
-            databaseLog.info('Initializing chain from saved head, #%d (%s)' %
-                  (self.state.prev_headers[0].number, encode_hex(self.state.prev_headers[0].hash)))
+            databaseLog.info('Initializing chain from saved head, #%d (%s)',self.state.prev_headers[0].number, encode_hex(self.state.prev_headers[0].hash))
         elif genesis is None:
             raise Exception("Need genesis decl!")
         elif isinstance(genesis, State):
@@ -88,15 +86,10 @@ class Chain(object):
         block_rlp = self.db.get(blockhash)
 
         if block_rlp in ('GENESIS', b'GENESIS'):
-            print("Genesis block hash ")
             return State.from_snapshot(json.loads(
                 self.db.get('GENESIS_STATE')), self.env)
         block = rlp.decode(block_rlp, Block)
         state = State(env=self.env)
-        print("block.number")
-        print(block.number)
-        print("block.header.state_root")
-        print(block.header.state_root.encode("HEX"))
         state.trie.root_hash = block.header.state_root
         update_block_env_variables(state, block)
         state.txindex = len(block.transactions)
@@ -231,16 +224,12 @@ class Chain(object):
         if block.header.prevhash == self.head_hash:
             self.state.deletes = []
             self.state.changed = {}
-            #try:
             apply_block(self.state, block, self.patricia)
-            #except (Exception):
-                #print ("exception found int add_block (apply_block failed), returning False")
-                #return False
 
-            self.patricia.to_db()  # store the patricia into the db in order to make changes persistent, TODO: test
+            self.patricia.to_db()
 
             self.db.put(b'block:%d' % block.header.number, block.header.hash)
-            # side effect: put 'score:' cache in db
+
             self.head_hash = block.header.hash
             for i, tx in enumerate(block.transactions):
                 self.db.put(b'txindex:' +
@@ -253,10 +242,10 @@ class Chain(object):
         elif block.header.prevhash in self.env.db:
             temp_state = self.mk_poststate_of_blockhash(block.header.prevhash)
             try:
-                print ("Block being added to a chain that is not currently the head")
+                databaseLog.info("Block being added to a chain that is not currently the head")
                 apply_block(temp_state, block)
             except (Exception):
-                print ("exception found int add_block (apply_block in line 223 failed), returning False")
+                databaseLog.error("Exception found while applying block. Returning False")
                 return False
             changed = temp_state.changed
         # Block has no parent yet
@@ -264,20 +253,21 @@ class Chain(object):
             if block.header.prevhash not in self.parent_queue:
                 self.parent_queue[block.header.prevhash] = []
             self.parent_queue[block.header.prevhash].append(block)
-            print ("previous hash not found in parent queue, returning False")
+            databaseLog.debug("Previous hash not found in parent queue, returning False")
             return False
         self.add_child(block)
         self.db.put('head_hash', self.head_hash)
         self.db.put(block.hash, rlp.encode(block))
         self.db.put(b'changed:' + block.hash,
                     b''.join([k.encode() if not isinstance(k, bytes) else k for k in list(changed.keys())]))
-        print('Saved %d address change logs' % len(changed.keys()))
+
+        databaseLog.debug('Saved %d address change logs', len(changed.keys()))
+
         self.db.commit()
-        # Call optional callback
+
         if self.new_head_cb and block.header.number != 0:
             self.new_head_cb(block)
-        # Are there blocks that we received that were waiting for this block?
-        # If so, process them.
+
         self.state.block_number = block.header.number
 
         if block.header.hash in self.parent_queue:
@@ -328,7 +318,6 @@ class Chain(object):
             return None
 
     def get_transaction(self, tx):
-        print('Deprecated. Use get_tx_position')
         blknum, index = self.get_tx_position(tx)
         blk = self.get_block_by_number(blknum)
         return blk.transactions[index], blk, index

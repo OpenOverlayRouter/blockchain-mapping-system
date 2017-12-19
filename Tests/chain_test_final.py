@@ -12,6 +12,9 @@ import netaddr
 from netaddr import IPNetwork, IPAddress, IPSet
 from utils import address, normalize_address
 from chain_service import ChainService
+import logger
+
+logger.setup_custom_logger('Database')
 
 print "Loading the environment..."
 db = LevelDB("./chain")
