@@ -25,6 +25,8 @@ from p2p import P2P
 import sys
 import fcntl, os
 from oor import Oor
+from user import Parser
+from utils import normalize_address
 
 
 def init_chain():
@@ -48,26 +50,32 @@ def init_consensus():
 
 def init_keystore(keys_dir='./Tests/keystore/'):
     keys = []
+    addresses = []
     for file in glob.glob(os.path.join(keys_dir, '*')):
-        keys.append(Keystore.load(keys_dir + file[-40:], "TFG1234"))
-    return keys
+        key = Keystore.load(keys_dir + file[-40:], "TFG1234")
+        keys.append(key)
+        addresses.append(normalize_address(key.keystore['address']))
+    return keys, addresses
 
 
 def init_oor():
     return Oor()
 
+def init_user():
+    return Parser()
 
 def run():
     chain = init_chain()
     p2p = init_p2p(chain.get_head_block().header.number)
     consensus = init_consensus()
-    keys = init_keystore()
+    keys, addresses = init_keystore()
     end = 0
     myIPs = chain.get_own_ips(keys[0].address)
     block_num = chain.get_head_block().header.number
     timestamp = chain.get_head_block().header.timestamp
     consensus.calculate_next_signer(myIPs, timestamp, block_num)
     oor = init_oor()
+    user = init_user()
 
     while(not end):
         
@@ -130,20 +138,27 @@ def run():
             sys.exit(0)
 
         #Process transactions from the user
-        '''try:
+        try:
+            user.read_transactions()
             tx_int = user.get_tx()
             if tx_int is not None:
                 try:
-                    chain.add_pending_transaction(tx_int)
+                    try:
+                        key = addresses.index(tx_int["from"])
+                    except:
+                        raise Exception("Key indicated in from field is not in present in the keystore")
+                    key = keys[key]
+                    tx = chain.parse_transaction(tx_int)
+                    tx.sign(key.privkey)
                     #correct tx
-                    p2p.broadcast_tx(tx_int)
+                    p2p.broadcast_tx(tx)
                 except:
                     pass
         except Exception as e:
             print "Exception while processing transactions from the user"
             print e  
             p2p.stop()
-            sys.exit(0)'''
+            sys.exit(0)
 
         #answer queries from OOR
         '''try:
@@ -190,31 +205,20 @@ def run():
 
 if __name__ == "__main__":
     #run()
-    """
-    keys = init_keystore()
-    chain = init_chain()
-    chain.query_eid(keys[0].keystore['address'], IPv4Address('192.168.0.1'))
-    """
-    rec_socket, snd_socket = open_sockets()
-    fcntl.fcntl(rec_socket, fcntl.F_SETFL, os.O_NONBLOCK)
-    fcntl.fcntl(snd_socket, fcntl.F_SETFL, os.O_NONBLOCK)
-    while 1:
-        read_request_and_process()
-        print("HOLA")
-        """
-        res = rec_socket.recvfrom(50)[0]
-        if res is not None:
-            print(struct.pack('>I',(int(struct.unpack("I",res[0:4])[0]))).encode('HEX'))
-            print(struct.pack('>I',(int(struct.unpack("I",res[4:8])[0]))).encode('HEX'))
-            afi = int(struct.unpack("H",res[8:10])[0])
-            if afi == 1:
-                ip = IPv4Address(res[18:])
-                print(ip)
-            elif afi == 2:
-                ip = IPv6Address(res[18:])
-                print(ip)
-            msg = struct.pack('>I',(int(struct.unpack("I",res[0:4])[0]))) + struct.pack('>I',(int(struct.unpack("I",res[4:8])[0]))) + struct.pack('H',int(struct.unpack("H",res[8:10])[0]))
-            write_socket(msg,snd_socket)"""
 
-        time.sleep(0.5)
-    
+    keys, addresses = init_keystore()
+    user = init_user()
+    user.read_transactions()
+    tx = user.get_tx()
+    try:
+        addresses.index(tx["from"])
+    except:
+        print "that key is not present in the keystore"
+    try:
+        addresses.index("hola")
+    except:
+        print "key hola is not present in the keystore"
+
+
+    #chain = init_chain()
+    #oor = init_oor()

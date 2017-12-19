@@ -64,7 +64,8 @@ class Parser():
 
     # sets the "from" field of the data_buffer dict with the data in the data_string
     def frm(self, data_string, data_buffer):
-        data_buffer["from"] = data_string
+        address = normalize_address(data_string)
+        data_buffer["from"] = address
 
     # sets the "metadata" field of the data_buffer dict with the data in the data_string
     def metadata(self, data_string, data_buffer):
@@ -107,7 +108,7 @@ class Parser():
     }
 
     # read from the file and get new transactions. Store in a list
-    def read_transactions(self, transactions_dir='./transactions.txt'):
+    def read_transactions(self, transactions_dir='./Tests/transactions.txt'):
         buffers = []
         with open(transactions_dir) as f:
             data_buffer = {}
@@ -116,7 +117,8 @@ class Parser():
                 content = content.strip("\n")
                 if type == "end":
                     if data_buffer.get("afi") is not None and data_buffer.get("category") is not None and \
-                                    data_buffer.get("value") is not None and data_buffer.get("to") is not None:
+                                    data_buffer.get("value") is not None and data_buffer.get("to") is not None\
+                                    and data_buffer.get("from") is not None:
                         buffers.append(data_buffer)
                         print("All necessary fields are filled. Adding one transaction...")
                     else:
@@ -124,7 +126,8 @@ class Parser():
                     data_buffer = {}
                 else:
                     self.types_dir[type](self, content, data_buffer)
-        self.transactions = buffers
+        for elem in buffers:
+            self.transactions.append(elem)
 
         #open(transactions_dir, 'w').close()  # to remove all contents of the txt file
 
