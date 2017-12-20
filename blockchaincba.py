@@ -102,6 +102,7 @@ def run():
 
     mainLog.info("Initializing Parser")
     user = init_user()
+    user.read_transactions()
 
     mainLog.info("Initializing OOR")
     oor = init_oor()
@@ -173,7 +174,6 @@ def run():
 
         # Process transactions from the user
         try:
-            user.read_transactions()
             tx_int = user.get_tx()
             if tx_int is not None:
                 try:
@@ -212,7 +212,7 @@ def run():
             if block_numbers is not None:
                 response = []
                 for block in block_numbers:
-                    response.append(chain.get_block(block))
+                    response.append(chain.get_block_by_number(block))
                 p2p.answer_block_queries(response)
         except Exception as e:
             mainLog.critical("Exception while answering queries from the network")
