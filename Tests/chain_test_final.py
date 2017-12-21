@@ -36,8 +36,8 @@ ks3 = Keystore.load("./keystore/a3e04410f475b813c01ca77ff12cb277991e62d2","TFG12
 print "Starting test..."
 
 print(chain.get_own_ips(add1))
-ip4List = list(IPNetwork('192.0.2.0/28'))
-ip6List = list(IPNetwork('2001:db8:0:1:1:1:1:1/124'))
+ip4List = list(IPNetwork('192.0.2.0/30'))
+ip6List = list(IPNetwork('2001:db8:0:1:1:1:1:1/126'))
 
 
 i = 0
@@ -93,18 +93,18 @@ while i < len(ip4List):
 print "Adding some Delegated IP TXs"
 
 print(chain.get_own_ips(add1))
-ip4List = list(IPNetwork('192.168.2.0/28'))
-ip6List = list(IPNetwork('2001:db9:0:1:1:1:1:1/124'))
+ip4List = list(IPNetwork('192.168.2.0/30'))
+ip6List = list(IPNetwork('2001:db9:0:1:1:1:1:1/126'))
 
 nonce = 0
 while i < len(ip4List):
     if(blockNum%2 == 0):
-        tx = Transaction(nonce, 1, add2, 1, str(ip4List[i]))
+        tx = Transaction(nonce, 1, add2, 1, str(ip4List[i]), time=int(time.time()))
         tx.sign(ks1.privkey)
         chain.add_pending_transaction(tx)
         i += 1
     else:
-        tx = Transaction(nonce, 1, add2, 2, str(ip6List[i]))
+        tx = Transaction(nonce, 1, add2, 2, str(ip6List[i]), time=int(time.time()))
         tx.sign(ks1.privkey)
         chain.add_pending_transaction(tx)
     block = chain.create_block(add1)
@@ -115,19 +115,19 @@ while i < len(ip4List):
     time.sleep(1)
 
 
-ip4List = list(IPNetwork('193.168.2.0/28'))
-ip6List = list(IPNetwork('2002:db9:0:1:1:1:1:1/124'))
+ip4List = list(IPNetwork('193.168.2.0/30'))
+ip6List = list(IPNetwork('2002:db9:0:1:1:1:1:1/126'))
 
 
 i = 0
 while i < len(ip4List):
     if(blockNum%2 == 0):
-        tx = Transaction(nonce, 1, add3, 1, str(ip4List[i]))
+        tx = Transaction(nonce, 1, add3, 1, str(ip4List[i]), time=int(time.time()))
         tx.sign(ks1.privkey)
         chain.add_pending_transaction(tx)
         i += 1
     else:
-        tx = Transaction(nonce, 1, add3, 2, str(ip6List[i]))
+        tx = Transaction(nonce, 1, add3, 2, str(ip6List[i]), time=int(time.time()))
         tx.sign(ks1.privkey)
         chain.add_pending_transaction(tx)
     block = chain.create_block(add1)
@@ -140,19 +140,19 @@ while i < len(ip4List):
 print "Overlaping som IPs"
 
 print(chain.get_own_ips(add1))
-ip4List = list(IPNetwork('192.168.2.0/28'))
-ip6List = list(IPNetwork('2001:db9:0:1:1:1:1:1/124'))
+ip4List = list(IPNetwork('192.168.2.0/30'))
+ip6List = list(IPNetwork('2001:db9:0:1:1:1:1:1/126'))
 
-nonce = 64
+nonce = 16
 i = 0
 while i < len(ip4List):
     if(blockNum%2 == 0):
-        tx = Transaction(nonce, 0, add3, 1, str(ip4List[i]))
+        tx = Transaction(nonce, 0, add3, 1, str(ip4List[i]), time=int(time.time()))
         tx.sign(ks1.privkey)
         chain.add_pending_transaction(tx)
         i += 1
     else:
-        tx = Transaction(nonce, 0, add3, 2, str(ip6List[i]))
+        tx = Transaction(nonce, 0, add3, 2, str(ip6List[i]), time=int(time.time()))
         tx.sign(ks1.privkey)
         chain.add_pending_transaction(tx)
     block = chain.create_block(add1)
@@ -201,19 +201,19 @@ print(chain.get_map_server(add3))
 print "Locator"
 print(chain.get_locator(add3))
 
-ip4List = list(IPNetwork('193.168.2.0/28'))
-ip6List = list(IPNetwork('2002:db9:0:1:1:1:1:1/124'))
+ip4List = list(IPNetwork('193.168.2.0/30'))
+ip6List = list(IPNetwork('2002:db9:0:1:1:1:1:1/126'))
 
 
 i = 0
 while i < len(ip4List):
     if(blockNum%2 == 0):
-        tx = Transaction(nonce, 0, add2, 1, str(ip4List[i]))
+        tx = Transaction(nonce, 0, add2, 1, str(ip4List[i]), time=int(time.time()))
         tx.sign(ks1.privkey)
         chain.add_pending_transaction(tx)
         i += 1
     else:
-        tx = Transaction(nonce, 0, add2, 2, str(ip6List[i]))
+        tx = Transaction(nonce, 0, add2, 2, str(ip6List[i]), time=int(time.time()))
         tx.sign(ks1.privkey)
         chain.add_pending_transaction(tx)
     block = chain.create_block(add1)
