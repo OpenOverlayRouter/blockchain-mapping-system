@@ -131,7 +131,7 @@ class p2pProtocol(Protocol):
                                         if block.header.number > self.factory.last_served_block and \
                                         self.factory.blocks.get(block.header.number) is None:
                                             self.factory.blocks[block.header.number] = b
-                                            #print block.header.number
+                                        print block.header.number
                                     except:
                                         print "Wrong Block"
                         elif data["msgtype"] == "get_block_num":
@@ -278,9 +278,12 @@ class localProtocol(Protocol):
                         if not self.factory.blocks:
                             self.sendMsg(messages.none())
                         else:
-                            block = self.factory.blocks.get(self.factory.last_served_block + 1).encode('utf-8')
-                            self.sendMsg(messages.set_block_local(block))
-                            self.factory.last_served_block += 1
+                            block = self.factory.blocks.get(self.factory.last_served_block + 1)
+                            if block:
+                                self.sendMsg(messages.set_block_local(block.encode('utf-8')))
+                                self.factory.last_served_block += 1
+                            else:
+                                self.sendMsg(messages.none())
                     elif data["msgtype"] == "set_block":
                         self.sendPeers(line + '\r\n')
                         self.factory.num_block += 1
