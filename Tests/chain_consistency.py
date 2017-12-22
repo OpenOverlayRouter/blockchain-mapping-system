@@ -7,6 +7,7 @@ from chain_service import ChainService
 
 db = LevelDB("./chain")
 env = Env(db)
+
 chain = ChainService(env)
 head_block = chain.get_head_block().header.number
 
