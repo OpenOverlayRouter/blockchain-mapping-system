@@ -55,6 +55,7 @@ class p2pProtocol(Protocol):
             except: pass
             del self.factory.peers[self.nodeid]
             del self.factory.peers_ip[self.nodeid]
+            del self.factory.block_queries[self]
         else:
             _print("Connection Error: {}".format(self.transport.getPeer()))
 
