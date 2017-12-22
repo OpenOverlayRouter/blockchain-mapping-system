@@ -1,6 +1,6 @@
 import sys
-sys.path.append("/home/blockchain")
-sys.path.append("/home/blockchain/Tests")
+sys.path.append("/home/blockchain/blockchain")
+sys.path.append("/home/blockchain/blockchain/Tests")
 from db import LevelDB
 from config import Env
 from chain_service import ChainService
