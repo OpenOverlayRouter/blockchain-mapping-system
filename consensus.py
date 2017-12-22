@@ -1,12 +1,17 @@
 import time
 import datetime
 import hashlib
+import logging
+import logger
 from ethapi import *
-from netaddr import IPAddress
+from netaddr import IPAddress, IPNetwork, IPSet
 
 IPv4_PREFIX_LENGTH = 32
 IPv6_PREFIX_LENGTH = 128
 ETH_BPS = 14
+
+logger.setup_custom_logger('Consensus')
+consensusLog = logging.getLogger('Consensus')
 
 class Consensus():
 
@@ -14,12 +19,13 @@ class Consensus():
 		self.next_signer = None
 		self.last_timestamp = 0
 		self.ips = []
+		self.logger = logging.getLogger('Consensus')
 
 	def get_next_signer(self):
 		return self.next_signer
 
 	def calculate_next_signer(self, ips, timestamp, block_number):
-		if block_number % 2 == 0:
+		if block_number % 2 != 0: # block_number is the previous one, so if it is even, next should be IPv6
 			protocol = "IPv4"
 		else:
 			protocol = "IPv6"
@@ -40,12 +46,19 @@ class Consensus():
 		self.last_timestamp = timestamp
 		self.ips = ips
 
-	def amISigner(self, ips):
-		# TODO: calcular 30 segons desde el timestamp (self.timestamp?)
+	def amISigner(self, ips, block_number):
+		if self.next_signer == None: 
+			return False, None
 		self.ips = ips
-		if self.next_signer in self.ips:
-			return true, self.next_signer
-		return false, self.next_signer
+		ip_next_signer = IPAddress(self.next_signer)
+		if block_number % 2 != 0:
+			f = lambda x: x.version == 4
+		else:
+			f = lambda x: x.version == 6
+		if ip_next_signer in IPSet(filter(f, ips.iter_cidrs())):
+			return True, self.next_signer
+		return False, self.next_signer
+
 
 # Returns the HASH of a block
 def get_hash_from_json_block(json_block):
@@ -53,7 +66,9 @@ def get_hash_from_json_block(json_block):
 
 # Returns the Timestamp of a block
 def get_timestamp_from_json_block(json_block):
-	#TODO: If json_block is NoneType
+	if json_block['result'] == None: 
+		consensusLog.error('No timestamp in block')
+		return 0x00
 	return json_block['result']['timestamp']
 
 def get_timestamp():
@@ -100,8 +115,9 @@ def get_block_from_timestamp(last_block_number,timestamp):
 		json_block = None
 	else:
 		while not found:
+			consensusLog.info('Searching old block timestamp')
+			#print "Consensus: Searching old block timestamp"
 			if timestamp < block_timestamp:
-				#print "timestamp < block_timestamp"
 				if (block_timestamp-timestamp)/ETH_BPS >= 14:
 					variance = int((block_timestamp-timestamp)/ETH_BPS)
 					block_number = sub_to_hex(block_number,variance)
@@ -112,17 +128,15 @@ def get_block_from_timestamp(last_block_number,timestamp):
 					candidate_json_block = get_block_by_number(candidate_block_number)
 					candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
 					while candidate_timestamp > timestamp:
+						consensusLog.info('Block timestamp is close...')
+						#print "Consensus: block timestamp is close..."
 						candidate_block_number = sub_to_hex(candidate_block_number,1)
 						candidate_json_block = get_block_by_number(candidate_block_number)
 						candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
-					#if candidate_timestamp == timestamp:
 					json_block = candidate_json_block
-					#	print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(json_block)), timestamp
-					#else:
-						#json_block = get_block_by_number(add_to_hex(candidate_block_number,1))
-						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(json_block)), timestamp
-						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(get_block_by_number(sub_to_hex(candidate_block_number,1)))), timestamp
 					found = True
+					consensusLog.debug('Candidate: %s', candidate_block_number)
+					#print "CANDIDATE: ", candidate_block_number
 			elif block_timestamp < timestamp:
 				if (timestamp-block_timestamp)/ETH_BPS >= 14:
 					variance = int((timestamp-block_timestamp)/ETH_BPS)
@@ -134,35 +148,40 @@ def get_block_from_timestamp(last_block_number,timestamp):
 					candidate_json_block = get_block_by_number(candidate_block_number)
 					candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
 					while candidate_timestamp < timestamp:
+						consensusLog.info('Block timestamp is close...')
+						#print "Consensus: block timestamp is close..."
 						candidate_block_number = add_to_hex(candidate_block_number,1)
 						candidate_json_block = get_block_by_number(candidate_block_number)
 						candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
 					if candidate_timestamp == timestamp:
 						json_block = candidate_json_block
-						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(json_block)), timestamp
 					else:
 						json_block = get_block_by_number(sub_to_hex(candidate_block_number,1))
-						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(json_block)), timestamp
-						#print candidate_block_number, from_hex_to_int(get_timestamp_from_json_block(get_block_by_number(add_to_hex(candidate_block_number,1)))), timestamp
+						consensusLog.debug('Candidate Sub: %s', sub_to_hex(candidate_block_number,1))
+						#print "Candidate: ", sub_to_hex(candidate_block_number,1)
 					found = True
-
+	consensusLog.debug('Timestamp for catching block: %s', timestamp)
+	#print timestamp
 	return json_block
 
 # Returns a random HASH mixing NIST and ETHEREUM HASH block
 def get_random_hash(timestamp):
-	# Get timestamp to work with
-	#timestamp = get_timestamp()
-
 	# Get Ethereum hash
 	last_block_number = get_last_block_number()
 	selected_block_number = get_block_from_timestamp(last_block_number,timestamp)
 	if selected_block_number == None:
-		print "No new ETH block yet"
+		#print "Consensus: No new ETH block yet, waiting for Ethereum chain..."
+		consensusLog.info('No new ETH block yet, waiting for Ethereum chain...')
 		return None
-		# TODO: Exception
-	else: 
-		eth_hash = get_hash_from_json_block(selected_block_number)
-		eth_hash_bits = from_hex_to_bits(eth_hash,256)
+	'''while selected_block_number == None:
+		print "Consensus: No new ETH block yet, waiting for Ethereum chain..."
+			# sleep??
+		last_block_number = get_last_block_number()
+		selected_block_number = get_block_from_timestamp(last_block_number,timestamp)'''
+	#print "Consensus: New block found"
+	consensusLog.info('New block fund on Ethereum chain')
+	eth_hash = get_hash_from_json_block(selected_block_number)
+	eth_hash_bits = from_hex_to_bits(eth_hash,256)
 
 	# Get Nist hash
 	nist_hash = get_hash_from_NIST(int(timestamp))

@@ -4,6 +4,9 @@ import select
 import socket
 import sys
 import Queue
+
+from netaddr import IPNetwork
+
 from transactions import Transaction
 from block import Block
 import chain
@@ -15,64 +18,26 @@ import select, socket, sys, Queue
 import struct
 import os
 import glob
+import rlp
 from keystore import Keystore
 from consensus import Consensus
-from map_reply import MapReplyRecord, LocatorRecord, Response
+from map_reply import MapReplyRecord, LocatorRecord, Response, MapServers
 from ipaddress import IPv4Network, IPv6Network, IPv4Address, IPv6Address
+from netaddr import IPAddress
+from p2p import P2P
+import sys
+import socket
+import fcntl, os
+import errno
+from time import sleep
+import logging
+import logging.config
+import logger
+from user import Parser
+from utils import normalize_address
+from oor import Oor
 
-
-HOST = ''
-REC_PORT = 16001
-SND_PORT = 16002
-
-
-def open_sockets():
-    try:
-        rec_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        snd_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        print 'Socket created'
-    except socket.error, msg:
-        print 'Failed to create socket. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
-        sys.exit(1)
-    # Bind socket to local host and port
-    try:
-        rec_socket.bind((HOST, REC_PORT))
-    except socket.error:
-        print 'Bind failed.'
-        sys.exit(1)
-
-    print 'Socket bind complete in ports ' + str(REC_PORT) + ' and ' + str(SND_PORT)
-
-    return rec_socket, snd_socket
-
-
-# reads the fields nonce, AFI and the IP from the socket
-def read_socket(rec_socket):
-    nonce = rec_socket.recv(64)
-    afi = rec_socket.recv(16)
-    if (afi == '1'*16):
-        # address IPv4
-        address = IPv4Address(rec_socket.recv(32))
-    elif (afi == '2'*16):
-        # address IPv6
-        address = IPv6Address(rec_socket.recv(128))
-    else:
-        rec_socket.recv(1024)  # used to empty socket
-        raise Exception('Incorrect AFI read from socket')
-    return nonce, afi, address
-
-
-def write_socket(res, snd_socket):
-    snd_socket.sendto(res, (HOST, SND_PORT))
-
-
-def test_map_reply():
-    locator = LocatorRecord(priority=0, weight=0, mpriority=0, mweight=0, unusedflags=0, LpR=0,
-                            locator=IPv4Address(u'192.168.0.1'))
-    locators = []
-    locators.append(locator)
-    reply = MapReplyRecord(eid_prefix=IPv4Network(u'192.168.1.0/24'), locator_records=locators)
-    print(reply.to_bitstream())
+mainLog = logging.getLogger('Main')
 
 
 def init_chain():
@@ -81,113 +46,212 @@ def init_chain():
     return ChainService(env)
 
 
-def init_p2p():
+def init_p2p(last_block_num):
     # P2P initialization
-    return 0
+    p2p = P2P(last_block_num)
+    while (p2p.bootstrap()):
+        time.sleep(1)
+    p2p.start_notifications()
+    return p2p
 
 
 def init_consensus():
     return Consensus()
 
 
+def init_user():
+    return Parser()
+
+
 def init_keystore(keys_dir='./Tests/keystore/'):
     keys = []
+    addresses = []
     for file in glob.glob(os.path.join(keys_dir, '*')):
-        keys.append(Keystore.load(keys_dir + file[-40:], "TFG1234"))
-    return keys
+        key = Keystore.load(keys_dir + file[-40:], "TFG1234")
+        keys.append(key)
+        addresses.append(normalize_address(key.keystore['address']))
+    return keys, addresses
+
+def init_oor():
+    return Oor()
+
+
+def init_logger():
+    logger.setup_custom_logger('Main')
+    logger.setup_custom_logger('Database')
+    logger.setup_custom_logger('P2P')
+    logger.setup_custom_logger('OOR')
+    logger.setup_custom_logger('Consensus')
+    logger.setup_custom_logger('Parser')
 
 
 def run():
+    init_logger()
+
+    mainLog.info("Initializing Chain")
     chain = init_chain()
-    p2p = init_p2p()
+
+    mainLog.info("Initializing P2P")
+    p2p = init_p2p(chain.get_head_block().header.number)
+
+    mainLog.info("Initializing Consensus")
     consensus = init_consensus()
-    keys = init_keystore()
+
+    mainLog.info("Initializing Keystore")
+    keys, addresses = init_keystore()
+
+    mainLog.info("Initializing Parser")
+    user = init_user()
+    user.read_transactions()
+
+    mainLog.info("Initializing OOR")
+    oor = init_oor()
+
     end = 0
+    myIPs = chain.get_own_ips(keys[0].address)
+    block_num = chain.get_head_block().header.number
+    timestamp = chain.get_head_block().header.timestamp
+    consensus.calculate_next_signer(myIPs, timestamp, block_num)
 
     while(not end):
-        
         #Process new blocks
         try:
             block = p2p.get_block()
             while block is not None:
-                signer = consensus.get_next_signer()
+                signer = consensus.get_next_signer() 
                 res = chain.verify_block_signature(block, signer)
                 if res:
                     # correct block
-                    myIPs = chain.add_block(block)
+                    chain.add_block(block)
+                    myIPs = chain.get_own_ips(keys[0].address)
                     timestamp = chain.get_head_block().get_timestamp()
-                    consensus.calculate_next_signer(myIPs, timestamp)
+                    block_num = chain.get_head_block().header.number
+                    consensus.calculate_next_signer(myIPs, timestamp, block_num)
                 block = p2p.get_block()
         except Exception as e:
-            print "Exception while processing a received block"
-            print e
-     
+            mainLog.critical("Exception while processing a received block")
+            mainLog.exception(e)
+            p2p.stop()
+            sys.exit(0)
+    
         #Process transactions from the network
         try:
             tx_ext = p2p.get_tx()
             while tx_ext is not None:
-                res = chain.add_pending_transaction(tx_ext)
-                if res:
-                    #correct tx
+                try:
+                    chain.add_pending_transaction(tx_ext)
+                    # Correct tx
                     p2p.broadcast_tx(tx_ext)
+                except:
+                    pass
                 #get new transactions to process
                 tx_ext = p2p.get_tx()
         except Exception as e:
-            print "Exception while processing a received transaction"
-            print e
+            mainLog.critical("Exception while processing a received transaction")
+            mainLog.exception(e)
+            p2p.stop()
+            sys.exit(0)
 
 
         #Check if the node has to sign the next block
-        me, signer = consensus.amIsinger(myIPs)
-        if me:
-            new_block = chain.create_block(signer)
-            #Like receiving a new block
-            myIPs = chain.add_block(new_block)
-            timestamp = chain.get_head_block().get_timestamp()
-            consensus.calculate_next_signer(myIPs, timestamp)
-            p2p.broadcast_block(new_block)
+        try:
+            me, signer = consensus.amISigner(myIPs, block_num)
+            if me:
+                new_block = chain.create_block(keys[0].address)
+                #Like receiving a new block
+                chain.add_block(new_block)
+                #Revisar
+                p2p.broadcast_block(new_block)
+            myIPs = chain.get_own_ips(keys[0].address)
+            timestamp = chain.get_head_block().header.timestamp
+            block_num = chain.get_head_block().header.number
+            consensus.calculate_next_signer(myIPs, timestamp, block_num)
+        except Exception as e:
+            mainLog.critical("Exception while checking if the node has to sign the next block")
+            mainLog.exception(e)
+            p2p.stop()
+            sys.exit(0)
 
-        #Process transactions from the user
-        tx_int = user.get_tx()
-        if tx_int is not None:
-            res = chain.add_pending_transaction(tx_int)
-            if res:
-                #correct tx
-                p2p.broadcast_tx(tx_int)
+        # Process transactions from the user
+        try:
+            tx_int = user.get_tx()
+            if tx_int is not None:
+                try:
+                    try:
+                        key = addresses.index(tx_int["from"])
+                    except:
+                        raise Exception("Key indicated in from field is not in present in the keystore")
+                    key = keys[key]
+                    tx = chain.parse_transaction(tx_int)
+                    tx.sign(key.privkey)
+                    # correct tx
+                    p2p.broadcast_tx(tx)
+                except:
+                    pass
+        except Exception as e:
+            mainLog.exception(e)
+            p2p.stop()
+            sys.exit(0)
 
         #answer queries from OOR
-        query = oor.get_query()
-        if query is not None:
-            info = chain.query_eid(query)
-            oor.send(info)
-            
+        try:
+            nonce, afi, address = oor.get_query()
+            if nonce is not None and afi is not None and address is not None:
+                info = chain.query_eid(ipaddr=address, nonce=nonce)
+                oor.send(info)
+        except Exception as e:
+            mainLog.critical("Exception while answering queries from OOR")
+            mainLog.exception(e)
+            p2p.stop()
+            sys.exit(0)
+
         #answer queries from the network
         #blocks
-        block_numbers = p2p.get_block_queries()
-        if block_numbers is not None:
-            response = []
-            for block in block_numbers:
-                response.append(chain.get_block(block))
-            p2p.answer_block_queries(response)
+        try:
+            block_numbers = p2p.get_block_queries()
+            if block_numbers is not None:
+                response = []
+                for block in block_numbers:
+                    response.append(chain.get_block_by_number(block))
+                p2p.answer_block_queries(response)
+        except Exception as e:
+            mainLog.critical("Exception while answering queries from the network")
+            mainLog.exception(e)
+            p2p.stop()
+            sys.exit(0)             
+
             
         #transaction pool
-        if p2p.tx_pool_query():
-            pool = chain.get_transaction_pool()
-            p2p.answer_tx_pool_query(pool)
+        try:
+            if p2p.tx_pool_query():
+                pool = chain.get_pending_transactions()
+                p2p.answer_tx_pool_query(pool)
+        except Exception as e:
+            mainLog.critical("Exception while answering the transaction pool")
+            mainLog.exception(e)
+            # Stop P2P
+            p2p.stop()
+            sys.exit(0)
 
 if __name__ == "__main__":
-    #init()
-    #run
-    #test_map_reply()
+    #filename = '.log/blockchainCBA.log',
+    #filemode = 'w'
+    # create logger
+
+    run()
+
     """
     keys = init_keystore()
     chain = init_chain()
     chain.query_eid(keys[0].keystore['address'], IPv4Address('192.168.0.1'))
     """
     rec_socket, snd_socket = open_sockets()
-    mrr = LocatorRecord()
-    r = Response(nonce=12345678, flag=0,info=mrr)
+    fcntl.fcntl(rec_socket, fcntl.F_SETFL, os.O_NONBLOCK)
+    fcntl.fcntl(snd_socket, fcntl.F_SETFL, os.O_NONBLOCK)
     while 1:
+        read_request_and_process()
+        print("HOLA")
+        """
         res = rec_socket.recvfrom(50)[0]
         if res is not None:
             print(struct.pack('>I',(int(struct.unpack("I",res[0:4])[0]))).encode('HEX'))
@@ -200,21 +264,6 @@ if __name__ == "__main__":
                 ip = IPv6Address(res[18:])
                 print(ip)
             msg = struct.pack('>I',(int(struct.unpack("I",res[0:4])[0]))) + struct.pack('>I',(int(struct.unpack("I",res[4:8])[0]))) + struct.pack('H',int(struct.unpack("H",res[8:10])[0]))
-            write_socket(msg,snd_socket)
+            write_socket(msg,snd_socket)"""
+
         time.sleep(0.5)
-
-
-    #chain = init_chain()
-    #timestamp = chain.get_head_block().get_timestamp()
-    #timestamp = chain.get_head_block().__getattribute__("timestamp")
-    #block_number = chain.get_head_block().__getattribute__("number")
-    #print block_number
-    #print timestamp
-    timestamp = 1512331226
-    block_number = 0
-    consensus = init_consensus()
-    consensus.calculate_next_signer(0,timestamp,block_number)
-    print consensus.get_next_signer()
-
-    #consensus.calculate_next_signer(0,timestamp)
-    #print consensus.get_next_signer()

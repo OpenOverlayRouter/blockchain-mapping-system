@@ -19,10 +19,10 @@ def get_bitstream_for_afi_address(address):
 
     # IPv4
     if address.version == 4:
-        return BitArray('uint:16=1, uint:32=%d' % int(address.ip.ip))
+        return BitArray('uint:16=1, uint:32=%d' % int(address.ip))
 
     elif address.version == 6:
-        return BitArray('uint:16=2, uint:128=%d' % int(address.ip.ip))
+        return BitArray('uint:16=2, uint:128=%d' % int(address.ip))
 
     else:
         raise ValueError('Unsupported address type')
@@ -66,7 +66,7 @@ class LocatorRecord(object):
         bitstream += BitArray('uint:3=%d' % self.LpR)
 
         #Add the locator-afi and locator
-        get_bitstream_for_afi_address(self.locator)
+        bitstream += get_bitstream_for_afi_address(self.locator)
 
         return bitstream
 
@@ -160,13 +160,12 @@ class MapReplyRecord(object):
 
 class MapServers(object):
 
-    def __init__(self, server_count=0, info=None):
-        self.server_count = server_count
+    def __init__(self, info=None):
         self.info = info
 
     def to_bitstream(self):
         # Add the map_server count
-        bitstream = BitArray('uint:8=%d' % self.server_count)
+        bitstream = BitArray('uint:8=%d' % len(self.info))
 
         # Add the list of map_servers
         for key in self.info:
@@ -176,9 +175,9 @@ class MapServers(object):
                 afi = 2
             bitstream += BitArray('uint:16=%d' % afi)
             if afi == 1:  # IPv4
-                bitstream += BitArray('uint:32=%d' % str(key))
+                bitstream += BitArray('uint:32=%d' % int(key.ip))
             elif afi == 2:
-                bitstream += BitArray('uint:128=%d' % str(key))
+                bitstream += BitArray('uint:128=%d' % int(key.ip))
 
         return bitstream
 
@@ -188,10 +187,13 @@ class MapServers(object):
 
 class Response(object):
 
-    def __init__(self, nonce=0, flag=0, info=None):
+    def __init__(self, nonce=0, info=None):
         self.nonce = nonce
-        self.flag = flag
         self.info = info  # info can be MapServers or MapReplyRecord
+        if isinstance(self.info, MapServers):
+            self.flag = 0
+        elif isinstance(self.info, MapReplyRecord):
+            self.flag = 1
 
     def to_bitstream(self):
 
@@ -199,7 +201,7 @@ class Response(object):
         bitstream = BitArray('uint:64=%d' % self.nonce)
 
         #Add the flag bit
-        bitstream += BitArray('uint:1=%d' % self.flag)
+        bitstream += BitArray('uint:8=%d' % self.flag)
 
         #Add the info
         bitstream += self.info.to_bitstream()

@@ -6,9 +6,26 @@ from db import EphemDB
 import rlp
 from netaddr import IPAddress
 from utils import normalize_address
+import logging
+from keystore import Keystore
+import glob
+import os
+import datetime
 
 null_address = b'\xff' * 20
 
+databaseLog = logging.getLogger('Database')
+
+
+def getAddresses(keys_dir='./keystore/'):
+    addresses = []
+    for file in glob.glob(os.path.join(keys_dir, '*')):
+        key = Keystore.load(keys_dir + file[-40:], "TFG1234")
+        addresses.append(normalize_address(key.keystore['address']))
+    print (addresses)
+    return addresses
+
+addresses = getAddresses()
 
 def rp(tx, what, actual, target):
     return '%r: %r actual:%r target:%r' % (tx, what, actual, target)
@@ -207,6 +224,11 @@ def apply_block(state, block, patricia):
         cached = {}  # cached = cached changes in balances, to be added later in the patricia
         for tx in block.transactions:
             apply_transaction(state, tx, cached)
+            if normalize_address(tx.sender) in addresses:
+                tx_time = datetime.datetime.fromtimestamp(tx.time)
+                block_time = datetime.datetime.fromtimestamp(block.header.timestamp)
+                databaseLog.debug("TX %s added to the chain. Elapsed time %s",tx.hash.encode("HEX"),str(block_time - tx_time))
+
         # Post-finalize (ie. add the block header to the state for now)
         state.add_block_header(block.header)
 

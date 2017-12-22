@@ -11,6 +11,9 @@ from account import Account
 from trie import BLANK_ROOT
 from block import FakeHeader
 from rlp.utils import encode_hex
+import logging
+
+databaseLog = logging.getLogger('Database')
 
 STATE_DEFAULTS = {
     "txindex": 0,
@@ -164,9 +167,9 @@ class State():
         db = env.db
         state = SecureTrie(Trie(db, BLANK_ROOT))
         count = 0
-        print("Start loading state from snapshot")
+        databaseLog.debug("Loading state from snapshot")
         for addr in alloc:
-            print("[%d] loading account %s" % (count, addr))
+            databaseLog.debug("[%d] loading account %s", count, addr)
             account = alloc[addr]
             acct = Account.blank_account(db, env.config['ACCOUNT_INITIAL_NONCE'])
             if len(account['storage']) > 0:
@@ -178,7 +181,7 @@ class State():
                     t.update(enckey, decode_hex(v))
                     c += 1
                     if c % 1000 and len(db.db_service.uncommitted) > 50000:
-                        print("%d uncommitted. committing..." % len(db.db_service.uncommitted))
+                        databaseLog.debug("%d uncommitted. committing...", len(db.db_service.uncommitted))
                         db.commit()
                 acct.storage = t.root_hash
             if account['nonce']:
@@ -310,7 +313,7 @@ class State():
                 lastitem = self.journal.pop()
                 lastitem()
             except Exception as e:
-                print(e)
+                databaseLog.exception(e)
         if h != self.trie.root_hash:
             assert L == 0
             self.trie.root_hash = h

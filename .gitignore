@@ -13,4 +13,11 @@ __pycache__/
 # Sphinx documentation
 docs/_build/
 
-.idea/*
+# file: ~/.gitignore_global
+.DS_Store
+.idea
+
+# Network files
+*.swp
+nohup.out
+network.out
