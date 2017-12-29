@@ -23,7 +23,12 @@ def state_from_genesis_declaration(
         block = block_from_genesis_declaration(genesis_data, env)
 
     state = State(env=env)
-    for addr, data in genesis_data["alloc"].items():
+    #convert list to dictionary
+    alloc_data = {}
+    for elem in genesis_data["alloc"]:
+        alloc_data[elem.keys()[0]] = elem[elem.keys()[0]]
+    #print alloc_data    
+    for addr, data in alloc_data.iteritems():
         addr = normalize_address(addr)
         assert len(addr) == 20
         if 'balance' in data:
