@@ -14,12 +14,15 @@ HOST = ''
 REC_PORT = 16001
 SND_PORT = 16002
 
+oorLog = logging.getLogger('OOR')
+
 
 class Oor:
 
     def __init__(self):
         self.rec_socket, self.snd_socket = self.open_sockets()
-        self.logger = logging.getLogger('OOR')
+        #self.logger = logging.getLogger('OOR')
+        #self.logger = oorLog
         fcntl.fcntl(self.rec_socket, fcntl.F_SETFL, os.O_NONBLOCK)
         fcntl.fcntl(self.snd_socket, fcntl.F_SETFL, os.O_NONBLOCK)
 
@@ -27,18 +30,18 @@ class Oor:
         try:
             rec_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             snd_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self.logger.info("Socket created.")
+            oorLog.info("Socket created.")
         except socket.error, msg:
-            self.logger.exception('Failed to create socket. Error Code : ' + str(msg[0]) + ' Message ' + msg[1] + '.')
+            oorLog.exception('Failed to create socket. Error Code : ' + str(msg[0]) + ' Message ' + msg[1] + '.')
             sys.exit(1)
         # Bind socket to local host and port
         try:
             rec_socket.bind((HOST, REC_PORT))
         except socket.error:
-            self.logger.exception("Bind failed.")
+            oorLog.exception("Bind failed.")
             sys.exit(1)
 
-        self.logger.info('Socket bind complete in ports ' + str(REC_PORT) + ' and ' + str(SND_PORT))
+        oorLog.info('Socket bind complete in ports ' + str(REC_PORT) + ' and ' + str(SND_PORT))
 
         return rec_socket, snd_socket
 
@@ -63,11 +66,11 @@ class Oor:
             err = e.args[0]
             if err == errno.EAGAIN or err == errno.EWOULDBLOCK:
                 sleep(1)
-                self.logger.info("No data available.")
+                oorLog.info("No data available.")
                 return None,None,None
             else:
                 # a "real" error occurred
-                self.logger.exception(e)
+                oorLog.exception(e)
 
     def write_socket(self, res):
         self.snd_socket.sendto(res, (HOST, SND_PORT))

@@ -1,35 +1,28 @@
 # -*- coding: utf-8 -*-
 
-import select
-import socket
+
 import sys
-import Queue
 
-from netaddr import IPNetwork
 
-from transactions import Transaction
-from block import Block
-import chain
+#from netaddr import IPNetwork
+
+#from transactions import Transaction
+#from block import Block
+#import chain
 import time
 from config import Env
 from db import LevelDB
 from chain_service import ChainService
-import select, socket, sys, Queue
-import struct
+
 import os
 import glob
-import rlp
+#import rlp
 from keystore import Keystore
 from consensus import Consensus
-from map_reply import MapReplyRecord, LocatorRecord, Response, MapServers
-from ipaddress import IPv4Network, IPv6Network, IPv4Address, IPv6Address
-from netaddr import IPAddress
+
+from netaddr import IPSet
 from p2p import P2P
-import sys
-import socket
-import fcntl, os
-import errno
-from time import sleep
+
 import logging
 import logging.config
 import logger
@@ -91,6 +84,9 @@ def run():
     mainLog.info("Initializing Chain")
     chain = init_chain()
 
+
+    last_block = chain.get_head_block().header.number
+    mainLog.debug("Last block: %s", last_block)
     mainLog.info("Initializing P2P")
     p2p = init_p2p(chain.get_head_block().header.number)
 
@@ -108,10 +104,13 @@ def run():
     oor = init_oor()
 
     end = 0
-    myIPs = chain.get_own_ips(keys[0].address)
+    myIPs = IPSet()
+    for i in range(len(keys)):
+        myIPs.update(chain.get_own_ips(keys[i].address))
     block_num = chain.get_head_block().header.number
     timestamp = chain.get_head_block().header.timestamp
     consensus.calculate_next_signer(myIPs, timestamp, block_num)
+    mainLog.info("Own IPs at startup are: %s", myIPs)
 
     while(not end):
         #Process new blocks
