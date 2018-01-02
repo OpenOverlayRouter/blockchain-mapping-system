@@ -95,7 +95,11 @@ def run():
 
     mainLog.info("Initializing Keystore")
     keys, addresses = init_keystore()
-
+    mainLog.info("Loaded %s keys", len(keys))
+    mainLog.info("----------------START OF KEY LIST---------------------")
+    print keys
+    mainLog.info("----------------END OF KEY LIST---------------------")
+    
     mainLog.info("Initializing Parser")
     user = init_user()
     user.read_transactions()
@@ -107,22 +111,27 @@ def run():
     myIPs = IPSet()
     for i in range(len(keys)):
         myIPs.update(chain.get_own_ips(keys[i].address))
+    mainLog.info("Own IPs at startup are: %s", myIPs)
+    
     block_num = chain.get_head_block().header.number
     timestamp = chain.get_head_block().header.timestamp
     consensus.calculate_next_signer(myIPs, timestamp, block_num)
-    mainLog.info("Own IPs at startup are: %s", myIPs)
+    
 
     while(not end):
         #Process new blocks
         try:
             block = p2p.get_block()
             while block is not None:
+                mainLog.info("Received new block no. %s", block.number)
                 signer = consensus.get_next_signer() 
                 res = chain.verify_block_signature(block, signer)
                 if res:
                     # correct block
                     chain.add_block(block)
-                    myIPs = chain.get_own_ips(keys[0].address)
+                    myIPs = IPSet()
+                    for i in range(len(keys)):
+                        myIPs.update(chain.get_own_ips(keys[i].address))
                     timestamp = chain.get_head_block().get_timestamp()
                     block_num = chain.get_head_block().header.number
                     consensus.calculate_next_signer(myIPs, timestamp, block_num)
@@ -156,12 +165,17 @@ def run():
         try:
             me, signer = consensus.amISigner(myIPs, block_num)
             if me:
-                new_block = chain.create_block(keys[0].address)
+                mainLog.info("This node has to sign a block")
+                signing_addr = chain.get_addr_from_ip(signer)
+                #new_block = chain.create_block(keys[0].address)
+                new_block = chain.create_block(signing_addr)
                 #Like receiving a new block
                 chain.add_block(new_block)
                 #Revisar
                 p2p.broadcast_block(new_block)
-            myIPs = chain.get_own_ips(keys[0].address)
+                myIPs = IPSet()
+                for i in range(len(keys)):
+                    myIPs.update(chain.get_own_ips(keys[i].address))            
             timestamp = chain.get_head_block().header.timestamp
             block_num = chain.get_head_block().header.number
             consensus.calculate_next_signer(myIPs, timestamp, block_num)
