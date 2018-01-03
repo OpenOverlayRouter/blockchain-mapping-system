@@ -32,10 +32,10 @@ BLOCK_CHUNK = 10
 #log.startLogging(sys.stdout)
 
 def _print(msg):
-    #print("[{}] {}".format(str(datetime.now()), msg))
-    msg = msg + '\n'
+    print("[{}] {}".format(str(datetime.now()), msg))
+    '''msg = msg + '\n'
     logFile.write("[{}] {}".format(str(datetime.now()), msg))
-    logFile.flush()
+    logFile.flush()'''
 
 class p2pProtocol(Protocol):
     def __init__(self, factory):
@@ -57,7 +57,8 @@ class p2pProtocol(Protocol):
             except: pass
             del self.factory.peers[self.nodeid]
             del self.factory.peers_ip[self.nodeid]
-            del self.factory.block_queries[self]
+            if self.factory.block_queries.get(self) is not None:
+                del self.factory.block_queries[self]
         else:
             _print("Connection Error: {}".format(self.transport.getPeer()))
 
@@ -134,7 +135,7 @@ class p2pProtocol(Protocol):
                                         if block.header.number > self.factory.last_served_block and \
                                         self.factory.blocks.get(block.header.number) is None:
                                             self.factory.blocks[block.header.number] = b
-                                        #_print (block.header.number)
+                                        _print (block.header.number)
                                     except:
                                         _print ("Wrong Block")
                         elif data["msgtype"] == "get_block_num":
@@ -447,11 +448,11 @@ if __name__ == '__main__':
         print ("Error: too many arguments")
         sys.exit(1)
 
-    global logFile    
+    '''global logFile    
     try:    
         logFile = open('netlog.txt', 'w')
     except Exception as e: 
-        print e
+        print e'''
 
     try:
         factory = myFactory(int(sys.argv[1]))
