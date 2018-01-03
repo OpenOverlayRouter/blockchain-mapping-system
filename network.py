@@ -134,7 +134,7 @@ class p2pProtocol(Protocol):
                                         if block.header.number > self.factory.last_served_block and \
                                         self.factory.blocks.get(block.header.number) is None:
                                             self.factory.blocks[block.header.number] = b
-                                        _print (block.header.number)
+                                        #_print (block.header.number)
                                     except:
                                         _print ("Wrong Block")
                         elif data["msgtype"] == "get_block_num":
