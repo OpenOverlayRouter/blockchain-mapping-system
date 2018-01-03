@@ -6,12 +6,12 @@ import random
 
 from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
 from twisted.internet.endpoints import connectProtocol
-from twisted.internet.address import UNIXAddress
+#from twisted.internet.address import UNIXAddress
 from twisted.internet import reactor, task
 from twisted.internet.error import CannotListenError
 from twisted.internet.protocol import Protocol, Factory
-from twisted.python.filepath import FilePath
-from twisted.python import log
+#from twisted.python.filepath import FilePath
+#from twisted.python import log
 
 import messages
 from transactions import Transaction
@@ -32,8 +32,10 @@ BLOCK_CHUNK = 10
 #log.startLogging(sys.stdout)
 
 def _print(msg):
-    print("[{}] {}".format(str(datetime.now()), msg))
-
+    #print("[{}] {}".format(str(datetime.now()), msg))
+    msg = msg + '\n'
+    logFile.write("[{}] {}".format(str(datetime.now()), msg))
+    logFile.flush()
 
 class p2pProtocol(Protocol):
     def __init__(self, factory):
@@ -88,7 +90,7 @@ class p2pProtocol(Protocol):
                             self.sendMsg(messages.set_peers(self.factory.peers_ip))
                         elif data["msgtype"] == "set_peers":
                             if self.factory.bootstrap == True:
-                                print data.get("peers")
+                                _print (data.get("peers"))
                                 peers = data.get("peers")
                                 for key in peers:
                                     exists = self.factory.peers_ip.get(key)
@@ -112,7 +114,7 @@ class p2pProtocol(Protocol):
                                 if self.factory.notify is not None:
                                     self.factory.notify.sendMsg(b'1\r\n')
                             except:
-                                print "Wrong Tx"
+                                _print ("Wrong Tx")
                         elif data["msgtype"] == "set_block":
                             try:
                                 block = rlp.decode(data["block"].decode('hex'), Block)
@@ -123,7 +125,7 @@ class p2pProtocol(Protocol):
                                 if self.factory.notify is not None:
                                     self.factory.notify.sendMsg(b'0\r\n')
                             except:
-                                print "Wrong Block"
+                                _print ("Wrong Block")
                         elif data["msgtype"] == "set_blocks":
                             if self.factory.bootstrap:
                                 for b in data["blocks"]:
@@ -132,9 +134,9 @@ class p2pProtocol(Protocol):
                                         if block.header.number > self.factory.last_served_block and \
                                         self.factory.blocks.get(block.header.number) is None:
                                             self.factory.blocks[block.header.number] = b
-                                        print block.header.number
+                                        _print (block.header.number)
                                     except:
-                                        print "Wrong Block"
+                                        _print ("Wrong Block")
                         elif data["msgtype"] == "get_block_num":
                             num = data["num"]
                             if num <= self.factory.last_served_block and not self.factory.bootstrap:
@@ -183,7 +185,7 @@ class p2pProtocol(Protocol):
                                         tx = rlp.decode(raw_tx.decode('hex'), Transaction)
                                         self.factory.transactions.add(raw_tx)
                                     except:
-                                        print "Wrong Tx"
+                                        _print ("Wrong Tx")
                                 self.factory.tx_pool = True                
                     except Exception as exception:
                         print "except", exception.__class__.__name__, exception
@@ -338,7 +340,7 @@ class localProtocol(Protocol):
 class myFactory(Factory):
     def __init__(self, last_block):
         self.nodeid = urandom(128//8).encode('hex')
-        print ("NodeID: {}".format(self.nodeid))
+        _print ("NodeID: {}".format(self.nodeid))
         self.num_block = last_block
         self.last_served_block = last_block
 
@@ -418,7 +420,7 @@ def printError(failure):
 
 
 def bootstrapProtocol(p):
-    print "BOOTSTRAPING"
+    _print ("BOOTSTRAPING")
     p.factory.bootstrap = True
     p.factory.ck_num_blocks.start(1, now=False)
     p.sendGetPeers()
@@ -444,6 +446,12 @@ if __name__ == '__main__':
     elif len(sys.argv) > 3:
         print ("Error: too many arguments")
         sys.exit(1)
+
+    global logFile    
+    try:    
+        logFile = open('netlog.txt', 'w')
+    except Exception as e: 
+        print e
 
     try:
         factory = myFactory(int(sys.argv[1]))

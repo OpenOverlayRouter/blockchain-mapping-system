@@ -1,4 +1,4 @@
-import sys
+#import sys
 import subprocess
 import select
 from select import poll, POLLIN

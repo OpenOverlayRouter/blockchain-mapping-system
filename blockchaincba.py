@@ -44,6 +44,7 @@ def init_p2p(last_block_num):
     p2p = P2P(last_block_num)
     while (p2p.bootstrap()):
         time.sleep(1)
+    mainLog.info("Bootstrap finished")
     p2p.start_notifications()
     return p2p
 
@@ -56,11 +57,12 @@ def init_user():
     return Parser()
 
 
-def init_keystore(keys_dir='./Tests/keystore/'):
+def init_keystore(keys_dir='./keystore/'):
     keys = []
     addresses = []
     for file in glob.glob(os.path.join(keys_dir, '*')):
         key = Keystore.load(keys_dir + file[-40:], "TFG1234")
+        print ("key %s loaded from %s", key, file)
         keys.append(key)
         addresses.append(normalize_address(key.keystore['address']))
     return keys, addresses
@@ -98,6 +100,7 @@ def run():
     mainLog.info("Loaded %s keys", len(keys))
     mainLog.info("----------------START OF KEY LIST---------------------")
     print keys
+    print addresses
     mainLog.info("----------------END OF KEY LIST---------------------")
     
     mainLog.info("Initializing Parser")
@@ -223,6 +226,7 @@ def run():
         try:
             block_numbers = p2p.get_block_queries()
             if block_numbers is not None:
+                mainLog.info("Answering query for block nos. %s", block_numbers)
                 response = []
                 for block in block_numbers:
                     response.append(chain.get_block_by_number(block))
