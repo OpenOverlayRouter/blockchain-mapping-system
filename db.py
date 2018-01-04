@@ -223,7 +223,7 @@ class LevelDB(BaseDB):
                 batch.Delete(k)
             else:
                 batch.Put(k, compress(v))
-                if key.startswith(b'block:'):
+                if k.startswith(b'block:'):
                     databaseLog.debug("Putting on database key: %s value: %s", k, compress(v))
         self.db.Write(batch, sync=False)
         self.uncommitted.clear()
