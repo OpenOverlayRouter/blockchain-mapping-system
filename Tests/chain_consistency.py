@@ -14,7 +14,7 @@ head_block = chain.get_head_block().header.number
 print(head_block)
 
 for k in db.RangeIter(include_value = False):
-	print "Key", k
+    print "Key", k
     print "Encoded key", k.encode('HEX')
 
 for i in range(head_block):
