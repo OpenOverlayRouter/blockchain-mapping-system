@@ -172,6 +172,9 @@ def run():
                 signing_addr = chain.get_addr_from_ip(signer)
                 #new_block = chain.create_block(keys[0].address)
                 new_block = chain.create_block(signing_addr)
+                mainLog.info("Created new block no. %s, timestamp %s, coinbase %s", \
+                    new_block.header.number, new_block.header.timestamp, new_block.header.coinbase)
+                mainLog.info("New block signature data: v %s -- r %s -- s %s", new_block.v, new_block.r, new_block.s)
                 #Like receiving a new block
                 chain.add_block(new_block)
                 #Revisar
