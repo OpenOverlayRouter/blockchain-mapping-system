@@ -13,7 +13,7 @@ head_block = chain.get_head_block().header.number
 
 print(head_block)
 
-for k in db.RangeIter(include_value = False):
+for k in db.db.RangeIter(include_value = False):
     print "Key", k
     print "Encoded key", k.encode('HEX')
 
