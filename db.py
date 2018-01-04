@@ -214,7 +214,8 @@ class LevelDB(BaseDB):
         return o
 
     def put(self, key, value):
-        databaseLog.debug("Putting on database key: %s value: %s",key,value)
+        if key.startswith(b'block:'):
+            databaseLog.debug("Putting on database key: %s value: %s",key,value)
         self.uncommitted[key] = value
 
     def commit(self):
