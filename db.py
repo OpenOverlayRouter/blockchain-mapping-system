@@ -214,8 +214,6 @@ class LevelDB(BaseDB):
         return o
 
     def put(self, key, value):
-        if key.startswith(b'block:'):
-            databaseLog.debug("Putting on database key: %s value: %s",key,value)
         self.uncommitted[key] = value
 
     def commit(self):
@@ -225,7 +223,8 @@ class LevelDB(BaseDB):
                 batch.Delete(k)
             else:
                 batch.Put(k, compress(v))
-                databaseLog.debug("Commiting on database key: %s value: %s",k,compress(v))
+                if key.startswith(b'block:'):
+                    databaseLog.debug("Putting on database key: %s value: %s", k, compress(v))
         self.db.Write(batch, sync=False)
         self.uncommitted.clear()
         # self.commit_counter += 1
