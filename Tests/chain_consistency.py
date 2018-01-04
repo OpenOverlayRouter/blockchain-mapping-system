@@ -13,6 +13,10 @@ head_block = chain.get_head_block().header.number
 
 print(head_block)
 
+for k in db.RangeIter(include_value = False):
+	print "Key", k
+    print "Encoded key", k.encode('HEX')
+
 for i in range(head_block):
     block = chain.get_block_by_number(i)
     print ("Asking for block number " + str(i))
