@@ -231,8 +231,8 @@ def run():
             if block_numbers is not None:
                 mainLog.info("Answering query for block nos. %s", block_numbers)
                 response = []
-                for block in block_numbers:
-                    response.append(chain.get_block_by_number(block))
+                for number in block_numbers:
+                    response.append(chain.get_block_by_number(number))
                 p2p.answer_block_queries(response)
         except Exception as e:
             mainLog.critical("Exception while answering queries from the network")
