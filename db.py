@@ -1,9 +1,12 @@
 import utils
 import leveldb
 from rlp.utils import str_to_bytes
+import logging
 
 compress = decompress = lambda x: x
 databases = {}
+
+databaseLog = logging.getLogger('Database')
 
 
 class BaseDB(object):
@@ -211,6 +214,7 @@ class LevelDB(BaseDB):
         return o
 
     def put(self, key, value):
+        databaseLog.debug("Putting on database key: %s value: %s",key,value)
         self.uncommitted[key] = value
 
     def commit(self):
