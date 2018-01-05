@@ -50,8 +50,8 @@ class ChainService():
     # creates a block with the list of pending transactions, creates its tries and returns it
     def create_block(self, coinbase):
         self.chain.process_time_queue()
-        prevhash = self.chain.get_head_block().hash
-        prevnumber = self.chain.get_head_block().header.number
+        prevhash = self.chain.head_hash
+        prevnumber = self.chain.state.block_number
         coinbase = normalize_address(coinbase)
         block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber + 1, coinbase=coinbase))
         snapshot = self.chain.state.to_snapshot()

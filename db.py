@@ -189,7 +189,6 @@ class LevelDB(BaseDB):
     paranoid_checks   (default: False)          if True, raises an error as soon as an internal
                                                 corruption is detected
     """
-
     max_open_files = 32000
     block_cache_size = 8 * 1024**2
     write_buffer_size = 4 * 1024**2
@@ -223,8 +222,6 @@ class LevelDB(BaseDB):
                 batch.Delete(k)
             else:
                 batch.Put(k, compress(v))
-                if k.startswith(b'block:'):
-                    databaseLog.debug("Putting on database key: %s value: %s", k, compress(v))
         self.db.Write(batch, sync=False)
         self.uncommitted.clear()
         # self.commit_counter += 1

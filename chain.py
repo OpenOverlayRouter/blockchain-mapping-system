@@ -42,23 +42,28 @@ class Chain(object):
             for key in diction:
                 self.patricia.set_value(str(key), str(diction[key]))
             self.patricia.to_db()
-
-
-        initialize(self.state)
-        if isinstance(self.state.prev_headers[0], FakeHeader):
-            header = self.state.prev_headers[0].to_block_header()
-        else:
-            header = self.state.prev_headers[0]
-
-        self.genesis = Block(header)
-        self.state.prev_headers[0] = header
-        initialize_genesis_keys(self.state, self.genesis)
-
+            reset_genesis = True
         assert self.env.db == self.state.db
 
+        initialize(self.state)
         self.new_head_cb = new_head_cb
-        assert self.state.block_number == self.state.prev_headers[0].number
-        self.genesis = self.get_block_by_number(0)
+
+        if self.state.block_number == 0:
+            assert self.state.block_number == self.state.prev_headers[0].number
+        else:
+            assert self.state.block_number == self.state.prev_headers[0].number
+
+        if reset_genesis:
+            if isinstance(self.state.prev_headers[0], FakeHeader):
+                header = self.state.prev_headers[0].to_block_header()
+            else:
+                header = self.state.prev_headers[0]
+            self.genesis = Block(header)
+            self.state.prev_headers[0] = header
+            initialize_genesis_keys(self.state, self.genesis)
+        else:
+            self.genesis = self.get_block_by_number(0)
+
         self.head_hash = self.state.prev_headers[0].hash
         self.time_queue = []
         self.parent_queue = {}
@@ -120,23 +125,20 @@ class Chain(object):
 
     # Gets the block with a given blockhash
     def get_block(self, blockhash):
-        try:
-            block_rlp = self.db.get(blockhash)
-            if block_rlp == 'GENESIS':
-                if not hasattr(self, 'genesis'):
-                    self.genesis = rlp.decode(
-                        self.db.get('GENESIS_RLP'), sedes=Block)
-                return self.genesis
-            else:
-                return rlp.decode(block_rlp, Block)
-        except Exception:
-            return None
+        #try:
+        block_rlp = self.db.get(blockhash)
+        if block_rlp == 'GENESIS':
+            if not hasattr(self, 'genesis'):
+                self.genesis = rlp.decode(self.db.get('GENESIS_RLP'), sedes=Block.exclude(['v', 'r', 's']))
+            return self.genesis
+        else:
+            return rlp.decode(block_rlp, Block)
 
     def get_head_block(self):
         try:
             block_rlp = self.db.get(self.head_hash)
             if block_rlp == 'GENESIS':
-		return self.genesis
+                return self.genesis
             else:
                 return rlp.decode(block_rlp, Block)
         except Exception:
@@ -166,7 +168,9 @@ class Chain(object):
 
     # Gets the block with the given block number
     def get_block_by_number(self, number):
-        return self.get_block(self.get_blockhash_by_number(number))
+        hash = self.get_blockhash_by_number(number)
+        block = self.get_block(hash)
+        return block
 
     # Get the hashes of all known children of a given block
     def get_child_hashes(self, blockhash):

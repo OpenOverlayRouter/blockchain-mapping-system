@@ -119,7 +119,7 @@ def run():
     block_num = chain.get_head_block().header.number
     timestamp = chain.get_head_block().header.timestamp
     consensus.calculate_next_signer(myIPs, timestamp, block_num)
-    
+
 
     while(not end):
         #Process new blocks
@@ -144,7 +144,7 @@ def run():
             mainLog.exception(e)
             p2p.stop()
             sys.exit(0)
-    
+
         #Process transactions from the network
         try:
             tx_ext = p2p.get_tx()
@@ -238,9 +238,9 @@ def run():
             mainLog.critical("Exception while answering queries from the network")
             mainLog.exception(e)
             p2p.stop()
-            sys.exit(0)             
+            sys.exit(0)
 
-            
+
         #transaction pool
         try:
             if p2p.tx_pool_query():
@@ -254,36 +254,4 @@ def run():
             sys.exit(0)
 
 if __name__ == "__main__":
-    #filename = '.log/blockchainCBA.log',
-    #filemode = 'w'
-    # create logger
-
     run()
-
-    """
-    keys = init_keystore()
-    chain = init_chain()
-    chain.query_eid(keys[0].keystore['address'], IPv4Address('192.168.0.1'))
-    """
-    rec_socket, snd_socket = open_sockets()
-    fcntl.fcntl(rec_socket, fcntl.F_SETFL, os.O_NONBLOCK)
-    fcntl.fcntl(snd_socket, fcntl.F_SETFL, os.O_NONBLOCK)
-    while 1:
-        read_request_and_process()
-        print("HOLA")
-        """
-        res = rec_socket.recvfrom(50)[0]
-        if res is not None:
-            print(struct.pack('>I',(int(struct.unpack("I",res[0:4])[0]))).encode('HEX'))
-            print(struct.pack('>I',(int(struct.unpack("I",res[4:8])[0]))).encode('HEX'))
-            afi = int(struct.unpack("H",res[8:10])[0])
-            if afi == 1:
-                ip = IPv4Address(res[18:])
-                print(ip)
-            elif afi == 2:
-                ip = IPv6Address(res[18:])
-                print(ip)
-            msg = struct.pack('>I',(int(struct.unpack("I",res[0:4])[0]))) + struct.pack('>I',(int(struct.unpack("I",res[4:8])[0]))) + struct.pack('H',int(struct.unpack("H",res[8:10])[0]))
-            write_socket(msg,snd_socket)"""
-
-        time.sleep(0.5)

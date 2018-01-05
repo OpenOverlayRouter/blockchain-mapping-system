@@ -112,6 +112,8 @@ while i < len(ip4List):
     chain.add_block(block)
     nonce += 1
     blockNum += 1
+    print("HEAD BLOCK")
+    print(chain.get_head_block().header.number)
     time.sleep(1)
 
 
@@ -134,7 +136,9 @@ while i < len(ip4List):
     block.sign(ks1.privkey)
     chain.add_block(block)
     nonce += 1
-    blockNum += 1
+    blockNum += 11
+    print("HEAD BLOCK")
+    print(chain.get_head_block().header.number)
     time.sleep(1)
 
 print "Overlaping som IPs"
@@ -159,7 +163,9 @@ while i < len(ip4List):
     block.sign(ks1.privkey)
     chain.add_block(block)
     nonce += 1
-    blockNum += 1
+    blockNum += 11
+    print("HEAD BLOCK")
+    print(chain.get_head_block().header.number)
     time.sleep(1)
 
 
