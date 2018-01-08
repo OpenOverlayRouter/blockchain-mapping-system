@@ -233,7 +233,7 @@ class Chain(object):
             self.patricia.to_db()
 
             self.db.put(b'block:%d' % block.header.number, block.header.hash)
-            databaseLog.info('Adding block: number %d hash %s', block.header.number, block.header.hash)
+            databaseLog.info('Adding block: number %d hash %s', block.header.number, block.header.hash.encode('HEX'))
             self.head_hash = block.header.hash
             for i, tx in enumerate(block.transactions):
                 self.db.put(b'txindex:' +
