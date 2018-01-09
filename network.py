@@ -33,9 +33,7 @@ BLOCK_CHUNK = 10
 
 def _print(msg):
     print("[{}] {}".format(str(datetime.now()), msg))
-    '''msg = msg + '\n'
-    logFile.write("[{}] {}".format(str(datetime.now()), msg))
-    logFile.flush()'''
+    sys.stdout.flush()
 
 class p2pProtocol(Protocol):
     def __init__(self, factory):
@@ -81,6 +79,7 @@ class p2pProtocol(Protocol):
                     try:
                         data = messages.read_envelope(line)
                         _print (data["msgtype"])
+                        #_print (data)
                         if data["msgtype"] == "ping":
                             #print self.transport.getPeer().host
                             self.sendPong()
@@ -291,6 +290,7 @@ class localProtocol(Protocol):
                     elif data["msgtype"] == "set_block":
                         self.sendPeers(line + '\r\n')
                         self.factory.num_block += 1
+                        self.factory.last_served_block += 1
                     elif data["msgtype"] == "get_block_queries":
                         if not self.factory.block_queries:
                             self.sendMsg(messages.none())
@@ -395,11 +395,13 @@ class myFactory(Factory):
 
     def get_blocks(self):
         last_block = self.last_served_block
-        for i in range(last_block + 1, self.num_block, BLOCK_CHUNK):
+        for i in range(last_block + 1, self.num_block + 1, BLOCK_CHUNK):
             if (i + BLOCK_CHUNK - 1) > self.num_block:
-                self.sendMsgRandomPeer(messages.get_blocks(i, self.num_block))
+                self.sendMsgRandomPeer(messages.get_blocks(i, self.num_block % BLOCK_CHUNK))
+                #print "getblocks 1", i, self.num_block % BLOCK_CHUNK
             else:
                 self.sendMsgRandomPeer(messages.get_blocks(i, BLOCK_CHUNK))
+                #print "getblocks 2", i, BLOCK_CHUNK
             d = task.deferLater(reactor, 5, self.check_blocks, i)
 
     def check_blocks(self, num):
@@ -447,12 +449,6 @@ if __name__ == '__main__':
     elif len(sys.argv) > 3:
         print ("Error: too many arguments")
         sys.exit(1)
-
-    '''global logFile    
-    try:    
-        logFile = open('netlog.txt', 'w')
-    except Exception as e: 
-        print e'''
 
     try:
         factory = myFactory(int(sys.argv[1]))

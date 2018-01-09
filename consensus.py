@@ -20,6 +20,7 @@ class Consensus():
 		self.last_timestamp = 0
 		self.ips = []
 		self.logger = logging.getLogger('Consensus')
+		self.found_in_chain = False
 
 	def get_next_signer(self):
 		return self.next_signer
@@ -29,22 +30,24 @@ class Consensus():
 			protocol = "IPv4"
 		else:
 			protocol = "IPv6"
-		if timestamp == self.last_timestamp:
+		if timestamp == self.last_timestamp and self.found_in_chain:
 			# Check that there is a new block in 30 seconds
 			current_timestamp = get_timestamp()
 			if (current_timestamp-timestamp) >= 30:
 				timestamp = timestamp+30
-				new_signer = who_signs(protocol, timestamp)
+				new_signer, found_in_chain = who_signs(protocol, timestamp)
 			else:
 				new_signer = None
+				found_in_chain = False
 				# If the timestamp is the same, we need to wait until NIST or Ethereum
 				# hashes changes. So we put next_signer to None until we get a
 				# valid signer. i.e. adding 30s to timestamp
 		else:
-			new_signer= who_signs(protocol, timestamp)
+			new_signer, found_in_chain = who_signs(protocol, timestamp)
 		self.next_signer = new_signer
 		self.last_timestamp = timestamp
 		self.ips = ips
+		self.found_in_chain = found_in_chain
 
 	def amISigner(self, ips, block_number):
 		if self.next_signer == None: 
@@ -172,7 +175,7 @@ def get_random_hash(timestamp):
 	if selected_block_number == None:
 		#print "Consensus: No new ETH block yet, waiting for Ethereum chain..."
 		consensusLog.info('No new ETH block yet, waiting for Ethereum chain...')
-		return None
+		return None, False
 	'''while selected_block_number == None:
 		print "Consensus: No new ETH block yet, waiting for Ethereum chain..."
 			# sleep??
@@ -190,7 +193,7 @@ def get_random_hash(timestamp):
 
 	# Mix both hashes
 	xor = long(eth_hash_bits+eth_hash_bits,2)^long(nist_hash_bits,2)
-	return from_long_to_bits(xor)
+	return from_long_to_bits(xor), True
 
 # Returns the IP Address in a readable format
 def formalize_IP(IP_bit_list):
@@ -225,12 +228,12 @@ def extractor(hash_string):
 
 # Given the protocol type, returns the selected address in the correct format
 def who_signs(protocol, timestamp):
-	hash_res = get_random_hash(timestamp)
+	hash_res, found_in_chain = get_random_hash(timestamp)
 	if hash_res == None:
-		return None
+		return None, found_in_chain
 	else:
 		entropy_hash = extractor(hash_res)
 		if protocol == "IPv6":
-			return formalize_IP(consensus_for_IPv6(entropy_hash))
+			return formalize_IP(consensus_for_IPv6(entropy_hash)), found_in_chain
 		else:
-			return formalize_IP(consensus_for_IPv4(entropy_hash))
+			return formalize_IP(consensus_for_IPv4(entropy_hash)), found_in_chain
