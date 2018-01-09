@@ -82,6 +82,7 @@ class p2pProtocol(Protocol):
                     try:
                         data = messages.read_envelope(line)
                         _print (data["msgtype"])
+                        #_print (data)
                         if data["msgtype"] == "ping":
                             #print self.transport.getPeer().host
                             self.sendPong()
@@ -396,7 +397,7 @@ class myFactory(Factory):
 
     def get_blocks(self):
         last_block = self.last_served_block
-        for i in range(last_block + 1, self.num_block, BLOCK_CHUNK):
+        for i in range(last_block + 1, self.num_block + 1, BLOCK_CHUNK):
             if (i + BLOCK_CHUNK - 1) > self.num_block:
                 self.sendMsgRandomPeer(messages.get_blocks(i, self.num_block))
             else:
