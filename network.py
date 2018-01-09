@@ -33,6 +33,7 @@ BLOCK_CHUNK = 10
 
 def _print(msg):
     print("[{}] {}".format(str(datetime.now()), msg))
+    sys.stdout.flush()
     '''msg = msg + '\n'
     logFile.write("[{}] {}".format(str(datetime.now()), msg))
     logFile.flush()'''
