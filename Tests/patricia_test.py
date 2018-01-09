@@ -73,3 +73,17 @@ for node in chain.chain.patricia.patricia.nodes():
 print(chain.get_addr_from_ip(str(ip6)).encode("HEX"))
 print(chain.get_state().get_balance("be30c5eb90498848da5a5d822b0e1b4939f6fe74").own_ips)
 """
+
+print "empieza test"
+
+arbol = radix.Radix()
+
+for i in range (0, 255):
+    nodo = arbol.add("192.168." + str(i) + ".0/24")
+    nodo.data["hola"] = str(i)
+
+nodo = arbol.search_exact("192.168.50.0/24")
+print nodo.data['hola']
+
+nodo = arbol.search_exact("192.168.40.0/24")
+print nodo.data['hola']
