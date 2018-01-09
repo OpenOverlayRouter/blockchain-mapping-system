@@ -105,7 +105,14 @@ def run():
     
     mainLog.info("Initializing Parser")
     user = init_user()
-    user.read_transactions()
+    try:
+        user.read_transactions()
+    except Exception as e:
+        mainLog.critical("Exception while reading user transactions")
+        mainLog.exception(e)
+        p2p.stop()
+        sys.exit(0)
+        
 
     mainLog.info("Initializing OOR")
     oor = init_oor()
@@ -179,7 +186,7 @@ def run():
                 sig_key = keys[key_pos]
                 new_block.sign(sig_key.privkey)
                 mainLog.info("Created new block no. %s, timestamp %s, coinbase %s", \
-                    new_block.header.number, new_block.header.timestamp, new_block.header.coinbase)
+                    new_block.header.number, new_block.header.timestamp, new_block.header.coinbase.encode("HEX"))
                 mainLog.info("New block signature data: v %s -- r %s -- s %s", new_block.v, new_block.r, new_block.s)
                 #Like receiving a new block
                 chain.add_block(new_block)
@@ -211,6 +218,8 @@ def run():
                     tx.sign(key.privkey)
                     # correct tx
                     p2p.broadcast_tx(tx)
+                    mainLog.info("Sent transaction to the network, from: %s --  to: %s --  value: %s", \
+                    tx_int["from"], tx.to, tx.ip_network)
                 except:
                     pass
         except Exception as e:
