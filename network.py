@@ -293,6 +293,7 @@ class localProtocol(Protocol):
                     elif data["msgtype"] == "set_block":
                         self.sendPeers(line + '\r\n')
                         self.factory.num_block += 1
+                        self.factory.last_served_block += 1
                     elif data["msgtype"] == "get_block_queries":
                         if not self.factory.block_queries:
                             self.sendMsg(messages.none())
@@ -399,9 +400,11 @@ class myFactory(Factory):
         last_block = self.last_served_block
         for i in range(last_block + 1, self.num_block + 1, BLOCK_CHUNK):
             if (i + BLOCK_CHUNK - 1) > self.num_block:
-                self.sendMsgRandomPeer(messages.get_blocks(i, self.num_block))
+                self.sendMsgRandomPeer(messages.get_blocks(i, self.num_block % BLOCK_CHUNK))
+                #print "getblocks 1", i, self.num_block % BLOCK_CHUNK
             else:
                 self.sendMsgRandomPeer(messages.get_blocks(i, BLOCK_CHUNK))
+                #print "getblocks 2", i, BLOCK_CHUNK
             d = task.deferLater(reactor, 5, self.check_blocks, i)
 
     def check_blocks(self, num):
