@@ -39,6 +39,7 @@ class Chain(object):
             diction = {}
             self.state = state_from_genesis_declaration(
                 genesis, self.env, executing_on_head=True, pytricia=diction)
+
             for key in diction:
                 self.patricia.set_value(str(key), str(diction[key]))
             self.patricia.to_db()

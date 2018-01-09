@@ -1,23 +1,26 @@
-import pytricia
+import radix
 import pickle
 import os
+
 
 
 class PatriciaState():
 
     def __init__(self):
-        self.patricia = pytricia.PyTricia()
+        self.patricia = radix.Radix()
         self.dic = {}
 
     def set_value(self, key, value):
-        self.patricia[key] = value
+        rnode = self.patricia.add(key)
+        rnode.data["address"] = value
 
     def get_value(self, key):
-        return self.patricia[key]
+        rnode = self.patricia.search_best(key)
+        return rnode.data["address"]
 
     def to_db(self):
-        for key in self.patricia:
-            self.dic[key] = self.patricia[key]
+        for node in self.patricia.nodes():
+            self.dic[node.prefix] = self.get_value(node.prefix)
         if not os.path.exists((os.path.dirname("./Patricia/patricia.p"))):
             os.makedirs(os.path.dirname("./Patricia/patricia.p"))
         pickle.dump(self.dic, open("./Patricia/patricia.p", "wb"))
@@ -28,4 +31,4 @@ class PatriciaState():
         except:
             pass
         for key in self.dic:
-            self.patricia[key] = self.dic[key]
+            self.set_value(key,self.dic[key])
