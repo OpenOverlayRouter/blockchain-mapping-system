@@ -15,9 +15,18 @@ def get_block_by_number(block_number):
 	return json_block
 
 def get_hash_from_NIST(timestamp):
-	url = "https://beacon.nist.gov/rest/record/previous/"+str(timestamp)
+	#url = "https://beacon.nist.gov/rest/record/previous/"+str(timestamp)
+	url = "https://beacon.nist.gov/rest/record/"+str(timestamp)
 	response = urllib.urlopen(url)
+	if response.getcode() == 404:
+		return None
 	xml_data = minidom.parse(response)
 	for element in xml_data.getElementsByTagName('outputValue'):
 		return element.firstChild.nodeValue
 	#return "0ED51848CD85288B649663965264B32F470DB6A50A981E365E0F8EAA25DF926A98FF1055733F19EB92BA6E12088E83ADE060BA840D53E599DE6B9925889B07DB"
+
+def get_timestamp():
+        curDate = time.strftime("%x")
+        curTime = time.strftime("%X")
+        now = curDate+" "+curTime
+        return time.mktime(datetime.datetime.strptime(now, "%m/%d/%y %H:%M:%S").timetuple())
