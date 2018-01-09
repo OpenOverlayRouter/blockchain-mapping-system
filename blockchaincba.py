@@ -62,7 +62,7 @@ def init_keystore(keys_dir='./keystore/'):
     addresses = []
     for file in glob.glob(os.path.join(keys_dir, '*')):
         key = Keystore.load(keys_dir + file[-40:], "TFG1234")
-        print ("key %s loaded from %s", key, file)
+        #print ("key %s loaded from %s", key, file)
         keys.append(key)
         addresses.append(normalize_address(key.keystore['address']))
     return keys, addresses
@@ -98,10 +98,10 @@ def run():
     mainLog.info("Initializing Keystore")
     keys, addresses = init_keystore()
     mainLog.info("Loaded %s keys", len(keys))
-    mainLog.info("----------------START OF KEY LIST---------------------")
-    print keys
-    print addresses
-    mainLog.info("----------------END OF KEY LIST---------------------")
+    mainLog.info("----------------LOADED ADDRESSES---------------------")
+    for add in addresses:
+        print add.encode("HEX")
+    mainLog.info("----------------END ADDRESS LIST---------------------")
     
     mainLog.info("Initializing Parser")
     user = init_user()
@@ -172,6 +172,12 @@ def run():
                 signing_addr = chain.get_addr_from_ip(signer)
                 #new_block = chain.create_block(keys[0].address)
                 new_block = chain.create_block(signing_addr)
+                try:
+                    key_pos = addresses.index(signing_addr)
+                except:
+                    raise Exception("FATAL ERROR: This node does not own the indicated key to sign the block (not present in the keystore)")
+                sig_key = keys[key_pos]
+                new_block.sign(sig_key.privkey)
                 mainLog.info("Created new block no. %s, timestamp %s, coinbase %s", \
                     new_block.header.number, new_block.header.timestamp, new_block.header.coinbase)
                 mainLog.info("New block signature data: v %s -- r %s -- s %s", new_block.v, new_block.r, new_block.s)
@@ -244,6 +250,7 @@ def run():
         #transaction pool
         try:
             if p2p.tx_pool_query():
+                mainLog.info("Answering tx pool query")
                 pool = chain.get_pending_transactions()
                 p2p.answer_tx_pool_query(pool)
         except Exception as e:
