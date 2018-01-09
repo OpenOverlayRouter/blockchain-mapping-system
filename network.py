@@ -34,9 +34,6 @@ BLOCK_CHUNK = 10
 def _print(msg):
     print("[{}] {}".format(str(datetime.now()), msg))
     sys.stdout.flush()
-    '''msg = msg + '\n'
-    logFile.write("[{}] {}".format(str(datetime.now()), msg))
-    logFile.flush()'''
 
 class p2pProtocol(Protocol):
     def __init__(self, factory):
@@ -452,12 +449,6 @@ if __name__ == '__main__':
     elif len(sys.argv) > 3:
         print ("Error: too many arguments")
         sys.exit(1)
-
-    '''global logFile    
-    try:    
-        logFile = open('netlog.txt', 'w')
-    except Exception as e: 
-        print e'''
 
     try:
         factory = myFactory(int(sys.argv[1]))

@@ -100,7 +100,7 @@ def run():
     mainLog.info("Loaded %s keys", len(keys))
     mainLog.info("----------------LOADED ADDRESSES---------------------")
     for add in addresses:
-        print add.encode("HEX")
+        mainLog.info(add.encode("HEX"))
     mainLog.info("----------------END ADDRESS LIST---------------------")
     
     mainLog.info("Initializing Parser")
@@ -135,6 +135,9 @@ def run():
             while block is not None:
                 mainLog.info("Received new block no. %s", block.number)
                 signer = consensus.get_next_signer() 
+                mainLog.debug("Verifying new block signature, signer should be %s", signer)
+                mainLog.debug("Owner of the previous IP is address %s", chain.get_addr_from_ip(signer).encode("HEX"))
+                mainLog.debug("Coinbase in the block is: %s", block.header.coinbase.encode("HEX"))
                 res = chain.verify_block_signature(block, signer)
                 if res:
                     # correct block
@@ -175,8 +178,9 @@ def run():
         try:
             me, signer = consensus.amISigner(myIPs, block_num)
             if me:
-                mainLog.info("This node has to sign a block")
+                mainLog.info("This node has to sign a block, selected IP: %s", signer)
                 signing_addr = chain.get_addr_from_ip(signer)
+                mainLog.info("Associated address: %s", signing_addr.encode("HEX"))                
                 #new_block = chain.create_block(keys[0].address)
                 new_block = chain.create_block(signing_addr)
                 try:
@@ -219,7 +223,7 @@ def run():
                     # correct tx
                     p2p.broadcast_tx(tx)
                     mainLog.info("Sent transaction to the network, from: %s --  to: %s --  value: %s", \
-                    tx_int["from"], tx.to, tx.ip_network)
+                    tx_int["from"].encode("HEX"), tx.to.encode("HEX"), tx.ip_network)
                 except:
                     pass
         except Exception as e:
