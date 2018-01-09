@@ -204,6 +204,12 @@ def validate_header(state, header):
 
 
 def validate_block(state, block):
+    if not block.signer:
+        raise UnsignedBlock(block)
+    else:
+        if block.signer == null_address:
+            raise UnsignedTransaction(block)
+
     assert validate_header(state, block.header)
     assert validate_transaction_tree(state, block)
     for tx in block.transactions:

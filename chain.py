@@ -217,6 +217,11 @@ class Chain(object):
     def add_block(self, block):
         now = self.localtime
         # Are we receiving the block too early?
+        try:
+            validate_block(self.state,block)
+        except (Exception):
+            databaseLog.info("Exception found while validating block %s. Discarding...", block.hash.encode("HEX"))
+            return False
         if block.header.timestamp > now:
             i = 0
             while i < len(
@@ -228,6 +233,7 @@ class Chain(object):
         if block.header.prevhash == self.head_hash:
             self.state.deletes = []
             self.state.changed = {}
+
             apply_block(self.state, block, self.patricia)
 
             self.patricia.to_db()
