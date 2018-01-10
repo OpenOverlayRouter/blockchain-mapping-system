@@ -1,4 +1,4 @@
-# BlockChain
+﻿# BlockChain
 
 ## Dependencies
 
@@ -27,3 +27,5 @@
 **pytricia** *Subnet Patricia Trie*
 
 **bitstring** *Socket Messages*
+
+**py-radix** *Alternative Patricia trie*

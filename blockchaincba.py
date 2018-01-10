@@ -221,6 +221,7 @@ def run():
                     tx = chain.parse_transaction(tx_int)
                     tx.sign(key.privkey)
                     # correct tx
+                    chain.add_pending_transaction(tx)
                     p2p.broadcast_tx(tx)
                     mainLog.info("Sent transaction to the network, from: %s --  to: %s --  value: %s", \
                     tx_int["from"].encode("HEX"), tx.to.encode("HEX"), tx.ip_network)
