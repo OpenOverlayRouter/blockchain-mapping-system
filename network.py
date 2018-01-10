@@ -34,9 +34,6 @@ BLOCK_CHUNK = 10
 def _print(msg):
     print("[{}] {}".format(str(datetime.now()), msg))
     sys.stdout.flush()
-    '''msg = msg + '\n'
-    logFile.write("[{}] {}".format(str(datetime.now()), msg))
-    logFile.flush()'''
 
 class p2pProtocol(Protocol):
     def __init__(self, factory):
@@ -122,7 +119,7 @@ class p2pProtocol(Protocol):
                             try:
                                 block = rlp.decode(data["block"].decode('hex'), Block)
                                 if self.factory.num_block == block.header.number - 1:
-                                    self.factory.blocks[block.header.number] = block
+                                    self.factory.blocks[block.header.number] = data["block"]
                                     self.factory.num_block += 1
                                     #print block.header.number
                                 if self.factory.notify is not None:
@@ -453,11 +450,6 @@ if __name__ == '__main__':
         print ("Error: too many arguments")
         sys.exit(1)
 
-    '''global logFile    
-    try:    
-        logFile = open('netlog.txt', 'w')
-    except Exception as e: 
-        print e'''
 
     try:
         factory = myFactory(int(sys.argv[1]))
