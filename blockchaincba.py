@@ -212,6 +212,7 @@ def run():
         try:
             tx_int = user.get_tx()
             if tx_int is not None:
+                mainLog.info("Processing user transaction, from: %s --  to: %s", tx_int["from"], tx_int["to"])
                 try:
                     try:
                         key = addresses.index(tx_int["from"])
