@@ -48,7 +48,7 @@ print "Starting test..."
 
 for i in range(5):
      b = chain.create_block(add1)
-     b.sign(ks1.privkey)
+     #b.sign(ks1.privkey)
      chain.add_block(b)
      time.sleep(1)
 print b.hash.encode("HEX")

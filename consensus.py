@@ -31,7 +31,7 @@ class Consensus():
 		else:
 			protocol = "IPv6"
 		if timestamp == self.last_timestamp and self.found_in_chain:
-			# Check that there is a new block in 30 seconds
+			# Check that there is a new block in 60 seconds
 			current_timestamp = get_timestamp()
 			if (current_timestamp-timestamp) >= 30:
 				timestamp = timestamp+30
@@ -170,29 +170,29 @@ def get_block_from_timestamp(last_block_number,timestamp):
 # Returns a random HASH mixing NIST and ETHEREUM HASH block
 def get_random_hash(timestamp):
 	# Get Ethereum hash
-	last_block_number = get_last_block_number()
+	'''last_block_number = get_last_block_number()
 	selected_block_number = get_block_from_timestamp(last_block_number,timestamp)
 	if selected_block_number == None:
 		#print "Consensus: No new ETH block yet, waiting for Ethereum chain..."
 		consensusLog.info('No new ETH block yet, waiting for Ethereum chain...')
 		return None, False
-	'''while selected_block_number == None:
-		print "Consensus: No new ETH block yet, waiting for Ethereum chain..."
-			# sleep??
-		last_block_number = get_last_block_number()
-		selected_block_number = get_block_from_timestamp(last_block_number,timestamp)'''
 	#print "Consensus: New block found"
 	consensusLog.info('New block fund on Ethereum chain')
 	eth_hash = get_hash_from_json_block(selected_block_number)
-	eth_hash_bits = from_hex_to_bits(eth_hash,256)
+	eth_hash_bits = from_hex_to_bits(eth_hash,256)'''
 
 	# Get Nist hash
 	nist_hash = get_hash_from_NIST(int(timestamp))
+	if nist_hash == None:
+		consensusLog.info('No new NIST hash yet, waiting for it...')
+		return None, False
+	consensusLog.info('New NIST hash found...')
 	nist_hash = hex(int(nist_hash.replace('L', '').zfill(8), 16))[:-1]
 	nist_hash_bits = from_hex_to_bits(nist_hash,512)
 
 	# Mix both hashes
-	xor = long(eth_hash_bits+eth_hash_bits,2)^long(nist_hash_bits,2)
+	#xor = long(eth_hash_bits+eth_hash_bits,2)^long(nist_hash_bits,2)
+	xor = long(nist_hash_bits,2)
 	return from_long_to_bits(xor), True
 
 # Returns the IP Address in a readable format
