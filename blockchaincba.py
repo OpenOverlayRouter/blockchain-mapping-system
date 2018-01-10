@@ -145,7 +145,7 @@ def run():
                     myIPs = IPSet()
                     for i in range(len(keys)):
                         myIPs.update(chain.get_own_ips(keys[i].address))
-                    timestamp = chain.get_head_block().get_timestamp()
+                    timestamp = chain.get_head_block().header.timestamp
                     block_num = chain.get_head_block().header.number
                     consensus.calculate_next_signer(myIPs, timestamp, block_num)
                 block = p2p.get_block()
