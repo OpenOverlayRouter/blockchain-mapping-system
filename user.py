@@ -132,7 +132,7 @@ class Parser():
                         self.logger.exception(e)
         for elem in buffers:
             self.transactions.append(elem)
-        self.logger.info("Loaded %s transactions successfully", len(transactions))
+        self.logger.info("Loaded %s transactions successfully", len(self.transactions))
 
         #open(transactions_dir, 'w').close()  # to remove all contents of the txt file
 
