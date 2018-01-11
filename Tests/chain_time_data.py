@@ -22,12 +22,13 @@ def init_keystore(keys_dir='./keystore/'):
 keys, addresses = init_keystore()
 nonce = 0
 NUM_TX = 5
+NUM_BLOCKS = 100
 db = LevelDB("./chain")
 env = Env(db)
 chain = ChainService(env)
 block_creation = []
 block_addition = []
-for i in range(100):
+for i in range(NUM_BLOCKS*2):
     for i in range(1,max(NUM_TX,len(addresses))):
         ipset = chain.get_own_ips(addresses[i])
         if (len(IPSet([])) != 0):
@@ -35,7 +36,7 @@ for i in range(100):
             tx = Transaction(nonce, 1, addresses[i-1], 1, ipset.iprange().cidrs()[0][0], time=int(time.time()))
         else:
             print("Type3")
-            tx = Transaction(nonce, 3, addresses[i], 2, '192.168.0.0.1', [1, '2.2.2.2', 20, 230, 1, '1.1.1.1', 45, 50])
+            tx = Transaction(nonce, 3, addresses[i], 1, '192.168.0.1', [1, '2.2.2.2', 20, 230, 1, '1.1.1.1', 45, 50])
         tx.sign(keys[i].privkey)
         chain.add_pending_transaction(tx)
 
