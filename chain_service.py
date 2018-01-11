@@ -186,13 +186,13 @@ class ChainService():
     # queries the eid to the blockchain and returns the response
     def query_eid(self, ipaddr, nonce):
         try:
-            address = normalize_address(self.chain.patricia.get_value(str(ipaddr)))
+            address = normalize_address(self.chain.patricia.get_value(str(IPNetwork(ipaddr).ip)))
             balance = self.chain.state.get_balance(address)
             if balance is not None:
                 if len(balance.map_server.keys()) > 0:
                     map_servers = MapServers(info=balance.map_server.keys())
                     resp = Response(nonce=nonce, info=map_servers)
-                    return resp
+                    return resp.to_bytes()
                 elif len(balance.locator.keys()) > 0:
                     locator_records = []
                     for key in balance.locator.keys():
@@ -201,10 +201,12 @@ class ChainService():
                                                              locator=key))
                     map_reply = MapReplyRecord(eid_prefix=IPNetwork(ipaddr), locator_records=locator_records)
                     resp = Response(nonce=nonce, info=map_reply)
-                    return resp
+                    return resp.to_bytes()
             else:
                 databaseLog.info("Address %s has no balance", str(address))
+                print("Address %s has no balance", str(address))
         except:
+            print("IP address %s is not owned by anybody", str(ipaddr))
             databaseLog.info("IP address %s is not owned by anybody", str(ipaddr))
         
         return None

@@ -20,16 +20,17 @@ def init_keystore(keys_dir='./keystore/'):
     return keys, addresses
 
 keys, addresses = init_keystore()
+print("Loaded ", len(keys), " keys")
 nonce = 0
-NUM_TX = 5
+NUM_TX = 100
 NUM_BLOCKS = 100
 db = LevelDB("./chain")
 env = Env(db)
 chain = ChainService(env)
 block_creation = []
 block_addition = []
-for i in range(NUM_BLOCKS*2):
-    for i in range(1,min(25,len(addresses))):
+for j in range(NUM_BLOCKS*2):
+    for i in range(1,min(NUM_TX,len(addresses))):
         ipset = chain.get_own_ips(addresses[i])
         if (len(ipset) != 0):
             tx = Transaction(nonce, 1, addresses[i-1], 1, ipset.iprange().cidrs()[0].ip, time=int(time.time()))
