@@ -55,15 +55,18 @@ def verify_block_signature(state, block, ip):
 def validate_transaction(state, tx):
     # (1) The transaction signature is valid;
     if not tx.sender:  # sender is set and validated on Transaction initialization
+        databaseLog.debug("Unsigned transaction %s",encode_hex(tx.hash))
         raise UnsignedTransaction(tx)
     else:
         if tx.sender == null_address:
+            databaseLog.debug("Unsigned transaction %s",encode_hex(tx.hash))
             raise UnsignedTransaction(tx)
     # (2) the transaction nonce is valid (equivalent to the
     #     sender account's current nonce);
 
     req_nonce = state.get_nonce(tx.sender)
     if req_nonce != tx.nonce:
+        databaseLog.debug("Invalid transaction Nonce %s Actual: %s TX Nonce",encode_hex(tx.hash),str(req_nonce),str(tx.nonce))
         raise InvalidNonce(rp(tx, 'nonce', tx.nonce, req_nonce))
 
     # (3) the sender account balance contains the value
@@ -71,6 +74,7 @@ def validate_transaction(state, tx):
         category = tx.category
 
         if category < 0 or category > 3:
+            databaseLog.debug("Invalid transaction category  %s ",encode_hex(tx.hash))
             raise InvalidCategory(category)
 
         balance = state.get_balance(tx.sender)
@@ -78,6 +82,7 @@ def validate_transaction(state, tx):
 
         if category == 0 or category == 1:
             if not balance.in_own_ips(value):
+                databaseLog.debug("Insuficient balance %s ", encode_hex(tx.hash))
                 raise InsufficientBalance(value)
         elif category == 2:
             pass
@@ -86,6 +91,7 @@ def validate_transaction(state, tx):
             pass
             # Locator
     else:
+        databaseLog.debug("Uncategorized transaction %s ", encode_hex(tx.hash))
         raise UncategorizedTransaction(tx)
 
     return True
@@ -179,6 +185,7 @@ def mk_transaction_sha(receipts):
 # Validate that the transaction list root is correct
 def validate_transaction_tree(state, block):
     if block.header.tx_root != mk_transaction_sha(block.transactions):
+        databaseLog.debug("Transaction root mismatch: header %s computed %s, %d transactions",(encode_hex(str(block.header.tx_root)), encode_hex(str(mk_transaction_sha(block.transactions))),len(block.transactions)))
         raise ValueError("Transaction root mismatch: header %s computed %s, %d transactions" %
                          (
                          encode_hex(str(block.header.tx_root)), encode_hex(str(mk_transaction_sha(block.transactions))),
@@ -191,9 +198,11 @@ def validate_header(state, header):
     parent = state.prev_headers[0]
     if parent:
         if header.prevhash != parent.hash:
+            databaseLog.debug("Block's prevhash and parent's hash do not match: block prevhash %s parent hash %s",(encode_hex(header.prevhash), encode_hex(parent.hash)))
             raise ValueError("Block's prevhash and parent's hash do not match: block prevhash %s parent hash %s" %
                              (encode_hex(header.prevhash), encode_hex(parent.hash)))
         if header.number != parent.number + 1:
+            databaseLog.debug("Block's number is not the successor of its parent number")
             raise ValueError(
                 "Block's number is not the successor of its parent number")
         if header.timestamp <= parent.timestamp:
@@ -205,15 +214,18 @@ def validate_header(state, header):
 
 def validate_block(state, block):
     if not block.signer:
+        databaseLog.debug("Unsigned block %s.", block.hash.encode("HEX"))
         raise UnsignedBlock(block)
     else:
         if block.signer == null_address:
+            databaseLog.debug("Unsigned block %s.", block.hash.encode("HEX"))
             raise UnsignedTransaction(block)
 
     assert validate_header(state, block.header)
     assert validate_transaction_tree(state, block)
     for tx in block.transactions:
         if not validate_transaction(state, tx):
+            databaseLog.debug("Invalid transaction %s in block %s.", tx.hash.encode("HEX"), block.hash.encode("HEX"))
             return False
     return True
 

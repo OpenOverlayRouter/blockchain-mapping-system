@@ -120,7 +120,7 @@ class ChainService():
         invalid_tx = []
         for tx in self.transactions:
             try:
-                validate_transaction(state,tx)
+                validate_transaction(self.chain.state,tx)
             except Exception:
                 invalid_tx.append(tx)
         if invalid_tx:
