@@ -231,7 +231,7 @@ class Chain(object):
                     self.time_queue) and block.timestamp > self.time_queue[i].timestamp:
                 i += 1
             self.time_queue.insert(i, block)
-            databaseLog.debug("Block timestamp greater than now, returning False...", block.hash.encode("HEX"))
+            databaseLog.debug("Block timestamp greater than now: Block Timestamp: %s - Now: %s", str(block.header.timestamp), str(now))
             return False
         # Is the block being added to the head?
         if block.header.prevhash == self.head_hash:
