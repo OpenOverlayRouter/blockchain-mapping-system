@@ -33,7 +33,10 @@ class ChainService():
 
     def add_pending_transaction(self, tx):
         assert isinstance(tx, Transaction)
-        validate_transaction(self.chain.state, tx)
+        try:        
+            validate_transaction(self.chain.state, tx)
+        except Exception as e:
+            databaseLog.info(e.message)
         # validate transaction
         try:
             # Transaction validation for broadcasting. Transaction is validated

@@ -231,8 +231,9 @@ def run():
                     p2p.broadcast_tx(tx)
                     mainLog.info("Sent transaction to the network, from: %s --  to: %s --  value: %s", \
                     tx_int["from"].encode("HEX"), tx.to.encode("HEX"), tx.ip_network)
-                except:
-                    raise Exception("Error when creating user transaction")
+                except Exception as e:
+                    mainLog.error("Error when creating user transaction")
+                    raise Exception(e)
         except Exception as e:
             mainLog.exception(e)
             p2p.stop()
