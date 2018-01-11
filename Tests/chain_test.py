@@ -1,30 +1,9 @@
-from config import Env
-from chain import Chain
-from genesis_helpers import mk_genesis_data
-from db import _EphemDB
-from block import Block, BlockHeader
+import datetime
+from db import LevelDB
 import time
-import transactions
-import trie
-import rlp
-import state
-from utils_test import get_rand_tx
-from db import LevelDB,_EphemDB
-import time
-from transactions import Transaction
-import copy
-from db import _EphemDB
 from config import Env
-from chain import Chain
-from genesis_helpers import mk_genesis_data
-from apply import validate_transaction, apply_transaction
 from keystore import Keystore
-import rlp
-import netaddr
-from netaddr import IPNetwork, IPAddress, IPSet
-from utils import address, normalize_address
 from chain_service import ChainService
-import sys
 
 
 print "Loading the environment..."
@@ -48,8 +27,7 @@ print "Starting test..."
 
 for i in range(5):
      b = chain.create_block(add1)
-     #b.sign(ks1.privkey)
+     b.sign(ks1.privkey)
+     time.now
      chain.add_block(b)
      time.sleep(1)
-print b.hash.encode("HEX")
-print(chain.get_block_by_number(0).prevhash.encode("HEX"))
