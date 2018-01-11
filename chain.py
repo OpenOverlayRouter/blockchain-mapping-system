@@ -219,7 +219,9 @@ class Chain(object):
         now = self.localtime
         # Are we receiving the block too early?
         try:
+            databaseLog.debug('Validating block: number %d hash %s', block.header.number, block.header.hash.encode('HEX'))
             validate_block(self.state,block)
+            databaseLog.debug('Block validated: number %d hash %s', block.header.number, block.header.hash.encode('HEX'))
         except (Exception):
             databaseLog.info("Exception found while validating block %s. Discarding...", block.hash.encode("HEX"))
             return False
@@ -229,6 +231,7 @@ class Chain(object):
                     self.time_queue) and block.timestamp > self.time_queue[i].timestamp:
                 i += 1
             self.time_queue.insert(i, block)
+            databaseLog.debug("Block timestamp greater than now, returning False...", block.hash.encode("HEX"))
             return False
         # Is the block being added to the head?
         if block.header.prevhash == self.head_hash:
@@ -240,7 +243,6 @@ class Chain(object):
             self.patricia.to_db()
 
             self.db.put(b'block:%d' % block.header.number, block.header.hash)
-            databaseLog.info('Adding block: number %d hash %s', block.header.number, block.header.hash.encode('HEX'))
             self.head_hash = block.header.hash
             for i, tx in enumerate(block.transactions):
                 self.db.put(b'txindex:' +
@@ -272,6 +274,7 @@ class Chain(object):
         self.db.put(b'changed:' + block.hash,
                     b''.join([k.encode() if not isinstance(k, bytes) else k for k in list(changed.keys())]))
 
+        databaseLog.info('Adding block: number %d hash %s', block.header.number, block.header.hash.encode('HEX'))
         databaseLog.debug('Saved %d address change logs', len(changed.keys()))
 
         self.db.commit()
