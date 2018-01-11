@@ -29,14 +29,11 @@ chain = ChainService(env)
 block_creation = []
 block_addition = []
 for i in range(NUM_BLOCKS*2):
-    for i in range(1,min(NUM_TX,len(addresses))):
+    for i in range(1,min(25,len(addresses))):
         ipset = chain.get_own_ips(addresses[i])
-        print(ipset)
         if (len(ipset) != 0):
-            print("Type1")
             tx = Transaction(nonce, 1, addresses[i-1], 1, ipset.iprange().cidrs()[0].ip, time=int(time.time()))
         else:
-            print("Type3")
             tx = Transaction(nonce, 3, addresses[i], 1, '192.168.0.1', [1, '2.2.2.2', 20, 230, 1, '1.1.1.1', 45, 50])
         tx.sign(keys[i].privkey)
         chain.add_pending_transaction(tx)
@@ -45,13 +42,13 @@ for i in range(NUM_BLOCKS*2):
     block = chain.create_block(addresses[0])
     block.sign(keys[0].privkey)
     c2 = datetime.datetime.now()
-    c3 = c1-c2
+    c3 = c2-c1
     block_creation.append(c3.total_seconds())
 
     c1 = datetime.datetime.now()
     chain.add_block(block)
     c2 = datetime.datetime.now()
-    c3 = c1-c2
+    c3 = c2-c1
     block_addition.append(c3.total_seconds())
     nonce = nonce + 1
 
