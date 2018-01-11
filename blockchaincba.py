@@ -148,6 +148,8 @@ def run():
                     timestamp = chain.get_head_block().header.timestamp
                     block_num = chain.get_head_block().header.number
                     consensus.calculate_next_signer(myIPs, timestamp, block_num)
+                else:
+                    mainLog.error("Block no. %s signautre is invalid!", block.number)
                 block = p2p.get_block()
         except Exception as e:
             mainLog.critical("Exception while processing a received block")
@@ -164,6 +166,8 @@ def run():
                     # Correct tx
                     p2p.broadcast_tx(tx_ext)
                 except:
+                    mainLog.info("Discarded invalid external transaction: to: %s  --  value: %s", \
+                    tx_ext.to.encode("HEX"), str(tx_ext.value))
                     pass
                 #get new transactions to process
                 tx_ext = p2p.get_tx()
@@ -212,13 +216,14 @@ def run():
         try:
             tx_int = user.get_tx()
             if tx_int is not None:
-                mainLog.info("Processing user transaction, from: %s --  to: %s", tx_int["from"], tx_int["to"])
+                mainLog.info("Processing user transaction, from: %s --  to: %s", tx_int["from"].encode("HEX"), tx_int["to"].encode("HEX"))
                 try:
                     try:
-                        key = addresses.index(tx_int["from"])
+                        key_pos = addresses.index(tx_int["from"])
+                        mainLog.debug("Found key in %s", key_pos)
                     except:
                         raise Exception("Key indicated in from field is not in present in the keystore")
-                    key = keys[key]
+                    key = keys[key_pos]
                     tx = chain.parse_transaction(tx_int)
                     tx.sign(key.privkey)
                     # correct tx
@@ -227,7 +232,7 @@ def run():
                     mainLog.info("Sent transaction to the network, from: %s --  to: %s --  value: %s", \
                     tx_int["from"].encode("HEX"), tx.to.encode("HEX"), tx.ip_network)
                 except:
-                    pass
+                    raise Exception("Error when creating user transaction")
         except Exception as e:
             mainLog.exception(e)
             p2p.stop()

@@ -121,7 +121,7 @@ class Parser():
                         buffers.append(data_buffer)
                         self.logger.info("Transaction successfully added.")
                         self.logger.debug("Transaction details: to: %s -- from: %s -- value: %s", \
-                        data_buffer.get("to"), data_buffer.get("from"), data_buffer.get("value"))
+                        data_buffer.get("to").encode("HEX"), data_buffer.get("from").encode("HEX"), data_buffer.get("value"))
                     else:
                         self.logger.exception("Transaction %s contains errors. Ignoring it...", str(data_buffer))
                     data_buffer = {}
@@ -132,7 +132,7 @@ class Parser():
                         self.logger.exception(e)
         for elem in buffers:
             self.transactions.append(elem)
-            self.logger.info("Loaded %s transactions successfully", len(transactions))
+        self.logger.info("Loaded %s transactions successfully", len(transactions))
 
         #open(transactions_dir, 'w').close()  # to remove all contents of the txt file
 

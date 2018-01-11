@@ -46,6 +46,9 @@ class ChainService():
         except Exception as e:
             databaseLog.info(e.message)
         self.transactions.append(tx)
+        databaseLog.info("Added transaction to the pool, from: %s --  to: %s -- value: %s,", \
+        tx.sender.encode("HEX"), tx.to.encode("HEX"), str(tx.value))
+        
 
     # creates a block with the list of pending transactions, creates its tries and returns it
     def create_block(self, coinbase):
