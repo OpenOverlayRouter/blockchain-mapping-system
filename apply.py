@@ -245,7 +245,7 @@ def apply_block(state, block, patricia):
             if normalize_address(tx.sender) in addresses:
                 tx_time = datetime.datetime.fromtimestamp(tx.time)
                 block_time = datetime.datetime.fromtimestamp(block.header.timestamp)
-                databaseLog.debug("TX %s added to the chain. Elapsed time %s",tx.hash.encode("HEX"),str(block_time - tx_time))
+                databaseLog.debug("TX %s added to the chain. Elapsed time %s seconds",tx.hash.encode("HEX"), block_time - tx_time)
 
         # Post-finalize (ie. add the block header to the state for now)
         state.add_block_header(block.header)
