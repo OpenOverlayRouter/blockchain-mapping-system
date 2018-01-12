@@ -17,6 +17,7 @@ from state import State
 from map_reply import Response, LocatorRecord, MapReplyRecord, MapServers
 from netaddr import IPNetwork
 import logging
+import sys
 
 databaseLog = logging.getLogger('Database')
 
@@ -64,16 +65,17 @@ class ChainService():
         s = state.State().from_snapshot(snapshot, Env(_EphemDB()))
         databaseLog.info("Creating block with block number %s", str(prevnumber+1))
         for tx in self.transactions:
-            try:
-                dictionary = {}
-                if (prevnumber+1) % 2 == 0 and int(tx.afi) == 1:  # the next block has to be an IPv4 one
-                    apply_transaction(s, tx, dictionary)
-                    block.transactions.append(tx)
-                elif (prevnumber+1) % 2 != 0 and int(tx.afi) == 2:  # the next block has to be an IPv6 one
-                    apply_transaction(s, tx, dictionary)
-                    block.transactions.append(tx)
-            except Exception as e:
-                databaseLog.info(e.message)
+            if sys.getsizeof(block) < 1048576:
+                try:
+                    dictionary = {}
+                    if (prevnumber+1) % 2 == 0 and int(tx.afi) == 1:  # the next block has to be an IPv4 one
+                        apply_transaction(s, tx, dictionary)
+                        block.transactions.append(tx)
+                    elif (prevnumber+1) % 2 != 0 and int(tx.afi) == 2:  # the next block has to be an IPv6 one
+                        apply_transaction(s, tx, dictionary)
+                        block.transactions.append(tx)
+                except Exception as e:
+                    databaseLog.info(e.message)
         self._create_tries(block)
         return block
 
