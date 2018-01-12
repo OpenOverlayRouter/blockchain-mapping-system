@@ -227,8 +227,8 @@ def run():
                     key = keys[key_pos]
                     tx = chain.parse_transaction(tx_int)
                     tx.sign(key.privkey)
-                    mainLog.debug("TX signed. Info: v %s -- r %s -- s %s -- NONCE %s", tx.v.encode('HEX'), \
-                    tx.r.encode('HEX'), tx.s.encode('HEX'), tx.nonce)
+                    mainLog.debug("TX signed. Info: v %s -- r %s -- s %s -- NONCE %s", tx.v, \
+                    tx.r, str(tx.s), tx.nonce)
                     # correct tx
                     chain.add_pending_transaction(tx)
                     p2p.broadcast_tx(tx)
