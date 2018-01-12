@@ -64,9 +64,9 @@ def validate_transaction(state, tx):
     # (2) the transaction nonce is valid (equivalent to the
     #     sender account's current nonce);
 
-    req_nonce = state.get_nonce(tx.sender)
+    req_nonce = state.get_nonce(tx.sender) + 1
     if req_nonce != tx.nonce:
-        databaseLog.debug("Invalid transaction Nonce %s Actual: %s TX Nonce",encode_hex(tx.hash),str(req_nonce),str(tx.nonce))
+        databaseLog.debug("Invalid transaction Nonce %s Actual: %s TX Nonce", tx.hash.encode("HEX"), str(req_nonce), str(tx.nonce))
         raise InvalidNonce(rp(tx, 'nonce', tx.nonce, req_nonce))
 
     # (3) the sender account balance contains the value
