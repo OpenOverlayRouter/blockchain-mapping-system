@@ -28,10 +28,10 @@ class Transaction(rlp.Serializable):
     _sender = None
 
     def __init__ (self, nonce, category, to, afi, value, 
-                  metadata=b'', time=0, v=0, r=0, s=0):
+                  metadata=None, time=0, v=0, r=0, s=0):
 
         if category == 0 or category == 1:
-            if metadata != b'':
+            if metadata != None:
                 raise InvalidTransaction("Invalid Metadata")
         elif category == 2:
             if type(metadata) == list and len(metadata) % 3 ==0:
