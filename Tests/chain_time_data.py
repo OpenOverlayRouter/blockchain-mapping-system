@@ -35,7 +35,7 @@ block_addition = []
 for j in range(NUM_BLOCKS*2):
     time.sleep(1)
     if j%2 != 0:
-        for i in range(1,min(NUM_TX,len(addresses))):
+        for i in range(1,min(NUM_TX,len(addresses)-1)+1):
             ipset = chain.get_own_ips(addresses[i])
             if (len(ipset) != 0):
                 tx = Transaction(nonce, 0, addresses[i-1], 1, ipset.iter_cidrs()[0].ip, time=int(time.time()))
