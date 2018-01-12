@@ -243,9 +243,10 @@ def apply_block(state, block, patricia):
         for tx in block.transactions:
             apply_transaction(state, tx, cached)
             if normalize_address(tx.sender) in addresses:
-                tx_time = datetime.datetime.fromtimestamp(tx.time)
-                block_time = datetime.datetime.fromtimestamp(block.header.timestamp)
-                databaseLog.debug("TX %s added to the chain. Elapsed time %s seconds",tx.hash.encode("HEX"), block_time - tx_time)
+                #tx_time = datetime.datetime.fromtimestamp(tx.time)
+                #block_time = datetime.datetime.fromtimestamp(block.header.timestamp)
+                #databaseLog.debug("TX %s added to the chain. Elapsed time %s seconds",tx.hash.encode("HEX"), block_time - tx_time)
+                databaseLog.debug("TX %s added to the chain. Elapsed time %s seconds",tx.hash.encode("HEX"), block.header.timestamp - tx.time)
 
         # Post-finalize (ie. add the block header to the state for now)
         state.add_block_header(block.header)
