@@ -166,15 +166,15 @@ def run():
             while tx_ext is not None:
                 #Check that the transaction has not been sent from this noed
                 if tx_ext.hash not in node_tx:
-                    mainLog.info("Received external transaction: to: %s value: %s", \
-                    tx_ext.to.encode('HEX'), IPv4Network(tx_ext.value) )
+                    mainLog.info("Received external transaction: to: %s", \
+                    tx_ext.to.encode('HEX'))
                     try:
                         chain.add_pending_transaction(tx_ext)
                         # Correct tx
                         p2p.broadcast_tx(tx_ext)
                     except:
-                        mainLog.info("Discarded invalid external transaction: to: %s  --  value: %s", \
-                        tx_ext.to.encode("HEX"), IPv4Network(tx_ext.value))
+                        mainLog.info("Discarded invalid external transaction: to: %s", \
+                        tx_ext.to.encode("HEX"))
                         pass                      
                 #get new transactions to process
                 tx_ext = p2p.get_tx()
