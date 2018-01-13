@@ -109,7 +109,7 @@ class p2pProtocol(Protocol):
                                 self.factory.ck_num = True
                         elif data["msgtype"] == "set_tx":
                             try:
-                                tx = rlp.decode(data["tx"].decode('hex'), Transaction)
+                                tx = rlp.decode(data["tx"].decode('base64'), Transaction)
                                 self.factory.transactions.add(data["tx"])
                                 if self.factory.notify is not None:
                                     self.factory.notify.sendMsg(b'1\r\n')
@@ -117,7 +117,7 @@ class p2pProtocol(Protocol):
                                 _print ("Wrong Tx")
                         elif data["msgtype"] == "set_block":
                             try:
-                                block = rlp.decode(data["block"].decode('hex'), Block)
+                                block = rlp.decode(data["block"].decode('base64'), Block)
                                 if self.factory.num_block == block.header.number - 1:
                                     self.factory.blocks[block.header.number] = data["block"]
                                     self.factory.num_block += 1
@@ -130,7 +130,7 @@ class p2pProtocol(Protocol):
                             if self.factory.bootstrap:
                                 for b in data["blocks"]:
                                     try:
-                                        block = rlp.decode(b.decode('hex'), Block)
+                                        block = rlp.decode(b.decode('base64'), Block)
                                         if block.header.number > self.factory.last_served_block and \
                                         self.factory.blocks.get(block.header.number) is None:
                                             self.factory.blocks[block.header.number] = b
@@ -182,7 +182,7 @@ class p2pProtocol(Protocol):
                                 txs = data["txs"]
                                 for raw_tx in txs:
                                     try:
-                                        tx = rlp.decode(raw_tx.decode('hex'), Transaction)
+                                        tx = rlp.decode(raw_tx.decode('base64'), Transaction)
                                         self.factory.transactions.add(raw_tx)
                                     except:
                                         _print ("Wrong Tx")
@@ -306,7 +306,7 @@ class localProtocol(Protocol):
                         for peer in peers:
                             blocks = []
                             for b in data["blocks"]:
-                                block = rlp.decode(b.decode('hex'), Block)
+                                block = rlp.decode(b.decode('base64'), Block)
                                 if block.header.number in self.factory.block_queries[peer]:
                                     blocks.append(b)
                                     self.factory.block_queries[peer].discard(block.header.number)
