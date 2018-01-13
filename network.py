@@ -450,10 +450,6 @@ if __name__ == '__main__':
         print ("Error: too many arguments")
         sys.exit(1)
 
-#<<<<<<< HEAD
-
-#=======
-#>>>>>>> b9cad0dde3295c442aecee9cb6ff8ebff1dc107d
     try:
         factory = myFactory(int(sys.argv[1]))
         endpoint_query = TCP4ServerEndpoint(reactor, QUERY_PORT)
