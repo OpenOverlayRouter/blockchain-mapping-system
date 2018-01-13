@@ -29,7 +29,7 @@ import logger
 from user import Parser
 from utils import normalize_address
 from oor import Oor
-import socket
+
 
 mainLog = logging.getLogger('Main')
 
@@ -163,14 +163,14 @@ def run():
             tx_ext = p2p.get_tx()
             while tx_ext is not None:
                 mainLog.info("Received external transaction: to: %s value: %s", \
-                tx_ext.to.encode('HEX'), socket.inet_ntoa(tx_ext.value[0:3]) )
+                tx_ext.to.encode('HEX'), str(tx_ext.value) )
                 try:
                     chain.add_pending_transaction(tx_ext)
                     # Correct tx
                     p2p.broadcast_tx(tx_ext)
                 except:
                     mainLog.info("Discarded invalid external transaction: to: %s  --  value: %s", \
-                    tx_ext.to.encode("HEX"), socket.inet_ntoa(tx_ext.value[0:3]))
+                    tx_ext.to.encode("HEX"), str(tx_ext.value))
                     pass
                 #get new transactions to process
                 tx_ext = p2p.get_tx()
@@ -233,7 +233,10 @@ def run():
                     mainLog.debug("TX signed. Info: v %s -- r %s -- s %s -- NONCE %s", tx.v, \
                     tx.r, str(tx.s), tx.nonce)
                     # correct tx
-                    chain.add_pending_transaction(tx)
+                    try:
+                        chain.add_pending_transaction(tx)
+                    except Exception as e:
+                        raise Exception(e)
                     p2p.broadcast_tx(tx)
                     mainLog.info("Sent transaction to the network, from: %s --  to: %s --  value: %s", \
                     tx_int["from"].encode("HEX"), tx.to.encode("HEX"), tx.ip_network)
