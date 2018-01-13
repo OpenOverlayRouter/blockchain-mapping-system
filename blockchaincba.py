@@ -29,6 +29,7 @@ import logger
 from user import Parser
 from utils import normalize_address
 from oor import Oor
+import socket
 
 mainLog = logging.getLogger('Main')
 
@@ -161,13 +162,15 @@ def run():
         try:
             tx_ext = p2p.get_tx()
             while tx_ext is not None:
+                mainLog.info("Received external transaction: to: %s value: %s", \
+                tx_ext.to.encode('HEX'), socket.inet_ntoa(tx_ext.value[0:3]) )
                 try:
                     chain.add_pending_transaction(tx_ext)
                     # Correct tx
                     p2p.broadcast_tx(tx_ext)
                 except:
                     mainLog.info("Discarded invalid external transaction: to: %s  --  value: %s", \
-                    tx_ext.to.encode("HEX"), str(tx_ext.value))
+                    tx_ext.to.encode("HEX"), socket.inet_ntoa(tx_ext.value[0:3]))
                     pass
                 #get new transactions to process
                 tx_ext = p2p.get_tx()

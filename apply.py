@@ -66,8 +66,11 @@ def validate_transaction(state, tx):
 
     req_nonce = state.get_nonce(tx.sender)
     if req_nonce != tx.nonce:
-        databaseLog.debug("Invalid transaction Nonce %s Actual: %s TX Nonce", tx.hash.encode("HEX"), str(req_nonce), str(tx.nonce))
-        raise InvalidNonce(rp(tx, 'nonce', tx.nonce, req_nonce))
+        databaseLog.debug("Invalid transaction Nonce for transaction %s Expected: %s In transaction: %s", \
+        tx.hash.encode("HEX"), str(req_nonce), str(tx.nonce))
+                
+        #raise InvalidNonce(rp(tx, 'nonce', tx.nonce, req_nonce))
+        raise InvalidNonce()
 
     # (3) the sender account balance contains the value
     if hasattr(tx, 'category'):

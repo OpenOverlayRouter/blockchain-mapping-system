@@ -50,7 +50,7 @@ class ChainService():
         except Exception as e:
             databaseLog.info(e.message)
         self.transactions.append(tx)
-        databaseLog.info("Added transaction to the pool, from: %s --  to: %s", \
+        databaseLog.info("From: chain_service: Added transaction to the pool, from: %s --  to: %s", \
         tx.sender.encode("HEX"), tx.to.encode("HEX"))
         
 
