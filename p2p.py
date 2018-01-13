@@ -116,7 +116,7 @@ class P2P():
                     self.txs = False
                     return None
                 else:
-                    tx = rlp.decode(data["tx"].decode('hex'), Transaction)
+                    tx = rlp.decode(data["tx"].decode('base64'), Transaction)
                     return tx
             else:
                 return None
@@ -140,7 +140,7 @@ class P2P():
                     self.blocks = None
                     return None
                 else:
-                    block = rlp.decode(data["block"].decode('hex'), Block)
+                    block = rlp.decode(data["block"].decode('base64'), Block)
                     return block
             else:
                 return None

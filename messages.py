@@ -60,7 +60,7 @@ def get_tx_pool():
 def set_tx(tx):
     '''Set Transaction
     tx: Transaction'''
-    rawtx = rlp.encode(tx).encode('hex')
+    rawtx = rlp.encode(tx).encode('base64')
     kwargs = {"tx": rawtx}
     return make_envelope("set_tx", **kwargs)
 
@@ -107,7 +107,7 @@ def get_blocks(num, chunk):
 def set_block(block):
     '''Set Block
     block: Block'''
-    rawblock = rlp.encode(block).encode('hex')
+    rawblock = rlp.encode(block).encode('base64')
     kwargs = {"block": rawblock}
     return make_envelope("set_block", **kwargs)
 
@@ -138,7 +138,7 @@ def answer_block_queries(blocks):
     blocks: List(Blocks)'''
     list_blocks = []
     for block in blocks:
-        rawblock = rlp.encode(block).encode('hex')
+        rawblock = rlp.encode(block).encode('base64')
         list_blocks.append(rawblock)
     kwargs = {"blocks": list_blocks}
     return make_envelope("answer_block_queries", **kwargs)
@@ -152,7 +152,7 @@ def answer_tx_pool_query(txs):
     txs: List (Transactions)'''
     list_tx = []
     for tx in txs:
-        rawtx = rlp.encode(tx).encode('hex')
+        rawtx = rlp.encode(tx).encode('base64')
         list_tx.append(rawtx)
     kwargs = {"txs": list_tx}
     return make_envelope("answer_tx_pool_query", **kwargs)
