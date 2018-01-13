@@ -14,6 +14,7 @@ from config import Env
 from db import LevelDB
 from chain_service import ChainService
 from netaddr import IPNetwork
+from ipaddr import IPv4Network
 import os
 import glob
 #import rlp
@@ -82,6 +83,7 @@ def init_logger():
 
 
 def run():
+    node_tx = []
     init_logger()
 
     mainLog.info("Initializing Chain")
@@ -162,16 +164,18 @@ def run():
         try:
             tx_ext = p2p.get_tx()
             while tx_ext is not None:
-                mainLog.info("Received external transaction: to: %s value: %s", \
-                tx_ext.to.encode('HEX'), str(tx_ext.value) )
-                try:
-                    chain.add_pending_transaction(tx_ext)
-                    # Correct tx
-                    p2p.broadcast_tx(tx_ext)
-                except:
-                    mainLog.info("Discarded invalid external transaction: to: %s  --  value: %s", \
-                    tx_ext.to.encode("HEX"), str(tx_ext.value))
-                    pass
+                #Check that the transaction has not been sent from this noed
+                if tx_ext.hash not in node_tx:
+                    mainLog.info("Received external transaction: to: %s value: %s", \
+                    tx_ext.to.encode('HEX'), IPv4Network(tx_ext.value) )
+                    try:
+                        chain.add_pending_transaction(tx_ext)
+                        # Correct tx
+                        p2p.broadcast_tx(tx_ext)
+                    except:
+                        mainLog.info("Discarded invalid external transaction: to: %s  --  value: %s", \
+                        tx_ext.to.encode("HEX"), IPv4Network(tx_ext.value))
+                        pass                      
                 #get new transactions to process
                 tx_ext = p2p.get_tx()
         except Exception as e:
@@ -240,6 +244,7 @@ def run():
                     p2p.broadcast_tx(tx)
                     mainLog.info("Sent transaction to the network, from: %s --  to: %s --  value: %s", \
                     tx_int["from"].encode("HEX"), tx.to.encode("HEX"), tx.ip_network)
+                    node_tx.append(tx.hash)
                 except Exception as e:
                     mainLog.error("Error when creating user transaction")
                     mainLog.exception(e.message)

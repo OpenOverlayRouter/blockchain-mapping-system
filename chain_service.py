@@ -183,7 +183,7 @@ class ChainService():
     def parse_transaction(self, transaction_data):
         return Transaction(self.chain.state.get_nonce(transaction_data["from"]), transaction_data["category"],
                            transaction_data["to"], transaction_data["afi"], transaction_data["value"],
-                           transaction_data.get("metadata"))
+                           transaction_data.get("metadata"), int(time.time()))
 
     # queries the eid to the blockchain and returns the response
     def query_eid(self, ipaddr, nonce):
