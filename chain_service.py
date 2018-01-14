@@ -50,8 +50,8 @@ class ChainService():
         except Exception as e:
             databaseLog.info(e.message)
         self.transactions.append(tx)
-        databaseLog.info("From: chain_service: Added transaction to the pool, from: %s --  to: %s", \
-        tx.sender.encode("HEX"), tx.to.encode("HEX"))
+        databaseLog.info("From: chain_service: Added transaction %s to the pool, from: %s --  to: %s", \
+        tx.hash.encode("HEX"), tx.sender.encode("HEX"), tx.to.encode("HEX"))
         
 
     # creates a block with the list of pending transactions, creates its tries and returns it
