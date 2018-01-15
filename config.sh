@@ -13,11 +13,11 @@ sudo apt-get -y install language-pack-ca-base
 sudo dpkg-reconfigure locales
 
 
-echo "Creating blockchain repo"
-mkdir blockchain-repo
-cd blockchain-repo
-git init
-git clone https://github.com/CodeEaterX/blockchain
+#echo "Creating blockchain repo"
+#mkdir blockchain-repo
+#cd blockchain-repo
+#git init
+#git clone https://github.com/CodeEaterX/blockchain
 
 
 echo "Installing all dependencies"
@@ -41,7 +41,7 @@ sudo pip install py-radix
 echo "Adjusting keystore and transactions for location" $location
 rm -r keystore
 mv data_generation/keystore-$location keystore
-mv data_generation/transactions-$location Tests/transactions.txt
+mv data_generation/$location-transactions.txt Tests/transactions.txt
 
 
 echo "Done :)"
