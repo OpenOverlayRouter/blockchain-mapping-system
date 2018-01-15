@@ -13,8 +13,8 @@ import time
 from config import Env
 from db import LevelDB
 from chain_service import ChainService
-from netaddr import IPNetwork
-from ipaddr import IPv4Network
+#from netaddr import IPNetwork
+#from ipaddr import IPv4Network
 import os
 import glob
 #import rlp
@@ -148,6 +148,7 @@ def run():
                     myIPs = IPSet()
                     for i in range(len(keys)):
                         myIPs.update(chain.get_own_ips(keys[i].address))
+                    mainLog.info("Updated own IPs: %s", myIPs)
                     timestamp = chain.get_head_block().header.timestamp
                     block_num = chain.get_head_block().header.number
                     consensus.calculate_next_signer(myIPs, timestamp, block_num)
@@ -211,6 +212,7 @@ def run():
                 myIPs = IPSet()
                 for i in range(len(keys)):
                     myIPs.update(chain.get_own_ips(keys[i].address))            
+                mainLog.info("Updated own IPs: %s", myIPs)
             timestamp = chain.get_head_block().header.timestamp
             block_num = chain.get_head_block().header.number
             consensus.calculate_next_signer(myIPs, timestamp, block_num)
