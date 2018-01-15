@@ -83,7 +83,7 @@ def init_logger():
 
 
 def run():
-    node_tx = []
+    seen_tx = []
     init_logger()
 
     mainLog.info("Initializing Chain")
@@ -165,14 +165,15 @@ def run():
         try:
             tx_ext = p2p.get_tx()
             while tx_ext is not None:
-                #Check that the transaction has not been sent from this noed
-                if tx_ext.hash not in node_tx:
+                #Check that the transaction has not been sent from this node or already processed
+                if tx_ext.hash not in seen_tx:
                     mainLog.info("Received external transaction: to: %s", \
                     tx_ext.to.encode('HEX'))
                     try:
                         chain.add_pending_transaction(tx_ext)
                         # Correct tx
                         p2p.broadcast_tx(tx_ext)
+                        seen_tx.append(tx_ext.hash)
                     except:
                         mainLog.info("Discarded invalid external transaction: to: %s", \
                         tx_ext.to.encode("HEX"))
@@ -230,23 +231,23 @@ def run():
                 try:
                     try:
                         key_pos = addresses.index(tx_int["from"])
-                        mainLog.debug("Found key in %s", key_pos)
+                        #mainLog.debug("Found key in %s", key_pos)
                     except:
                         raise Exception("Key indicated in from field is not in present in the keystore")
                     key = keys[key_pos]
                     tx = chain.parse_transaction(tx_int)
                     tx.sign(key.privkey)
-                    mainLog.debug("TX signed. Info: v %s -- r %s -- s %s -- NONCE %s", tx.v, \
-                    tx.r, str(tx.s), tx.nonce)
+                    #mainLog.debug("TX signed. Info: v %s -- r %s -- s %s -- NONCE %s", tx.v, \
+                    #tx.r, str(tx.s), tx.nonce)
                     # correct tx
                     try:
                         chain.add_pending_transaction(tx)
                     except Exception as e:
                         raise Exception(e)
                     p2p.broadcast_tx(tx)
-                    mainLog.info("Sent transaction to the network, from: %s --  to: %s --  value: %s", \
-                    tx_int["from"].encode("HEX"), tx.to.encode("HEX"), tx.ip_network)
-                    node_tx.append(tx.hash)
+                    #mainLog.info("Sent transaction to the network, from: %s --  to: %s --  value: %s", \
+                    #tx_int["from"].encode("HEX"), tx.to.encode("HEX"), tx.ip_network)
+                    seen_tx.append(tx.hash)
                 except Exception as e:
                     mainLog.error("Error when creating user transaction")
                     mainLog.exception(e.message)

@@ -122,9 +122,9 @@ class Parser():
                         if data_buffer.get("metadata") is None:
                             data_buffer["metadata"] = b''
                         buffers.append(data_buffer)
-                        self.logger.info("Transaction successfully added.")
-                        self.logger.debug("Transaction details: to: %s -- from: %s -- value: %s", \
-                        data_buffer.get("to").encode("HEX"), data_buffer.get("from").encode("HEX"), data_buffer.get("value"))
+                        #self.logger.info("Transaction successfully added.")
+                        #self.logger.debug("Transaction details: to: %s -- from: %s -- value: %s", \
+                        #data_buffer.get("to").encode("HEX"), data_buffer.get("from").encode("HEX"), data_buffer.get("value"))
                         
                     else:
                         self.logger.exception("Transaction %s contains errors. Ignoring it...", str(data_buffer))
