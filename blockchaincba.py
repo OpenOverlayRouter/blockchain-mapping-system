@@ -30,6 +30,7 @@ import logger
 from user import Parser
 from utils import normalize_address
 from oor import Oor
+import time
 
 
 mainLog = logging.getLogger('Main')
@@ -83,6 +84,8 @@ def init_logger():
 
 
 def run():
+    bootstrap = True    
+    start_time = time.time()
     seen_tx = []
     init_logger()
 
@@ -178,8 +181,15 @@ def run():
                         mainLog.info("Discarded invalid external transaction: to: %s", \
                         tx_ext.to.encode("HEX"))
                         pass                      
-                #get new transactions to process
-                tx_ext = p2p.get_tx()
+                #rate limit transaction processing after bootsrap
+                if bootstrap:
+                    #get new transactions to process
+                    tx_ext = p2p.get_tx()
+                    if time.time() - start_time > 50:
+                        bootstrap = False
+                        mainLog.info("Finished 50s tx bootstrap.")
+                else:
+                    tx_ext = None                
         except Exception as e:
             mainLog.critical("Exception while processing a received transaction")
             mainLog.exception(e)
