@@ -11,6 +11,7 @@ from keystore import Keystore
 import glob
 import os
 import datetime
+from ipaddr import IPv4Network
 
 null_address = b'\xff' * 20
 
@@ -249,7 +250,8 @@ def apply_block(state, block, patricia):
                 #tx_time = datetime.datetime.fromtimestamp(tx.time)
                 #block_time = datetime.datetime.fromtimestamp(block.header.timestamp)
                 #databaseLog.debug("TX %s added to the chain. Elapsed time %s seconds",tx.hash.encode("HEX"), block_time - tx_time)
-                databaseLog.debug("TX %s added to the chain. Elapsed time %s seconds",tx.hash.encode("HEX"), block.header.timestamp - tx.time)
+                databaseLog.debug("TX %s added to the chain. Elapsed time %s seconds, value: %s", \
+                tx.hash.encode("HEX"), block.header.timestamp - tx.time, IPv4Network(tx.value))
 
         # Post-finalize (ie. add the block header to the state for now)
         state.add_block_header(block.header)
