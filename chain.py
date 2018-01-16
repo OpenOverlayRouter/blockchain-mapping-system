@@ -216,7 +216,8 @@ class Chain(object):
 
     # Call upon receiving a block
     def add_block(self, block):
-        now = self.localtime
+        #now = self.localtime
+        now = time.time()
         # Are we receiving the block too early?
         try:
             databaseLog.debug('Validating block: number %d hash %s', block.header.number, block.header.hash.encode('HEX'))
