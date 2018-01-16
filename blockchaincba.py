@@ -167,7 +167,8 @@ def run():
         #Process transactions from the network
         try:
             tx_ext = p2p.get_tx()
-            while tx_ext is not None:
+            if tx_ext is not None:
+            #while tx_ext is not None:
                 #Check that the transaction has not been sent from this node or already processed
                 if tx_ext.hash not in seen_tx:
                     mainLog.info("Received external transaction: to: %s", \
@@ -181,15 +182,15 @@ def run():
                         mainLog.info("Discarded invalid external transaction: to: %s", \
                         tx_ext.to.encode("HEX"))
                         pass                      
-                #rate limit transaction processing after bootsrap
-                if bootstrap:
-                    #get new transactions to process
-                    tx_ext = p2p.get_tx()
-                    if (time.time() - start_time) > 30:
-                        bootstrap = False
-                        mainLog.info("Finished 50s tx bootstrap.")
-                else:
-                    tx_ext = None                
+#                #rate limit transaction processing after bootsrap
+#                if bootstrap:
+#                    #get new transactions to process
+#                    tx_ext = p2p.get_tx()
+#                    if (time.time() - start_time) > 30:
+#                        bootstrap = False
+#                        mainLog.info("Finished 50s tx bootstrap.")
+#                else:
+#                    tx_ext = None                
         except Exception as e:
             mainLog.critical("Exception while processing a received transaction")
             mainLog.exception(e)
@@ -205,6 +206,8 @@ def run():
                 signing_addr = chain.get_addr_from_ip(signer)
                 mainLog.info("Associated address: %s", signing_addr.encode("HEX"))                
                 #new_block = chain.create_block(keys[0].address)
+                mainLog.info("Sleeping 14s to give way to clock drift...")
+                time.sleep(14)                
                 new_block = chain.create_block(signing_addr)
                 try:
                     key_pos = addresses.index(signing_addr)
