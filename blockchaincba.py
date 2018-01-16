@@ -185,7 +185,7 @@ def run():
                 if bootstrap:
                     #get new transactions to process
                     tx_ext = p2p.get_tx()
-                    if time.time() - start_time > 50:
+                    if (time.time() - start_time) > 50:
                         bootstrap = False
                         mainLog.info("Finished 50s tx bootstrap.")
                 else:
