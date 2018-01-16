@@ -185,7 +185,7 @@ def run():
                 if bootstrap:
                     #get new transactions to process
                     tx_ext = p2p.get_tx()
-                    if (time.time() - start_time) > 50:
+                    if (time.time() - start_time) > 30:
                         bootstrap = False
                         mainLog.info("Finished 50s tx bootstrap.")
                 else:
@@ -234,38 +234,39 @@ def run():
             sys.exit(0)
 
         # Process transactions from the user
-        try:
-            tx_int = user.get_tx()
-            if tx_int is not None:
-                mainLog.info("Processing user transaction, from: %s --  to: %s", tx_int["from"].encode("HEX"), tx_int["to"].encode("HEX"))
-                try:
+        if (time.time() - start_time) > 600:
+            try:
+                tx_int = user.get_tx()
+                if tx_int is not None:
+                    mainLog.info("Processing user transaction, from: %s --  to: %s", tx_int["from"].encode("HEX"), tx_int["to"].encode("HEX"))
                     try:
-                        key_pos = addresses.index(tx_int["from"])
-                        #mainLog.debug("Found key in %s", key_pos)
-                    except:
-                        raise Exception("Key indicated in from field is not in present in the keystore")
-                    key = keys[key_pos]
-                    tx = chain.parse_transaction(tx_int)
-                    tx.sign(key.privkey)
-                    #mainLog.debug("TX signed. Info: v %s -- r %s -- s %s -- NONCE %s", tx.v, \
-                    #tx.r, str(tx.s), tx.nonce)
-                    # correct tx
-                    try:
-                        chain.add_pending_transaction(tx)
+                        try:
+                            key_pos = addresses.index(tx_int["from"])
+                            #mainLog.debug("Found key in %s", key_pos)
+                        except:
+                            raise Exception("Key indicated in from field is not in present in the keystore")
+                        key = keys[key_pos]
+                        tx = chain.parse_transaction(tx_int)
+                        tx.sign(key.privkey)
+                        #mainLog.debug("TX signed. Info: v %s -- r %s -- s %s -- NONCE %s", tx.v, \
+                        #tx.r, str(tx.s), tx.nonce)
+                        # correct tx
+                        try:
+                            chain.add_pending_transaction(tx)
+                        except Exception as e:
+                            raise Exception(e)
+                        p2p.broadcast_tx(tx)
+                        #mainLog.info("Sent transaction to the network, from: %s --  to: %s --  value: %s", \
+                        #tx_int["from"].encode("HEX"), tx.to.encode("HEX"), tx.ip_network)
+                        seen_tx.append(tx.hash)
                     except Exception as e:
+                        mainLog.error("Error when creating user transaction")
+                        mainLog.exception(e.message)
                         raise Exception(e)
-                    p2p.broadcast_tx(tx)
-                    #mainLog.info("Sent transaction to the network, from: %s --  to: %s --  value: %s", \
-                    #tx_int["from"].encode("HEX"), tx.to.encode("HEX"), tx.ip_network)
-                    seen_tx.append(tx.hash)
-                except Exception as e:
-                    mainLog.error("Error when creating user transaction")
-                    mainLog.exception(e.message)
-                    raise Exception(e)
-        except Exception as e:
-            mainLog.exception(e)
-            p2p.stop()
-            sys.exit(0)
+            except Exception as e:
+                mainLog.exception(e)
+                p2p.stop()
+                sys.exit(0)
 
         #answer queries from OOR
         try:
