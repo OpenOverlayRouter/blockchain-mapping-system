@@ -227,9 +227,9 @@ def run():
                 for i in range(len(keys)):
                     myIPs.update(chain.get_own_ips(keys[i].address))            
                 mainLog.info("Updated own IPs: %s", myIPs)
-            timestamp = chain.get_head_block().header.timestamp
-            block_num = chain.get_head_block().header.number
-            consensus.calculate_next_signer(myIPs, timestamp, block_num)
+                timestamp = chain.get_head_block().header.timestamp
+                block_num = chain.get_head_block().header.number
+                consensus.calculate_next_signer(myIPs, timestamp, block_num)
         except Exception as e:
             mainLog.critical("Exception while checking if the node has to sign the next block")
             mainLog.exception(e)
