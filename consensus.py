@@ -31,10 +31,10 @@ class Consensus():
 		else:
 			protocol = "IPv6"
 		if timestamp == self.last_timestamp and self.found_in_chain:
-			# Check that there is a new block in 60 seconds
+			# Check that there is a new block in 80 seconds
 			current_timestamp = get_timestamp()
-			if (current_timestamp-timestamp) >= 30:
-				timestamp = timestamp+30
+			if (current_timestamp-timestamp) >= 80:
+				timestamp = timestamp+80
 				new_signer, found_in_chain = who_signs(protocol, timestamp)
 			else:
 				new_signer = None
