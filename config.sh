@@ -12,6 +12,8 @@ sudo apt-get -y install language-pack-ca-base
 
 sudo dpkg-reconfigure locales
 
+sudo apt-get -y install ntp
+sudo ntpq -p
 
 #echo "Creating blockchain repo"
 #mkdir blockchain-repo

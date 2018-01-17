@@ -274,7 +274,9 @@ class Chain(object):
         self.db.put(b'changed:' + block.hash,
                     b''.join([k.encode() if not isinstance(k, bytes) else k for k in list(changed.keys())]))
 
-        databaseLog.info('Adding block: number %d hash %s timestamp %s', block.header.number, block.header.hash.encode('HEX'), block.header.timestamp)
+        databaseLog.info('Adding block: number %d hash %s block timestamp %s number \
+        of new transactions %s current machine time %s', block.header.number, block.header.hash.encode('HEX'), \
+        block.header.timestamp, block.transaction_count, int(time.time()))
         databaseLog.debug('Saved %d address change logs', len(changed.keys()))
 
         self.db.commit()
