@@ -204,10 +204,7 @@ def run():
             if me:
                 mainLog.info("This node has to sign a block, selected IP: %s", signer)
                 signing_addr = chain.get_addr_from_ip(signer)
-                mainLog.info("Associated address: %s", signing_addr.encode("HEX"))                
-                #new_block = chain.create_block(keys[0].address)
-                mainLog.info("Sleeping 14s to give way to clock drift...")
-                time.sleep(14)                
+                mainLog.info("Associated address: %s", signing_addr.encode("HEX"))
                 new_block = chain.create_block(signing_addr)
                 try:
                     key_pos = addresses.index(signing_addr)
@@ -219,9 +216,10 @@ def run():
                     new_block.header.number, new_block.header.timestamp, new_block.header.coinbase.encode("HEX"))
                 mainLog.info("New block signature data: v %s -- r %s -- s %s", new_block.v, new_block.r, new_block.s)
                 mainLog.info("This block contains %s transactions", new_block.transaction_count)
+                mainLog.info("Sleeping 14s to give way to clock drift...")
+                time.sleep(14)                                
                 #Like receiving a new block
                 chain.add_block(new_block)
-                #Revisar
                 p2p.broadcast_block(new_block)
                 myIPs = IPSet()
                 for i in range(len(keys)):
