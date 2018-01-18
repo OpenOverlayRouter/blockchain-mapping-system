@@ -216,7 +216,6 @@ class Chain(object):
 
     # Call upon receiving a block
     def add_block(self, block):
-        now = self.localtime
         # Are we receiving the block too early?
         try:
             databaseLog.debug('Validating block: number %d hash %s', block.header.number, block.header.hash.encode('HEX'))
@@ -225,7 +224,10 @@ class Chain(object):
         except (Exception):
             databaseLog.info("Exception found while validating block %s. Discarding...", block.hash.encode("HEX"))
             return False
-        if block.header.timestamp > now:
+
+        now = self.localtime
+
+        if block.header.timestamp > (now+30):
             i = 0
             while i < len(
                     self.time_queue) and block.timestamp > self.time_queue[i].timestamp:
