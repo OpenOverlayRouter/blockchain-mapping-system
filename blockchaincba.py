@@ -131,6 +131,7 @@ def run():
     
     block_num = chain.get_head_block().header.number
     timestamp = chain.get_head_block().header.timestamp
+    mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
     consensus.calculate_next_signer(myIPs, timestamp, block_num)
 
 
@@ -154,6 +155,7 @@ def run():
                     mainLog.info("Updated own IPs: %s", myIPs)
                     timestamp = chain.get_head_block().header.timestamp
                     block_num = chain.get_head_block().header.number
+                    mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
                     consensus.calculate_next_signer(myIPs, timestamp, block_num)
                 else:
                     mainLog.error("Block no. %s signautre is invalid!", block.number)
@@ -200,6 +202,7 @@ def run():
 
         #Check if the node has to sign the next block
         try:
+            block_num = chain.get_head_block().header.number
             me, signer = consensus.amISigner(myIPs, block_num)
             if me:
                 mainLog.info("This node has to sign a block, selected IP: %s", signer)
@@ -227,6 +230,7 @@ def run():
                 mainLog.info("Updated own IPs: %s", myIPs)
             timestamp = chain.get_head_block().header.timestamp
             block_num = chain.get_head_block().header.number
+            mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
             consensus.calculate_next_signer(myIPs, timestamp, block_num)
         except Exception as e:
             mainLog.critical("Exception while checking if the node has to sign the next block")
