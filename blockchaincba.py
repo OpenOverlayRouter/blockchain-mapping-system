@@ -219,8 +219,8 @@ def run():
                     new_block.header.number, new_block.header.timestamp, new_block.header.coinbase.encode("HEX"))
                 mainLog.info("New block signature data: v %s -- r %s -- s %s", new_block.v, new_block.r, new_block.s)
                 mainLog.info("This block contains %s transactions", new_block.transaction_count)
-                mainLog.info("Sleeping 14s to give way to clock drift...")
-                time.sleep(14)                                
+                mainLog.info("Sleeping 7s to give way to clock drift...")
+                time.sleep(7)                                
                 #Like receiving a new block
                 chain.add_block(new_block)
                 p2p.broadcast_block(new_block)
