@@ -34,16 +34,21 @@ class Consensus():
 			# Check that there is a new block in 80 seconds
 			current_timestamp = get_timestamp()
 			if (current_timestamp-timestamp) >= 80:
+				consensusLog.warning('No new timestamp in 80 seconds. Possible signer desconnection!')
 				timestamp = timestamp+80
 				new_signer, found_in_chain = who_signs(protocol, timestamp)
+				#timestamp_aux = timestamp+80
+				#new_signer, found_in_chain = who_signs(protocol, timestamp_aux)
 			else:
-				new_signer = None
+				new_signer = self.next_signer
 				found_in_chain = False
 				# If the timestamp is the same, we need to wait until NIST or Ethereum
 				# hashes changes. So we put next_signer to None until we get a
 				# valid signer. i.e. adding 30s to timestamp
 		else:
 			new_signer, found_in_chain = who_signs(protocol, timestamp)
+			if new_signer == None:
+				new_signer = self.next_signer
 		self.next_signer = new_signer
 		self.last_timestamp = timestamp
 		self.ips = ips
@@ -51,14 +56,14 @@ class Consensus():
 
 	def amISigner(self, ips, block_number):
 		if self.next_signer == None: 
-			return False, None
+			return False, self.next_signer
 		self.ips = ips
 		ip_next_signer = IPAddress(self.next_signer)
 		if block_number % 2 != 0:
 			f = lambda x: x.version == 4
 		else:
 			f = lambda x: x.version == 6
-		if ip_next_signer in IPSet(filter(f, ips.iter_cidrs())):
+		if (ip_next_signer in IPSet(filter(f, ips.iter_cidrs()))) and self.found_in_chain:
 			return True, self.next_signer
 		return False, self.next_signer
 
