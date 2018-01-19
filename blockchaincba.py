@@ -30,7 +30,7 @@ import logger
 from user import Parser
 from utils import normalize_address
 from oor import Oor
-import time
+
 
 
 mainLog = logging.getLogger('Main')
@@ -84,7 +84,7 @@ def init_logger():
 
 
 def run():
-    bootstrap = True    
+    
     start_time = time.time()
     seen_tx = []
     init_logger()
@@ -173,8 +173,8 @@ def run():
             #while tx_ext is not None:
                 #Check that the transaction has not been sent from this node or already processed
                 if tx_ext.hash not in seen_tx:
-                    mainLog.info("Received external transaction: to: %s", \
-                    tx_ext.to.encode('HEX'))
+                    mainLog.info("Received external transaction: to: %s hash %s", \
+                    tx_ext.to.encode('HEX'), tx_ext.hash.encode('HEX'))
                     try:
                         chain.add_pending_transaction(tx_ext)
                         # Correct tx
@@ -253,8 +253,8 @@ def run():
                         key = keys[key_pos]
                         tx = chain.parse_transaction(tx_int)
                         tx.sign(key.privkey)
-                        #mainLog.debug("TX signed. Info: v %s -- r %s -- s %s -- NONCE %s", tx.v, \
-                        #tx.r, str(tx.s), tx.nonce)
+                        mainLog.debug("TX signed. Info: v %s -- r %s -- s %s -- NONCE %s", tx.v, \
+                        tx.r, str(tx.s), tx.nonce)
                         # correct tx
                         try:
                             chain.add_pending_transaction(tx)

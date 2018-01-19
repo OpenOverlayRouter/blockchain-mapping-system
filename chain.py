@@ -227,7 +227,8 @@ class Chain(object):
 
         now = self.localtime
 
-        if block.header.timestamp > (now+30):
+        #if block.header.timestamp > (now+30):
+        if block.header.timestamp > int(time.time()):
             i = 0
             while i < len(
                     self.time_queue) and block.timestamp > self.time_queue[i].timestamp:
