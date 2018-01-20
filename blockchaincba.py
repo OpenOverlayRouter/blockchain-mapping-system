@@ -154,6 +154,7 @@ def run():
                     for i in range(len(keys)):
                         myIPs.update(chain.get_own_ips(keys[i].address))
                     mainLog.info("Updated own IPs: %s", myIPs)
+                    p2p.broadcast_block(block)
                     timestamp = chain.get_head_block().header.timestamp
                     block_num = chain.get_head_block().header.number
                     #mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
@@ -251,7 +252,6 @@ def run():
                 tx_int = user.get_tx()
                 while tx_int is not None:
                     processed = processed + 1                    
-                    mainLog.info("Processing user transaction, from: %s --  to: %s", tx_int["from"].encode("HEX"), tx_int["to"].encode("HEX"))
                     try:
                         try:
                             key_pos = addresses.index(tx_int["from"])
@@ -261,8 +261,10 @@ def run():
                         key = keys[key_pos]
                         tx = chain.parse_transaction(tx_int)
                         tx.sign(key.privkey)
-                        mainLog.debug("TX signed. Info: v %s -- r %s -- s %s -- NONCE %s", tx.v, \
-                        tx.r, str(tx.s), tx.nonce)
+                        mainLog.info("Processing user transaction, from: %s --  to: %s -- hash %s -- value %s", \
+                        tx_int["from"].encode("HEX"), tx_int["to"].encode("HEX"), tx.hash.encode("HEX"), tx_int["value"])
+                        #mainLog.debug("TX signed. Info: v %s -- r %s -- s %s -- NONCE %s", tx.v, \
+                        #tx.r, str(tx.s), tx.nonce)
                         # correct tx
                         try:
                             chain.add_pending_transaction(tx)
