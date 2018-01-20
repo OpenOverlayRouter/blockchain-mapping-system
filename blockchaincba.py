@@ -31,7 +31,8 @@ from user import Parser
 from utils import normalize_address
 from oor import Oor
 
-
+EXT_TX_PER_LOOP = 6
+USER_TX_PER_LOOP = 3
 
 mainLog = logging.getLogger('Main')
 
@@ -131,7 +132,7 @@ def run():
     
     block_num = chain.get_head_block().header.number
     timestamp = chain.get_head_block().header.timestamp
-    mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
+    #mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
     consensus.calculate_next_signer(myIPs, timestamp, block_num)
 
 
@@ -155,7 +156,7 @@ def run():
                     mainLog.info("Updated own IPs: %s", myIPs)
                     timestamp = chain.get_head_block().header.timestamp
                     block_num = chain.get_head_block().header.number
-                    mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
+                    #mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
                     consensus.calculate_next_signer(myIPs, timestamp, block_num)
                 else:
                     mainLog.error("Block no. %s signautre is invalid!", block.number)
@@ -167,11 +168,12 @@ def run():
             sys.exit(0)
 
         #Process transactions from the network
+        processed = 0
         try:
             tx_ext = p2p.get_tx()
-            if tx_ext is not None:
-            #while tx_ext is not None:
+            while tx_ext is not None:
                 #Check that the transaction has not been sent from this node or already processed
+                processed = processed + 1
                 if tx_ext.hash not in seen_tx:
                     mainLog.info("Received external transaction: to: %s hash %s", \
                     tx_ext.to.encode('HEX'), tx_ext.hash.encode('HEX'))
@@ -184,6 +186,10 @@ def run():
                         mainLog.info("Discarded invalid external transaction: to: %s", \
                         tx_ext.to.encode("HEX"))
                         pass                      
+                if processed < EXT_TX_PER_LOOP:
+                    tx_ext = p2p.get_tx()
+                else:
+                    tx_ext = None
 #                #rate limit transaction processing after bootsrap
 #                if bootstrap:
 #                    #get new transactions to process
@@ -230,7 +236,7 @@ def run():
                 mainLog.info("Updated own IPs: %s", myIPs)
             timestamp = chain.get_head_block().header.timestamp
             block_num = chain.get_head_block().header.number
-            mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
+            #mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
             consensus.calculate_next_signer(myIPs, timestamp, block_num)
         except Exception as e:
             mainLog.critical("Exception while checking if the node has to sign the next block")
@@ -239,10 +245,12 @@ def run():
             sys.exit(0)
 
         # Process transactions from the user
+        processed = 0
         if (time.time() - start_time) > 600:
             try:
                 tx_int = user.get_tx()
-                if tx_int is not None:
+                while tx_int is not None:
+                    processed = processed + 1                    
                     mainLog.info("Processing user transaction, from: %s --  to: %s", tx_int["from"].encode("HEX"), tx_int["to"].encode("HEX"))
                     try:
                         try:
@@ -268,6 +276,10 @@ def run():
                         mainLog.error("Error when creating user transaction")
                         mainLog.exception(e.message)
                         raise Exception(e)
+                    if processed < USER_TX_PER_LOOP:
+                        tx_int = user.get_tx()
+                    else:
+                        tx_int = None
             except Exception as e:
                 mainLog.exception(e)
                 p2p.stop()
