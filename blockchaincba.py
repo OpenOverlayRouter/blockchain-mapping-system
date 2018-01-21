@@ -154,7 +154,6 @@ def run():
                     for i in range(len(keys)):
                         myIPs.update(chain.get_own_ips(keys[i].address))
                     mainLog.info("Updated own IPs: %s", myIPs)
-                    p2p.broadcast_block(block)
                     timestamp = chain.get_head_block().header.timestamp
                     block_num = chain.get_head_block().header.number
                     #mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
