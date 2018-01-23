@@ -32,7 +32,7 @@ from utils import normalize_address
 from oor import Oor
 
 EXT_TX_PER_LOOP = 6
-USER_TX_PER_LOOP = 3
+USER_TX_PER_LOOP = 1
 
 mainLog = logging.getLogger('Main')
 
