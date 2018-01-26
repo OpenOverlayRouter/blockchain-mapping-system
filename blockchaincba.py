@@ -34,6 +34,10 @@ from oor import Oor
 EXT_TX_PER_LOOP = 6
 USER_TX_PER_LOOP = 1
 
+USE_ETH_NIST = 0
+USE_ETH = 1
+USE_NIST = 2
+
 mainLog = logging.getLogger('Main')
 
 
@@ -53,8 +57,8 @@ def init_p2p(last_block_num):
     return p2p
 
 
-def init_consensus():
-    return Consensus()
+def init_consensus(blockhash):
+    return Consensus(blockhash)
 
 
 def init_user():
@@ -100,7 +104,7 @@ def run():
     p2p = init_p2p(chain.get_head_block().header.number)
 
     mainLog.info("Initializing Consensus")
-    consensus = init_consensus()
+    consensus = init_consensus(USE_NIST)
 
     mainLog.info("Initializing Keystore")
     keys, addresses = init_keystore()

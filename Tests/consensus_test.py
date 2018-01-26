@@ -25,8 +25,8 @@ def init_chain():
     env = Env(db)
     return ChainService(env)
 
-def init_consensus():
-    return Consensus()
+def init_consensus(blockhash):
+    return Consensus(blockhash)
 
 def get_timestamp():
         curDate = time.strftime("%x")
@@ -102,11 +102,12 @@ if __name__ == "__main__":
         consensus.calculate_next_signer(0,timestamp,block_number)
         s = consensus.get_next_signer()
     print s'''
-    consensus = init_consensus()
+    consensus = init_consensus(2)
     while(1):
         timestamp = get_timestamp()
         consensus.calculate_next_signer(0,timestamp,0)
         s = consensus.get_next_signer()
-        while s == None:
+        last_s = s
+        while s == last_s:
                 consensus.calculate_next_signer(0,timestamp,0)
                 s = consensus.get_next_signer()
