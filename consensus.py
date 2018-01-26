@@ -33,20 +33,17 @@ class Consensus():
 		else:
 			protocol = "IPv6"
 		if timestamp == self.last_timestamp and self.found_in_chain:
-			# Check that there is a new block in 80 seconds
+			# Check that there is a new block in 100 seconds
 			current_timestamp = get_timestamp()
-			if (current_timestamp-timestamp) >= 80:
-				consensusLog.warning('No new timestamp in 80 seconds. Possible signer desconnection!')
-				timestamp = timestamp+80
-				new_signer, found_in_chain = who_signs(protocol, timestamp, self.blockhash)
-				#timestamp_aux = timestamp+80
-				#new_signer, found_in_chain = who_signs(protocol, timestamp_aux)
+			if (current_timestamp-timestamp) >= 100:
+				consensusLog.warning('No new timestamp in 100 seconds. Possible signer desconnection!')
+				#timestamp = timestamp+80
+				#new_signer, found_in_chain = who_signs(protocol, timestamp, self.blockhash)
+				timestamp_aux = timestamp+100
+				new_signer, found_in_chain = who_signs(protocol, timestamp_aux)
 			else:
 				new_signer = self.next_signer
 				found_in_chain = False
-				# If the timestamp is the same, we need to wait until NIST or Ethereum
-				# hashes changes. So we put next_signer to None until we get a
-				# valid signer. i.e. adding 30s to timestamp
 		else:
 			new_signer, found_in_chain = who_signs(protocol, timestamp, self.blockhash)
 			if new_signer == None:
