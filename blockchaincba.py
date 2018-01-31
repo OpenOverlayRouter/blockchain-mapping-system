@@ -30,7 +30,7 @@ import logger
 from user import Parser
 from utils import normalize_address
 from oor import Oor
-from own_exceptions import InvalidBlockSigner
+from own_exceptions import InvalidBlockSigner, UnsignedBlock
 
 EXT_TX_PER_LOOP = 25
 USER_TX_PER_LOOP = 1
@@ -149,14 +149,11 @@ def run():
             block = p2p.get_block()
             while block is not None:
                 mainLog.info("Received new block no. %s", block.number)
-                timestamp = chain.get_head_block().header.timestamp
-                block_num = chain.get_head_block().header.number
                 res = False
                 attempts = 0
                 try: 
                     while attempts < MAX_DISC_BLOCKS and not res:
                         attempts = attempts + 1
-                        consensus.calculate_next_signer(myIPs, timestamp, block_num)
                         signer = consensus.get_next_signer() 
                         mainLog.debug("Verifying new block signature, signer should be %s", signer)
                         mainLog.debug("Owner of the previous IP is address %s", chain.get_addr_from_ip(signer).encode("HEX"))
@@ -167,12 +164,17 @@ def run():
                             res = False                        
                             mainLog.info("Invalid signer for this block, recalculating signer in case of timeout expiry")
                             timestamp = timestamp + 100
-                        except Exception as e: 
-                            res = False
+                            consensus.calculate_next_signer(myIPs, timestamp, block_num)
+                        except Exception as e:
                             raise e
-                except Exception as e:
-                    mainLog.error("Block no. %s signautre is invalid!, ignoring block", block.number)
+                except UnsignedBlock as e:
                     mainLog.exception(e)
+                    mainLog.error("Unsigned block. Skipping")
+                    res = False
+                except Exception as e:
+                    mainLog.error("Block no. %s signautre is invalid!", block.number)
+                    mainLog.exception(e)
+                    raise e
                 if res:
                     # correct block
                     chain.add_block(block)
@@ -185,7 +187,8 @@ def run():
                     mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
                     consensus.calculate_next_signer(myIPs, timestamp, block_num)
                 else:
-                    mainLog.error("Checked %s times for block signer but did not find it.", attempts)
+                    mainLog.error("Checked %s times for block signer but did not find it. Ignoring block...", attempts)
+                    raise InvalidBlockSigner
                 block = p2p.get_block()
         except Exception as e:
             mainLog.critical("Exception while processing a received block")

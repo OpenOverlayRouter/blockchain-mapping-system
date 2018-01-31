@@ -40,7 +40,7 @@ class Consensus():
 				#timestamp = timestamp+80
 				#new_signer, found_in_chain = who_signs(protocol, timestamp, self.blockhash)
 				timestamp_aux = timestamp+100
-				new_signer, found_in_chain = who_signs(protocol, timestamp_aux)
+				new_signer, found_in_chain = who_signs(protocol, timestamp_aux, self.blockhash)
 				consensusLog.warning('Selected new signer: %s', new_signer)
 			else:
 				new_signer = self.next_signer
