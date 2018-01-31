@@ -13,7 +13,7 @@ import rlp
 from apply import apply_transaction
 from utils import normalize_address
 from own_exceptions import UnsignedTransaction
-from state import State
+#from state import State
 from map_reply import Response, LocatorRecord, MapReplyRecord, MapServers
 from netaddr import IPNetwork
 import logging
@@ -37,7 +37,8 @@ class ChainService():
         try:        
             validate_transaction(self.chain.state, tx)
         except Exception as e:
-            databaseLog.info(e.message)
+            raise e
+            #databaseLog.info(e.message)
         # validate transaction
         try:
             # Transaction validation for broadcasting. Transaction is validated
@@ -48,7 +49,8 @@ class ChainService():
                 if tx.sender == null_address:
                     raise UnsignedTransaction(tx)
         except Exception as e:
-            databaseLog.info(e.message)
+            raise e
+            #databaseLog.info(e.message)
         self.transactions.append(tx)
         databaseLog.info("From: chain_service: Added transaction %s to the pool, from: %s --  to: %s", \
         tx.hash.encode("HEX"), tx.sender.encode("HEX"), tx.to.encode("HEX"))
@@ -116,10 +118,12 @@ class ChainService():
                 if tx.afi != 2:
                     raise Exception("IPv4 block with an IPv6 transaction, afi detected: " + str(tx.afi))
         self.chain.add_block(block)
+        databaseLog.debug("TX management: deleting transactions added to the chain from the pool")
         for tx in block.transactions:
             if tx in self.transactions:
                 self.transactions.remove(tx)
         invalid_tx = []
+        databaseLog.debug("TX management: purging tx pool")
         for tx in self.transactions:
             try:
                 validate_transaction(self.chain.state,tx)

@@ -36,16 +36,18 @@ class Consensus():
 			# Check that there is a new block in 100 seconds
 			current_timestamp = get_timestamp()
 			if (current_timestamp-timestamp) >= 100:
-				consensusLog.warning('No new timestamp in 100 seconds. Possible signer desconnection!')
+				consensusLog.warning('No new block in 100 seconds. Possible signer desconnection!')
 				#timestamp = timestamp+80
 				#new_signer, found_in_chain = who_signs(protocol, timestamp, self.blockhash)
 				timestamp_aux = timestamp+100
 				new_signer, found_in_chain = who_signs(protocol, timestamp_aux)
+				consensusLog.warning('Selected new signer: %s', new_signer)
 			else:
 				new_signer = self.next_signer
 				found_in_chain = False
 		else:
 			new_signer, found_in_chain = who_signs(protocol, timestamp, self.blockhash)
+			consensusLog.info("Detected timestamp change, new signer is %s", new_signer)
 			if new_signer == None:
 				new_signer = self.next_signer
 		self.next_signer = new_signer

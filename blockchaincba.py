@@ -30,9 +30,12 @@ import logger
 from user import Parser
 from utils import normalize_address
 from oor import Oor
+from own_exceptions import InvalidBlockSigner
 
-EXT_TX_PER_LOOP = 6
+EXT_TX_PER_LOOP = 25
 USER_TX_PER_LOOP = 1
+#Number of times to add 100s to consensus calculation to identify signers in case of timeout
+MAX_DISC_BLOCKS = 10
 
 USE_ETH_NIST = 0
 USE_ETH = 1
@@ -136,7 +139,7 @@ def run():
     
     block_num = chain.get_head_block().header.number
     timestamp = chain.get_head_block().header.timestamp
-    #mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
+    mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
     consensus.calculate_next_signer(myIPs, timestamp, block_num)
 
 
@@ -146,11 +149,30 @@ def run():
             block = p2p.get_block()
             while block is not None:
                 mainLog.info("Received new block no. %s", block.number)
-                signer = consensus.get_next_signer() 
-                mainLog.debug("Verifying new block signature, signer should be %s", signer)
-                mainLog.debug("Owner of the previous IP is address %s", chain.get_addr_from_ip(signer).encode("HEX"))
-                mainLog.debug("Coinbase in the block is: %s", block.header.coinbase.encode("HEX"))
-                res = chain.verify_block_signature(block, signer)
+                timestamp = chain.get_head_block().header.timestamp
+                block_num = chain.get_head_block().header.number
+                res = False
+                attempts = 0
+                try: 
+                    while attempts < MAX_DISC_BLOCKS and not res:
+                        attempts = attempts + 1
+                        consensus.calculate_next_signer(myIPs, timestamp, block_num)
+                        signer = consensus.get_next_signer() 
+                        mainLog.debug("Verifying new block signature, signer should be %s", signer)
+                        mainLog.debug("Owner of the previous IP is address %s", chain.get_addr_from_ip(signer).encode("HEX"))
+                        mainLog.debug("Coinbase in the block is: %s", block.header.coinbase.encode("HEX"))
+                        try:                
+                            res = chain.verify_block_signature(block, signer)
+                        except InvalidBlockSigner:
+                            res = False                        
+                            mainLog.info("Invalid signer for this block, recalculating signer in case of timeout expiry")
+                            timestamp = timestamp + 100
+                        except Exception as e: 
+                            res = False
+                            raise e
+                except Exception as e:
+                    mainLog.error("Block no. %s signautre is invalid!, ignoring block", block.number)
+                    mainLog.exception(e)
                 if res:
                     # correct block
                     chain.add_block(block)
@@ -160,10 +182,10 @@ def run():
                     mainLog.info("Updated own IPs: %s", myIPs)
                     timestamp = chain.get_head_block().header.timestamp
                     block_num = chain.get_head_block().header.number
-                    #mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
+                    mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
                     consensus.calculate_next_signer(myIPs, timestamp, block_num)
                 else:
-                    mainLog.error("Block no. %s signautre is invalid!", block.number)
+                    mainLog.error("Checked %s times for block signer but did not find it.", attempts)
                 block = p2p.get_block()
         except Exception as e:
             mainLog.critical("Exception while processing a received block")
@@ -182,27 +204,18 @@ def run():
                     mainLog.info("Received external transaction: to: %s hash %s", \
                     tx_ext.to.encode('HEX'), tx_ext.hash.encode('HEX'))
                     try:
+                        seen_tx.append(tx_ext.hash)                        
                         chain.add_pending_transaction(tx_ext)
                         # Correct tx
                         p2p.broadcast_tx(tx_ext)
-                        seen_tx.append(tx_ext.hash)
-                    except:
+                    except Exception as e:
                         mainLog.info("Discarded invalid external transaction: to: %s", \
                         tx_ext.to.encode("HEX"))
-                        pass                      
+                        mainLog.exception(e)                        
                 if processed < EXT_TX_PER_LOOP:
                     tx_ext = p2p.get_tx()
                 else:
                     tx_ext = None
-#                #rate limit transaction processing after bootsrap
-#                if bootstrap:
-#                    #get new transactions to process
-#                    tx_ext = p2p.get_tx()
-#                    if (time.time() - start_time) > 30:
-#                        bootstrap = False
-#                        mainLog.info("Finished 50s tx bootstrap.")
-#                else:
-#                    tx_ext = None                
         except Exception as e:
             mainLog.critical("Exception while processing a received transaction")
             mainLog.exception(e)
@@ -240,7 +253,7 @@ def run():
                 mainLog.info("Updated own IPs: %s", myIPs)
             timestamp = chain.get_head_block().header.timestamp
             block_num = chain.get_head_block().header.number
-            #mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
+            mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
             consensus.calculate_next_signer(myIPs, timestamp, block_num)
         except Exception as e:
             mainLog.critical("Exception while checking if the node has to sign the next block")
@@ -272,15 +285,14 @@ def run():
                         try:
                             chain.add_pending_transaction(tx)
                         except Exception as e:
-                            raise Exception(e)
+                            raise e
                         p2p.broadcast_tx(tx)
                         #mainLog.info("Sent transaction to the network, from: %s --  to: %s --  value: %s", \
                         #tx_int["from"].encode("HEX"), tx.to.encode("HEX"), tx.ip_network)
                         seen_tx.append(tx.hash)
                     except Exception as e:
-                        mainLog.error("Error when creating user transaction")
+                        mainLog.error("Error when creating user transaction, ignoring transaction.")
                         mainLog.exception(e.message)
-                        raise Exception(e)
                     if processed < USER_TX_PER_LOOP:
                         tx_int = user.get_tx()
                     else:
