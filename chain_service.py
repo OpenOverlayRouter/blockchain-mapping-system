@@ -78,6 +78,9 @@ class ChainService():
                         block.transactions.append(tx)
                 except Exception as e:
                     databaseLog.info(e.message)
+            else:
+                databaseLog.info("Block number %s filled to max. size", str(prevnumber+1))
+
         self._create_tries(block)
         return block
 
@@ -133,6 +136,7 @@ class ChainService():
             for tx in invalid_tx:
                 databaseLog.debug("Deleted invalid transaction %s", tx.hash.encode('HEX'))
                 self.transactions.remove(tx)
+        databaseLog.debug("TX management: pool size after purging: %s", len(self.transactions))
 
 
     # returns the transaction whose hash is 'tx'

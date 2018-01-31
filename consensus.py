@@ -46,10 +46,11 @@ class Consensus():
 				new_signer = self.next_signer
 				found_in_chain = False
 		else:
-			new_signer, found_in_chain = who_signs(protocol, timestamp, self.blockhash)
-			consensusLog.info("Detected timestamp change, new signer is %s", new_signer)
+			new_signer, found_in_chain = who_signs(protocol, timestamp, self.blockhash)			
 			if new_signer == None:
 				new_signer = self.next_signer
+			else:
+				consensusLog.info("Detected timestamp change, new signer is %s", new_signer)	
 		self.next_signer = new_signer
 		self.last_timestamp = timestamp
 		self.ips = ips

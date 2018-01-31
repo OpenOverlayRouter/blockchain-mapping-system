@@ -32,7 +32,7 @@ from utils import normalize_address
 from oor import Oor
 from own_exceptions import InvalidBlockSigner, UnsignedBlock
 
-EXT_TX_PER_LOOP = 25
+EXT_TX_PER_LOOP = 100
 USER_TX_PER_LOOP = 1
 #Number of times to add 100s to consensus calculation to identify signers in case of timeout
 MAX_DISC_BLOCKS = 10
