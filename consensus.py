@@ -11,18 +11,20 @@ IPv4_PREFIX_LENGTH = 32
 IPv6_PREFIX_LENGTH = 128
 ETH_BPS = 14
 
+
 logger.setup_custom_logger('Consensus')
 consensusLog = logging.getLogger('Consensus')
 
 class Consensus():
 
-	def __init__(self, blockhash):
+	def __init__(self, blockhash, timeout):
 		self.next_signer = None
 		self.last_timestamp = 0
 		self.ips = []
 		self.logger = logging.getLogger('Consensus')
 		self.found_in_chain = False
 		self.blockhash = blockhash
+		self.timeout = timeout
 
 	def get_next_signer(self):
 		return self.next_signer
@@ -33,13 +35,13 @@ class Consensus():
 		else:
 			protocol = "IPv6"
 		if timestamp == self.last_timestamp and self.found_in_chain:
-			# Check that there is a new block in 100 seconds
+			# Check that there is a new block in self.timeout seconds
 			current_timestamp = get_timestamp()
-			if (current_timestamp-timestamp) >= 100:
-				consensusLog.warning('No new block in 100 seconds. Possible signer desconnection!')
+			if (current_timestamp-timestamp) >= self.timeout:
+				consensusLog.warning('No new block in %s seconds. Possible signer desconnection!', self.timeout)
 				#timestamp = timestamp+80
 				#new_signer, found_in_chain = who_signs(protocol, timestamp, self.blockhash)
-				timestamp_aux = timestamp+100
+				timestamp_aux = timestamp + self.timeout
 				new_signer, found_in_chain = who_signs(protocol, timestamp_aux, self.blockhash)
 				consensusLog.warning('Selected new signer: %s', new_signer)
 			else:

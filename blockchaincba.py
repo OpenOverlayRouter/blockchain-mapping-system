@@ -32,7 +32,7 @@ from utils import normalize_address
 from oor import Oor
 from own_exceptions import InvalidBlockSigner, UnsignedBlock
 
-EXT_TX_PER_LOOP = 100
+EXT_TX_PER_LOOP = 75
 USER_TX_PER_LOOP = 1
 #Number of times to add 100s to consensus calculation to identify signers in case of timeout
 MAX_DISC_BLOCKS = 10
@@ -40,6 +40,7 @@ MAX_DISC_BLOCKS = 10
 USE_ETH_NIST = 0
 USE_ETH = 1
 USE_NIST = 2
+TIMEOUT = 240
 
 mainLog = logging.getLogger('Main')
 
@@ -61,7 +62,7 @@ def init_p2p(last_block_num):
 
 
 def init_consensus(blockhash):
-    return Consensus(blockhash)
+    return Consensus(blockhash, TIMEOUT)
 
 
 def init_user():
@@ -163,7 +164,7 @@ def run():
                         except InvalidBlockSigner:
                             res = False                        
                             mainLog.info("Invalid signer for this block, recalculating signer in case of timeout expiry")
-                            timestamp = timestamp + 100
+                            timestamp = timestamp + TIMEOUT
                             consensus.calculate_next_signer(myIPs, timestamp, block_num)
                         except Exception as e:
                             raise e
@@ -245,8 +246,8 @@ def run():
                     new_block.header.number, new_block.header.timestamp, new_block.header.coinbase.encode("HEX"))
                 mainLog.info("New block signature data: v %s -- r %s -- s %s", new_block.v, new_block.r, new_block.s)
                 mainLog.info("This block contains %s transactions", new_block.transaction_count)
-                mainLog.info("Sleeping 7s to give way to clock drift...")
-                time.sleep(7)                                
+                mainLog.info("Sleeping 2s to give way to clock drift...")
+                time.sleep(2)                                
                 #Like receiving a new block
                 chain.add_block(new_block)
                 p2p.broadcast_block(new_block)

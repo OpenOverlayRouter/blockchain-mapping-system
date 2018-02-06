@@ -150,6 +150,7 @@ class P2P():
     def broadcast_block(self, block):
         try:
             self.sock.send(messages.set_block(block))
+            p2pLog.info("Block no. %s sent successfully to the network.", block.header.number)
         except:
             p2pLog.error("P2P broadcast_block error")
     
