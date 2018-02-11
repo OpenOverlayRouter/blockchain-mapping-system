@@ -360,6 +360,7 @@ class myFactory(Factory):
     def check_dht(self):
         b = self.dht.get("last_block")
         # _print(b)
+        b = int(b)
         if b > self.num_block:
             for i in range(self.num_block+1, b+1):
                 self.sendMsgRandomPeer(messages.get_block_num(i))
