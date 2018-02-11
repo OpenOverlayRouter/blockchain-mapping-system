@@ -57,7 +57,6 @@ def init_p2p(last_block_num):
     while (p2p.bootstrap()):
         time.sleep(1)
     mainLog.info("Bootstrap finished")
-    p2p.start_notifications()
     return p2p
 
 

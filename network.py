@@ -6,24 +6,25 @@ import random
 
 from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
 from twisted.internet.endpoints import connectProtocol
-#from twisted.internet.address import UNIXAddress
 from twisted.internet import reactor, task
 from twisted.internet.error import CannotListenError
 from twisted.internet.protocol import Protocol, Factory
-#from twisted.python.filepath import FilePath
 #from twisted.python import log
 
+from kademlia.network import Server
+
+import ipgetter
 import messages
 from transactions import Transaction
 from block import Block, BlockHeader
 import rlp
 
-NOTIFY_PORT = 5005
+DHT_PORT = 5005
 QUERY_PORT = 5006
 P2P_PORT = 5007
 LOCALHOST = '127.0.0.1'
+MY_IP = ipgetter.myip()
 
-#BOOTSTRAP_NODE = "127.0.0.2"
 BOOTSTRAP_NODE = "84.88.81.69"
 
 PING_TIME = 300 # 5min
@@ -34,6 +35,7 @@ BLOCK_CHUNK = 10
 def _print(msg):
     print("[{}] {}".format(str(datetime.now()), msg))
     sys.stdout.flush()
+
 
 class p2pProtocol(Protocol):
     def __init__(self, factory):
@@ -111,8 +113,6 @@ class p2pProtocol(Protocol):
                             try:
                                 tx = rlp.decode(data["tx"].decode('base64'), Transaction)
                                 self.factory.transactions.add(data["tx"])
-                                if self.factory.notify is not None:
-                                    self.factory.notify.sendMsg(b'1\r\n')
                             except:
                                 _print ("Wrong Tx")
                         elif data["msgtype"] == "set_block":
@@ -122,8 +122,6 @@ class p2pProtocol(Protocol):
                                     self.factory.blocks[block.header.number] = data["block"]
                                     self.factory.num_block += 1
                                     #print block.header.number
-                                if self.factory.notify is not None:
-                                    self.factory.notify.sendMsg(b'0\r\n')
                             except:
                                 _print ("Wrong Block")
                         elif data["msgtype"] == "set_blocks":
@@ -144,8 +142,6 @@ class p2pProtocol(Protocol):
                                     self.factory.block_queries[self] = set([num])
                                 else:
                                     self.factory.block_queries[self].add(num)
-                                if self.factory.notify is not None:
-                                    self.factory.notify.sendMsg(b'2\r\n')
                             elif num <= self.factory.num_block:
                                 block = self.factory.blocks.get(num)
                                 if block is not None:
@@ -154,29 +150,21 @@ class p2pProtocol(Protocol):
                             num = data["num"]
                             chunk = data["chunk"]
                             blocks = []
-                            notify = False
                             for n in range(num, num+chunk):
                                 if n <= self.factory.last_served_block and not self.factory.bootstrap:
                                     if self.factory.block_queries.get(self) is None:
                                         self.factory.block_queries[self] = set([n])
-                                        notify = True
                                     else:
                                         self.factory.block_queries[self].add(n)
-                                        notify = True
                                 elif n <= self.factory.num_block:
                                     block = self.factory.blocks.get(n)
                                     if block is not None:
                                         blocks.append(block)
                             if blocks:
                                 self.sendMsg(messages.set_blocks(blocks))
-                            if notify:
-                                if self.factory.notify is not None:
-                                        self.factory.notify.sendMsg(b'2\r\n')
                         elif data["msgtype"] == "get_tx_pool":
                             if not self.factory.bootstrap:
                                 self.factory.tx_pool_query.add(self)
-                                if self.factory.notify is not None:
-                                    self.factory.notify.sendMsg(b'3\r\n')
                         elif data["msgtype"] == "set_tx_pool":
                             if self.factory.bootstrap and not self.factory.tx_pool:
                                 txs = data["txs"]
@@ -222,33 +210,11 @@ class localProtocol(Protocol):
         self.buffer = ''
 
     def connectionMade(self):
-        port = self.transport.getHost().port
-        if port == QUERY_PORT:
-            if self.factory.local is None:
-                self.factory.local = self
-                _print("Local Connection")
-            else:
-                self.transport.loseConnection()
-        elif port == NOTIFY_PORT:
-            if self.factory.notify is None:
-                self.factory.notify = self
-                _print("Notify Connection")
-                if self.factory.blocks:
-                    self.sendMsg(b'0\r\n')
-                elif self.factory.transactions:
-                    self.sendMsg(b'1\r\n')
-                elif self.factory.block_queries:
-                    self.sendMsg(b'2\r\n')
-                elif self.factory.tx_pool_query:
-                    self.sendMsg(b'3\r\n')
-                self.sendMsg(b'-1\r\n')
-            else:
-                self.transport.loseConnection()
-        '''if self.factory.local is None:
+        if self.factory.local is None:
             self.factory.local = self
             _print("Local Connection")
         else:
-            self.transport.loseConnection()'''
+            self.transport.loseConnection()
 
     def connectionLost(self, reason):
         self.factory.local = None
@@ -291,6 +257,7 @@ class localProtocol(Protocol):
                         self.sendPeers(line + '\r\n')
                         self.factory.num_block += 1
                         self.factory.last_served_block += 1
+                        self.factory.dht.set("last_block", self.factory.num_block)
                     elif data["msgtype"] == "get_block_queries":
                         if not self.factory.block_queries:
                             self.sendMsg(messages.none())
@@ -351,7 +318,6 @@ class myFactory(Factory):
         self.blocks = {}
         self.transactions = set()
         self.local = None
-        self.notify = None
         self.bootstrap = False
         self.ck_num = False
         self.ck_num_blocks = task.LoopingCall(self.check_num_blocks)
@@ -360,12 +326,14 @@ class myFactory(Factory):
         self.ck_tx = task.LoopingCall(self.check_tx)
         self.block_queries = {}
         self.tx_pool_query = set()
+        self.dht = None
+        self.ck_dht_block = task.LoopingCall(self.check_dht)
     
     def stopFactory(self):
         pass
     
     def buildProtocol(self, addr):
-        if addr.host == "127.0.0.1":
+        if addr.host == LOCALHOST:
             return localProtocol(self)
         return p2pProtocol(self)
 
@@ -385,8 +353,16 @@ class myFactory(Factory):
         if self.tx_pool == True:
             self.ck_tx.stop()
             self.bootstrap = False
+            self.ck_dht_block.start(7, now=False)
         else:
             self.sendMsgRandomPeer(messages.get_tx_pool())
+    
+    def check_dht(self):
+        b = self.dht.get("last_block")
+        # _print(b)
+        if b > self.num_block:
+            for i in range(self.num_block+1, b+1):
+                self.sendMsgRandomPeer(messages.get_block_num(i))
 
     def sendMsgRandomPeer(self, msg):
         nodeid, address = random.choice(list(self.peers.items()))
@@ -416,29 +392,32 @@ class myFactory(Factory):
             d = task.deferLater(reactor, 5, self.check_block, num)
 
 
-
-def printError(failure):
-    print (failure.getErrorMessage())
-    reactor.stop()
-
-
 def bootstrapProtocol(p):
     _print ("BOOTSTRAPING")
     p.factory.bootstrap = True
     p.factory.ck_num_blocks.start(1, now=False)
     p.sendGetPeers()
 
-def my_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        #s.connect(('10.255.255.255', 1))
-        s.connect((BOOTSTRAP_NODE, 1))
-        IP = s.getsockname()[0]
-    except:
-        IP = '127.0.0.1'
-    finally:
-        s.close()
-    return IP
+
+def printError(failure):
+    _print (failure.getErrorMessage())
+    reactor.stop()
+
+
+def bootstrap(found, factory, server):
+    factory.dht = server
+    _print ("Connecting to bootstrap node...")
+    #if LOCALHOST != '127.0.0.2':
+    if BOOTSTRAP_NODE != MY_IP:
+        point = TCP4ClientEndpoint(reactor, BOOTSTRAP_NODE, P2P_PORT)
+        #point = TCP4ClientEndpoint(reactor, BOOTSTRAP_NODE, P2P_PORT, bindAddress=(LOCALHOST, 0))
+        d = point.connect(factory)
+        d.addCallback(bootstrapProtocol)
+        d.addErrback(printError)
+    else:
+        factory.dht.set("last_block", str(factory.last_block))
+        factory.ck_dht_block.start(7, now=False)
+    
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
@@ -455,9 +434,6 @@ if __name__ == '__main__':
         endpoint_query = TCP4ServerEndpoint(reactor, QUERY_PORT)
         endpoint_query.listen(factory)
         _print("LISTEN QUERY: {}".format(QUERY_PORT))
-        endpoint_notify = TCP4ServerEndpoint(reactor, NOTIFY_PORT)
-        endpoint_notify.listen(factory)
-        _print("LISTEN NOTIFY: {}".format(NOTIFY_PORT))
         endpoint_p2p = TCP4ServerEndpoint(reactor, P2P_PORT)
         #endpoint_p2p = TCP4ServerEndpoint(reactor, P2P_PORT, interface=LOCALHOST)
         endpoint_p2p.listen(factory)
@@ -466,14 +442,13 @@ if __name__ == '__main__':
         _print("ERROR: Port in use")
         sys.exit(1)
 
-    # BootStrap Node
-    _print ("Connecting to bootstrap node...")
-    #if LOCALHOST != '127.0.0.2':
-    if BOOTSTRAP_NODE != my_ip():
-        point = TCP4ClientEndpoint(reactor, BOOTSTRAP_NODE, P2P_PORT)
-        #point = TCP4ClientEndpoint(reactor, BOOTSTRAP_NODE, P2P_PORT, bindAddress=(LOCALHOST, 0))
-        d = point.connect(factory)
-        d.addCallback(bootstrapProtocol)
-        d.addErrback(printError)
+    try:
+        _print("Starting Kademlia DHT...")
+        dht = Server()
+        dht.listen(DHT_PORT)
+        dht.bootstrap([(BOOTSTRAP_NODE, DHT_PORT)]).addCallback(bootstrap, factory, dht)
+    except:
+        _print("ERROR: DHT failed")
+        sys.exit(1)
 
     reactor.run()

@@ -1,7 +1,6 @@
 #import sys
 import subprocess
 import select
-from select import poll, POLLIN
 import socket
 import messages
 import rlp
@@ -12,7 +11,6 @@ import logging.config
 import time
 
 HOST = ''
-NOTIFY_PORT = 5005
 QUERY_PORT = 5006
 
 p2pLog = logging.getLogger('P2P')
@@ -27,63 +25,13 @@ class P2P():
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((HOST, QUERY_PORT))
         #self.sock.setblocking(0)
-        self.notify = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.p = poll()
-        self.blocks = False
-        self.txs = False
-        self.blocks_queries = False
-        self.pool_queries = False
     
     def stop(self):
         try:
-            self.notify.close()
             self.sock.send(messages.quit())
             self.sock.close()
         except:
             p2pLog.error("P2P stop error")
-    
-    def start_notifications(self):
-        self.notify.connect((HOST, NOTIFY_PORT))
-        self.p.register(self.notify, POLLIN)
-        #self.notify.setblocking(0)
-        end = False
-        buffer = ''
-        while not end:
-            rlist, _, _ = select.select([self.notify], [], [])
-            if rlist:
-                buffer += self.notify.recv(4096)
-                if buffer[-2:] == "\r\n":
-                    for data in buffer.split("\r\n"):
-                        if data == '0':
-                            self.blocks = True
-                        elif data == '1':
-                            self.txs = True
-                        elif data == '2':
-                            self.blocks_queries = True
-                        elif data == '3':
-                            self.pool_queries = True
-                    end = True
-    
-    def data_avalaible(self):
-        try:
-            rlist = self.p.poll(100)
-            if rlist:
-                buffer = self.notify.recv(4096)
-                if buffer:
-                    while not buffer[-2:] == "\r\n":
-                        buffer += self.notify.recv(4096)
-                    for data in buffer.split("\r\n"):
-                            if data == '0':
-                                self.blocks = True
-                            elif data == '1':
-                                self.txs = True
-                            elif data == '2':
-                                self.blocks_queries = True
-                            elif data == '3':
-                                self.pool_queries = True
-        except:
-            pass
-
     
     def read(self):
         buffer = ''
@@ -107,19 +55,14 @@ class P2P():
     
     def get_tx(self):
         try:
-            if not self.txs:
-                self.data_avalaible()
-            if self.txs:
-                self.sock.send(messages.get_tx())
-                data = self.read()
-                if data["msgtype"] == "none":
-                    self.txs = False
-                    return None
-                else:
-                    tx = rlp.decode(data["tx"].decode('base64'), Transaction)
-                    return tx
-            else:
+            self.sock.send(messages.get_tx())
+            data = self.read()
+            if data["msgtype"] == "none":
+                self.txs = False
                 return None
+            else:
+                tx = rlp.decode(data["tx"].decode('base64'), Transaction)
+                return tx
         except:
             p2pLog.error("P2P get_tx error")
 
@@ -131,43 +74,32 @@ class P2P():
 
     def get_block(self):
         try:
-            if not self.blocks:
-                self.data_avalaible()
-            if self.blocks:
-                self.sock.send(messages.get_block())
-                data = self.read()
-                if data["msgtype"] == "none":
-                    self.blocks = None
-                    return None
-                else:
-                    block = rlp.decode(data["block"].decode('base64'), Block)
-                    return block
-            else:
+            self.sock.send(messages.get_block())
+            data = self.read()
+            if data["msgtype"] == "none":
+                self.blocks = None
                 return None
+            else:
+                block = rlp.decode(data["block"].decode('base64'), Block)
+                return block
         except:
             p2pLog.error("P2P get_block error")
 
     def broadcast_block(self, block):
         try:
             self.sock.send(messages.set_block(block))
-            p2pLog.info("Block no. %s sent successfully to the network.", block.header.number)
         except:
             p2pLog.error("P2P broadcast_block error")
     
     def get_block_queries(self):
         try:
-            if not self.blocks_queries:
-                self.data_avalaible()
-            if self.blocks_queries:
-                self.sock.send(messages.get_block_queries())
-                data = self.read()
-                if data["msgtype"] == "none":
-                    self.blocks_queries = False
-                    return None
-                else:
-                    return data["blocks"]
-            else:
+            self.sock.send(messages.get_block_queries())
+            data = self.read()
+            if data["msgtype"] == "none":
+                self.blocks_queries = False
                 return None
+            else:
+                return data["blocks"]
         except:
             p2pLog.error("P2P get_block_queries error")
     
@@ -179,17 +111,12 @@ class P2P():
     
     def tx_pool_query(self):
         try:
-            if not self.pool_queries:
-                self.data_avalaible()
-            if self.pool_queries:
-                self.sock.send(messages.tx_pool_query())
-                data = self.read()
-                if data["msgtype"] == "true":
-                    return True
-                else:
-                    self.pool_queries = False
-                    return False
+            self.sock.send(messages.tx_pool_query())
+            data = self.read()
+            if data["msgtype"] == "true":
+                return True
             else:
+                self.pool_queries = False
                 return False
         except:
             p2pLog.error("P2P tx_pool_query error")
