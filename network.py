@@ -357,13 +357,15 @@ class myFactory(Factory):
         else:
             self.sendMsgRandomPeer(messages.get_tx_pool())
     
-    def check_dht(self):
-        b = self.dht.get("last_block")
+    def ask_dht(self, result):
         # _print(b)
-        b = int(b)
-        if b > self.num_block:
-            for i in range(self.num_block+1, b+1):
+        result = int(result)
+        if result > self.num_block:
+            for i in range(self.num_block+1, result+1):
                 self.sendMsgRandomPeer(messages.get_block_num(i))
+    
+    def check_dht(self):
+        b = self.dht.get("last_block").addCallback(self.ask_dht)
 
     def sendMsgRandomPeer(self, msg):
         nodeid, address = random.choice(list(self.peers.items()))
