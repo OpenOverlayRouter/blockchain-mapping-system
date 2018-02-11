@@ -415,7 +415,7 @@ def bootstrap(found, factory, server):
         d.addCallback(bootstrapProtocol)
         d.addErrback(printError)
     else:
-        factory.dht.set("last_block", str(factory.last_block))
+        factory.dht.set("last_block", str(factory.num_block))
         factory.ck_dht_block.start(7, now=False)
     
 
