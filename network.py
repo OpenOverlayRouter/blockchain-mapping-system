@@ -257,7 +257,7 @@ class localProtocol(Protocol):
                         self.sendPeers(line + '\r\n')
                         self.factory.num_block += 1
                         self.factory.last_served_block += 1
-                        self.factory.dht.set("last_block", self.factory.num_block)
+                        self.factory.dht.set("last_block", str(self.factory.num_block))
                     elif data["msgtype"] == "get_block_queries":
                         if not self.factory.block_queries:
                             self.sendMsg(messages.none())
