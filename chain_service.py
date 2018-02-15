@@ -13,10 +13,11 @@ import rlp
 from apply import apply_transaction
 from utils import normalize_address
 from own_exceptions import UnsignedTransaction
-from state import State
+#from state import State
 from map_reply import Response, LocatorRecord, MapReplyRecord, MapServers
 from netaddr import IPNetwork
 import logging
+import sys
 
 databaseLog = logging.getLogger('Database')
 
@@ -33,7 +34,11 @@ class ChainService():
 
     def add_pending_transaction(self, tx):
         assert isinstance(tx, Transaction)
-        validate_transaction(self.chain.state, tx)
+        try:        
+            validate_transaction(self.chain.state, tx)
+        except Exception as e:
+            raise e
+            #databaseLog.info(e.message)
         # validate transaction
         try:
             # Transaction validation for broadcasting. Transaction is validated
@@ -44,8 +49,12 @@ class ChainService():
                 if tx.sender == null_address:
                     raise UnsignedTransaction(tx)
         except Exception as e:
-            databaseLog.info(e.message)
+            raise e
+            #databaseLog.info(e.message)
         self.transactions.append(tx)
+        databaseLog.info("From: chain_service: Added transaction %s to the pool, from: %s --  to: %s", \
+        tx.hash.encode("HEX"), tx.sender.encode("HEX"), tx.to.encode("HEX"))
+        
 
     # creates a block with the list of pending transactions, creates its tries and returns it
     def create_block(self, coinbase):
@@ -58,16 +67,20 @@ class ChainService():
         s = state.State().from_snapshot(snapshot, Env(_EphemDB()))
         databaseLog.info("Creating block with block number %s", str(prevnumber+1))
         for tx in self.transactions:
-            try:
-                dictionary = {}
-                if (prevnumber+1) % 2 == 0 and int(tx.afi) == 1:  # the next block has to be an IPv4 one
-                    apply_transaction(s, tx, dictionary)
-                    block.transactions.append(tx)
-                elif (prevnumber+1) % 2 != 0 and int(tx.afi) == 2:  # the next block has to be an IPv6 one
-                    apply_transaction(s, tx, dictionary)
-                    block.transactions.append(tx)
-            except Exception as e:
-                databaseLog.info(e.message)
+            if sys.getsizeof(block) < 1048576:
+                try:
+                    dictionary = {}
+                    if (prevnumber+1) % 2 == 0 and int(tx.afi) == 1:  # the next block has to be an IPv4 one
+                        apply_transaction(s, tx, dictionary)
+                        block.transactions.append(tx)
+                    elif (prevnumber+1) % 2 != 0 and int(tx.afi) == 2:  # the next block has to be an IPv6 one
+                        apply_transaction(s, tx, dictionary)
+                        block.transactions.append(tx)
+                except Exception as e:
+                    databaseLog.info(e.message)
+            else:
+                databaseLog.info("Block number %s filled to max. size", str(prevnumber+1))
+
         self._create_tries(block)
         return block
 
@@ -108,19 +121,22 @@ class ChainService():
                 if tx.afi != 2:
                     raise Exception("IPv4 block with an IPv6 transaction, afi detected: " + str(tx.afi))
         self.chain.add_block(block)
+        databaseLog.debug("TX management: deleting transactions added to the chain from the pool")
         for tx in block.transactions:
             if tx in self.transactions:
                 self.transactions.remove(tx)
         invalid_tx = []
+        databaseLog.debug("TX management: purging tx pool")
         for tx in self.transactions:
             try:
-                validate_transaction(state,tx)
+                validate_transaction(self.chain.state,tx)
             except Exception:
                 invalid_tx.append(tx)
         if invalid_tx:
             for tx in invalid_tx:
                 databaseLog.debug("Deleted invalid transaction %s", tx.hash.encode('HEX'))
                 self.transactions.remove(tx)
+        databaseLog.debug("TX management: pool size after purging: %s", len(self.transactions))
 
 
     # returns the transaction whose hash is 'tx'
@@ -173,20 +189,20 @@ class ChainService():
 
     # creates a transaction with de data in the transaction_data dictionary
     def parse_transaction(self, transaction_data):
-        return Transaction(self.chain.state.get_nonce(transaction_data["from"]) + 1, transaction_data["category"],
+        return Transaction(self.chain.state.get_nonce(transaction_data["from"]), transaction_data["category"],
                            transaction_data["to"], transaction_data["afi"], transaction_data["value"],
-                           transaction_data["metadata"])
+                           transaction_data.get("metadata"), int(time.time()))
 
     # queries the eid to the blockchain and returns the response
     def query_eid(self, ipaddr, nonce):
         try:
-            address = normalize_address(self.chain.patricia.get_value(str(ipaddr)))
+            address = normalize_address(self.chain.patricia.get_value(str(IPNetwork(ipaddr).ip)))
             balance = self.chain.state.get_balance(address)
             if balance is not None:
                 if len(balance.map_server.keys()) > 0:
                     map_servers = MapServers(info=balance.map_server.keys())
                     resp = Response(nonce=nonce, info=map_servers)
-                    return resp
+                    return resp.to_bytes()
                 elif len(balance.locator.keys()) > 0:
                     locator_records = []
                     for key in balance.locator.keys():
@@ -195,10 +211,12 @@ class ChainService():
                                                              locator=key))
                     map_reply = MapReplyRecord(eid_prefix=IPNetwork(ipaddr), locator_records=locator_records)
                     resp = Response(nonce=nonce, info=map_reply)
-                    return resp
+                    return resp.to_bytes()
             else:
                 databaseLog.info("Address %s has no balance", str(address))
+                print("Address %s has no balance", str(address))
         except:
+            print("IP address %s is not owned by anybody", str(ipaddr))
             databaseLog.info("IP address %s is not owned by anybody", str(ipaddr))
         
         return None

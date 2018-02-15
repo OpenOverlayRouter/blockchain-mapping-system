@@ -7,25 +7,26 @@ import rlp
 from netaddr import IPAddress
 from utils import normalize_address
 import logging
-from keystore import Keystore
-import glob
-import os
-import datetime
+#from keystore import Keystore
+#import glob
+#import os
+#import datetime
+
 
 null_address = b'\xff' * 20
 
 databaseLog = logging.getLogger('Database')
 
 
-def getAddresses(keys_dir='./keystore/'):
-    addresses = []
-    for file in glob.glob(os.path.join(keys_dir, '*')):
-        key = Keystore.load(keys_dir + file[-40:], "TFG1234")
-        addresses.append(normalize_address(key.keystore['address']))
-    print (addresses)
-    return addresses
-
-addresses = getAddresses()
+#def getAddresses(keys_dir='./keystore/'):
+#    addresses = []
+#    for file in glob.glob(os.path.join(keys_dir, '*')):
+#        key = Keystore.load(keys_dir + file[-40:], "TFG1234")
+#        addresses.append(normalize_address(key.keystore['address']))
+#    print (addresses)
+#    return addresses
+#
+#addresses = getAddresses()
 
 def rp(tx, what, actual, target):
     return '%r: %r actual:%r target:%r' % (tx, what, actual, target)
@@ -55,22 +56,29 @@ def verify_block_signature(state, block, ip):
 def validate_transaction(state, tx):
     # (1) The transaction signature is valid;
     if not tx.sender:  # sender is set and validated on Transaction initialization
+        databaseLog.debug("Unsigned transaction %s",encode_hex(tx.hash))
         raise UnsignedTransaction(tx)
     else:
         if tx.sender == null_address:
+            databaseLog.debug("Unsigned transaction %s",encode_hex(tx.hash))
             raise UnsignedTransaction(tx)
     # (2) the transaction nonce is valid (equivalent to the
     #     sender account's current nonce);
 
     req_nonce = state.get_nonce(tx.sender)
     if req_nonce != tx.nonce:
-        raise InvalidNonce(rp(tx, 'nonce', tx.nonce, req_nonce))
+        databaseLog.debug("Invalid transaction Nonce for transaction %s Expected: %s In transaction: %s", \
+        tx.hash.encode("HEX"), str(req_nonce), str(tx.nonce))
+                
+        #raise InvalidNonce(rp(tx, 'nonce', tx.nonce, req_nonce))
+        raise InvalidNonce()
 
     # (3) the sender account balance contains the value
     if hasattr(tx, 'category'):
         category = tx.category
 
         if category < 0 or category > 3:
+            databaseLog.debug("Invalid transaction category  %s ",encode_hex(tx.hash))
             raise InvalidCategory(category)
 
         balance = state.get_balance(tx.sender)
@@ -78,6 +86,7 @@ def validate_transaction(state, tx):
 
         if category == 0 or category == 1:
             if not balance.in_own_ips(value):
+                databaseLog.debug("Insuficient balance %s ", encode_hex(tx.hash))
                 raise InsufficientBalance(value)
         elif category == 2:
             pass
@@ -86,6 +95,7 @@ def validate_transaction(state, tx):
             pass
             # Locator
     else:
+        databaseLog.debug("Uncategorized transaction %s ", encode_hex(tx.hash))
         raise UncategorizedTransaction(tx)
 
     return True
@@ -179,6 +189,7 @@ def mk_transaction_sha(receipts):
 # Validate that the transaction list root is correct
 def validate_transaction_tree(state, block):
     if block.header.tx_root != mk_transaction_sha(block.transactions):
+        databaseLog.debug("Transaction root mismatch: header %s computed %s, %d transactions",(encode_hex(str(block.header.tx_root)), encode_hex(str(mk_transaction_sha(block.transactions))),len(block.transactions)))
         raise ValueError("Transaction root mismatch: header %s computed %s, %d transactions" %
                          (
                          encode_hex(str(block.header.tx_root)), encode_hex(str(mk_transaction_sha(block.transactions))),
@@ -191,9 +202,11 @@ def validate_header(state, header):
     parent = state.prev_headers[0]
     if parent:
         if header.prevhash != parent.hash:
+            databaseLog.debug("Block's prevhash and parent's hash do not match: block prevhash %s parent hash %s",(encode_hex(header.prevhash), encode_hex(parent.hash)))
             raise ValueError("Block's prevhash and parent's hash do not match: block prevhash %s parent hash %s" %
                              (encode_hex(header.prevhash), encode_hex(parent.hash)))
         if header.number != parent.number + 1:
+            databaseLog.debug("Block's number is not the successor of its parent number")
             raise ValueError(
                 "Block's number is not the successor of its parent number")
         if header.timestamp <= parent.timestamp:
@@ -204,10 +217,19 @@ def validate_header(state, header):
 
 
 def validate_block(state, block):
+    if not block.signer:
+        databaseLog.debug("Unsigned block %s.", block.hash.encode("HEX"))
+        raise UnsignedBlock(block)
+    else:
+        if block.signer == null_address:
+            databaseLog.debug("Unsigned block %s.", block.hash.encode("HEX"))
+            raise UnsignedTransaction(block)
+
     assert validate_header(state, block.header)
     assert validate_transaction_tree(state, block)
     for tx in block.transactions:
         if not validate_transaction(state, tx):
+            databaseLog.debug("Invalid transaction %s in block %s.", tx.hash.encode("HEX"), block.hash.encode("HEX"))
             return False
     return True
 
@@ -221,13 +243,18 @@ def apply_block(state, block, patricia):
         assert validate_header(state, block.header)
         assert validate_transaction_tree(state, block)
         # Process transactions
+        count = 0
         cached = {}  # cached = cached changes in balances, to be added later in the patricia
         for tx in block.transactions:
             apply_transaction(state, tx, cached)
-            if normalize_address(tx.sender) in addresses:
-                tx_time = datetime.datetime.fromtimestamp(tx.time)
-                block_time = datetime.datetime.fromtimestamp(block.header.timestamp)
-                databaseLog.debug("TX %s added to the chain. Elapsed time %s",tx.hash.encode("HEX"),str(block_time - tx_time))
+            #if normalize_address(tx.sender) in addresses:
+                #tx_time = datetime.datetime.fromtimestamp(tx.time)
+                #block_time = datetime.datetime.fromtimestamp(block.header.timestamp)
+                #databaseLog.debug("TX %s added to the chain. Elapsed time %s seconds",tx.hash.encode("HEX"), block_time - tx_time)
+            databaseLog.debug("TX %s added to the chain. Elapsed time %s seconds.",\
+            tx.hash.encode("HEX"), block.header.timestamp - tx.time)
+            count = count + 1
+        databaseLog.debug("Total TX processed: %s", count)
 
         # Post-finalize (ie. add the block header to the state for now)
         state.add_block_header(block.header)

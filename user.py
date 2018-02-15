@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from utils import normalize_address
-import logger
+#import logger
 import logging.config
 
 transactions = []
@@ -118,8 +118,14 @@ class Parser():
                     if data_buffer.get("afi") is not None and data_buffer.get("category") is not None and \
                                     data_buffer.get("value") is not None and data_buffer.get("to") is not None\
                                     and data_buffer.get("from") is not None:
+                        #Transaction constructor requires a value in metadata
+                        if data_buffer.get("metadata") is None:
+                            data_buffer["metadata"] = b''
                         buffers.append(data_buffer)
-                        self.logger.info("Transaction successfully added.")
+                        #self.logger.info("Transaction successfully added.")
+                        #self.logger.debug("Transaction details: to: %s -- from: %s -- value: %s", \
+                        #data_buffer.get("to").encode("HEX"), data_buffer.get("from").encode("HEX"), data_buffer.get("value"))
+                        
                     else:
                         self.logger.exception("Transaction %s contains errors. Ignoring it...", str(data_buffer))
                     data_buffer = {}
@@ -130,6 +136,7 @@ class Parser():
                         self.logger.exception(e)
         for elem in buffers:
             self.transactions.append(elem)
+        self.logger.info("Loaded %s transactions successfully", len(self.transactions))
 
         #open(transactions_dir, 'w').close()  # to remove all contents of the txt file
 

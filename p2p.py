@@ -7,6 +7,7 @@ import messages
 import rlp
 from transactions import Transaction
 from block import Block, BlockHeader
+import logging.config
 
 import time
 
@@ -14,12 +15,14 @@ HOST = ''
 NOTIFY_PORT = 5005
 QUERY_PORT = 5006
 
+p2pLog = logging.getLogger('P2P')
+
 class P2P():
 
     def __init__(self, last_block):
         #self.p = subprocess.Popen([sys.executable, "network.py", last_block, ip])
         self.p = subprocess.Popen(["nohup", "python", "network.py", str(last_block)],
-                                  stdout=open('network.out', mode='w+'), shell=False)
+                                  stdout=open('network.out', mode='w+', buffering=0), shell=False)
         time.sleep(5)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((HOST, QUERY_PORT))
@@ -37,7 +40,7 @@ class P2P():
             self.sock.send(messages.quit())
             self.sock.close()
         except:
-            print "P2P stop error"
+            p2pLog.error("P2P stop error")
     
     def start_notifications(self):
         self.notify.connect((HOST, NOTIFY_PORT))
@@ -100,7 +103,7 @@ class P2P():
             else:
                 return False
         except:
-            print "P2P bootstrap error"
+            p2pLog.error("P2P bootstrap error")
     
     def get_tx(self):
         try:
@@ -113,18 +116,18 @@ class P2P():
                     self.txs = False
                     return None
                 else:
-                    tx = rlp.decode(data["tx"].decode('hex'), Transaction)
+                    tx = rlp.decode(data["tx"].decode('base64'), Transaction)
                     return tx
             else:
                 return None
         except:
-            print "P2P get_tx error"
+            p2pLog.error("P2P get_tx error")
 
     def broadcast_tx(self, tx):
         try:
             self.sock.send(messages.set_tx(tx))
         except:
-            print "P2P broadcast_tx error"
+            p2pLog.error("P2P broadcast_tx error")
 
     def get_block(self):
         try:
@@ -137,18 +140,19 @@ class P2P():
                     self.blocks = None
                     return None
                 else:
-                    block = rlp.decode(data["block"].decode('hex'), Block)
+                    block = rlp.decode(data["block"].decode('base64'), Block)
                     return block
             else:
                 return None
         except:
-            print "P2P get_block error"
+            p2pLog.error("P2P get_block error")
 
     def broadcast_block(self, block):
         try:
             self.sock.send(messages.set_block(block))
+            p2pLog.info("Block no. %s sent successfully to the network.", block.header.number)
         except:
-            print "P2P broadcast_block error"
+            p2pLog.error("P2P broadcast_block error")
     
     def get_block_queries(self):
         try:
@@ -165,13 +169,13 @@ class P2P():
             else:
                 return None
         except:
-            print "P2P get_block_queries error"
+            p2pLog.error("P2P get_block_queries error")
     
     def answer_block_queries(self, response):
         try:
             self.sock.send(messages.answer_block_queries(response))
         except:
-            print "P2P answer_block_queries error"
+            p2pLog.error("P2P answer_block_queries error")
     
     def tx_pool_query(self):
         try:
@@ -188,13 +192,13 @@ class P2P():
             else:
                 return False
         except:
-            print "P2P tx_pool_query error"
+            p2pLog.error("P2P tx_pool_query error")
 
     def answer_tx_pool_query(self, pool):
         try:
             self.sock.send(messages.answer_tx_pool_query(pool))
         except:
-            print "P2P answer_tx_pool_query"
+            p2pLog.error("P2P answer_tx_pool_query")
 
 if __name__ == '__main__':
     pass

@@ -33,6 +33,7 @@ class Transaction(rlp.Serializable):
         if category == 0 or category == 1:
             if metadata != b'':
                 raise InvalidTransaction("Invalid Metadata")
+            metadata = b''
         elif category == 2:
             if type(metadata) == list and len(metadata) % 3 ==0:
                 _metadata = []

@@ -39,6 +39,7 @@ class Chain(object):
             diction = {}
             self.state = state_from_genesis_declaration(
                 genesis, self.env, executing_on_head=True, pytricia=diction)
+
             for key in diction:
                 self.patricia.set_value(str(key), str(diction[key]))
             self.patricia.to_db()
@@ -215,25 +216,36 @@ class Chain(object):
 
     # Call upon receiving a block
     def add_block(self, block):
-        now = self.localtime
         # Are we receiving the block too early?
-        if block.header.timestamp > now:
+        try:
+            databaseLog.debug('Validating block: number %d hash %s', block.header.number, block.header.hash.encode('HEX'))
+            validate_block(self.state,block)
+            databaseLog.debug('Block validated: number %d hash %s', block.header.number, block.header.hash.encode('HEX'))
+        except (Exception):
+            databaseLog.info("Exception found while validating block %s. Discarding...", block.hash.encode("HEX"))
+            return False
+
+        now = self.localtime
+
+        #if block.header.timestamp > (now+30):
+        if block.header.timestamp > int(time.time()):
             i = 0
             while i < len(
                     self.time_queue) and block.timestamp > self.time_queue[i].timestamp:
                 i += 1
             self.time_queue.insert(i, block)
+            databaseLog.debug("Block timestamp greater than now: Block Timestamp: %s - Now: %s", str(block.header.timestamp), str(now))
             return False
         # Is the block being added to the head?
         if block.header.prevhash == self.head_hash:
             self.state.deletes = []
             self.state.changed = {}
+
             apply_block(self.state, block, self.patricia)
 
             self.patricia.to_db()
 
             self.db.put(b'block:%d' % block.header.number, block.header.hash)
-            databaseLog.info('Adding block: number %d hash %s', block.header.number, block.header.hash.encode('HEX'))
             self.head_hash = block.header.hash
             for i, tx in enumerate(block.transactions):
                 self.db.put(b'txindex:' +
@@ -265,6 +277,9 @@ class Chain(object):
         self.db.put(b'changed:' + block.hash,
                     b''.join([k.encode() if not isinstance(k, bytes) else k for k in list(changed.keys())]))
 
+        databaseLog.info('Adding block: number %d hash %s block timestamp %s number of new transactions %s current machine time %s', \
+        block.header.number, block.header.hash.encode('HEX'), \
+        block.header.timestamp, block.transaction_count, int(time.time()))
         databaseLog.debug('Saved %d address change logs', len(changed.keys()))
 
         self.db.commit()

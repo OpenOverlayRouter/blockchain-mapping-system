@@ -3,6 +3,7 @@ import datetime
 import hashlib
 import logging
 import logger
+import sys
 from ethapi import *
 from netaddr import IPAddress, IPNetwork, IPSet
 
@@ -10,16 +11,20 @@ IPv4_PREFIX_LENGTH = 32
 IPv6_PREFIX_LENGTH = 128
 ETH_BPS = 14
 
+
 logger.setup_custom_logger('Consensus')
 consensusLog = logging.getLogger('Consensus')
 
 class Consensus():
 
-	def __init__(self):
+	def __init__(self, blockhash, timeout):
 		self.next_signer = None
 		self.last_timestamp = 0
 		self.ips = []
 		self.logger = logging.getLogger('Consensus')
+		self.found_in_chain = False
+		self.blockhash = blockhash
+		self.timeout = timeout
 
 	def get_next_signer(self):
 		return self.next_signer
@@ -29,33 +34,40 @@ class Consensus():
 			protocol = "IPv4"
 		else:
 			protocol = "IPv6"
-		if timestamp == self.last_timestamp:
-			# Check that there is a new block in 30 seconds
+		if timestamp == self.last_timestamp and self.found_in_chain:
+			# Check that there is a new block in self.timeout seconds
 			current_timestamp = get_timestamp()
-			if (current_timestamp-timestamp) >= 30:
-				timestamp = timestamp+30
-				new_signer = who_signs(protocol, timestamp)
+			if (current_timestamp-timestamp) >= self.timeout:
+				consensusLog.warning('No new block in %s seconds. Possible signer desconnection!', self.timeout)
+				#timestamp = timestamp+80
+				#new_signer, found_in_chain = who_signs(protocol, timestamp, self.blockhash)
+				timestamp_aux = timestamp + self.timeout
+				new_signer, found_in_chain = who_signs(protocol, timestamp_aux, self.blockhash)
+				consensusLog.warning('Selected new signer: %s', new_signer)
 			else:
-				new_signer = None
-				# If the timestamp is the same, we need to wait until NIST or Ethereum
-				# hashes changes. So we put next_signer to None until we get a
-				# valid signer. i.e. adding 30s to timestamp
+				new_signer = self.next_signer
+				found_in_chain = False
 		else:
-			new_signer= who_signs(protocol, timestamp)
+			new_signer, found_in_chain = who_signs(protocol, timestamp, self.blockhash)			
+			if new_signer == None:
+				new_signer = self.next_signer
+			else:
+				consensusLog.info("Detected timestamp change, new signer is %s", new_signer)	
 		self.next_signer = new_signer
 		self.last_timestamp = timestamp
 		self.ips = ips
+		self.found_in_chain = found_in_chain
 
 	def amISigner(self, ips, block_number):
 		if self.next_signer == None: 
-			return False, None
+			return False, self.next_signer
 		self.ips = ips
 		ip_next_signer = IPAddress(self.next_signer)
 		if block_number % 2 != 0:
 			f = lambda x: x.version == 4
 		else:
 			f = lambda x: x.version == 6
-		if ip_next_signer in IPSet(filter(f, ips.iter_cidrs())):
+		if (ip_next_signer in IPSet(filter(f, ips.iter_cidrs()))) and self.found_in_chain:
 			return True, self.next_signer
 		return False, self.next_signer
 
@@ -116,7 +128,6 @@ def get_block_from_timestamp(last_block_number,timestamp):
 	else:
 		while not found:
 			consensusLog.info('Searching old block timestamp')
-			#print "Consensus: Searching old block timestamp"
 			if timestamp < block_timestamp:
 				if (block_timestamp-timestamp)/ETH_BPS >= 14:
 					variance = int((block_timestamp-timestamp)/ETH_BPS)
@@ -129,14 +140,12 @@ def get_block_from_timestamp(last_block_number,timestamp):
 					candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
 					while candidate_timestamp > timestamp:
 						consensusLog.info('Block timestamp is close...')
-						#print "Consensus: block timestamp is close..."
 						candidate_block_number = sub_to_hex(candidate_block_number,1)
 						candidate_json_block = get_block_by_number(candidate_block_number)
 						candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
 					json_block = candidate_json_block
 					found = True
 					consensusLog.debug('Candidate: %s', candidate_block_number)
-					#print "CANDIDATE: ", candidate_block_number
 			elif block_timestamp < timestamp:
 				if (timestamp-block_timestamp)/ETH_BPS >= 14:
 					variance = int((timestamp-block_timestamp)/ETH_BPS)
@@ -149,7 +158,6 @@ def get_block_from_timestamp(last_block_number,timestamp):
 					candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
 					while candidate_timestamp < timestamp:
 						consensusLog.info('Block timestamp is close...')
-						#print "Consensus: block timestamp is close..."
 						candidate_block_number = add_to_hex(candidate_block_number,1)
 						candidate_json_block = get_block_by_number(candidate_block_number)
 						candidate_timestamp = from_hex_to_int(get_timestamp_from_json_block(candidate_json_block))
@@ -158,39 +166,63 @@ def get_block_from_timestamp(last_block_number,timestamp):
 					else:
 						json_block = get_block_by_number(sub_to_hex(candidate_block_number,1))
 						consensusLog.debug('Candidate Sub: %s', sub_to_hex(candidate_block_number,1))
-						#print "Candidate: ", sub_to_hex(candidate_block_number,1)
 					found = True
 	consensusLog.debug('Timestamp for catching block: %s', timestamp)
-	#print timestamp
 	return json_block
 
-# Returns a random HASH mixing NIST and ETHEREUM HASH block
-def get_random_hash(timestamp):
+# Returns a random HASH block from NIST
+def get_random_hash_nist(timestamp):
+	# Get NIST hash
+	nist_hash = get_hash_from_NIST_nist(int(timestamp))
+	if nist_hash == None:
+		consensusLog.info('No new NIST hash yet, waiting for it...')
+		return None, False
+	consensusLog.info('New NIST hash found...')
+	nist_hash = hex(int(nist_hash.replace('L', '').zfill(8), 16))[:-1]
+	nist_hash_bits = from_hex_to_bits(nist_hash,512)
+
+	xor = long(nist_hash_bits,2)
+	return from_long_to_bits(xor), True
+
+# Returns a random HASH block from ETHEREUM
+def get_random_hash_eth(timestamp):
 	# Get Ethereum hash
 	last_block_number = get_last_block_number()
 	selected_block_number = get_block_from_timestamp(last_block_number,timestamp)
 	if selected_block_number == None:
-		#print "Consensus: No new ETH block yet, waiting for Ethereum chain..."
 		consensusLog.info('No new ETH block yet, waiting for Ethereum chain...')
-		return None
-	'''while selected_block_number == None:
-		print "Consensus: No new ETH block yet, waiting for Ethereum chain..."
-			# sleep??
-		last_block_number = get_last_block_number()
-		selected_block_number = get_block_from_timestamp(last_block_number,timestamp)'''
-	#print "Consensus: New block found"
+		return None, False
+	consensusLog.info('New block fund on Ethereum chain')
+	eth_hash = get_hash_from_json_block(selected_block_number)
+	eth_hash_bits = from_hex_to_bits(eth_hash,256)
+
+	# Mix both hashes
+	xor = long(eth_hash_bits,2)
+	return from_long_to_bits(xor), True
+
+# Returns a random HASH mixing NIST and ETHEREUM HASH block
+def get_random_hash_eth_nist(timestamp):
+	# Get Ethereum hash
+	last_block_number = get_last_block_number()
+	selected_block_number = get_block_from_timestamp(last_block_number,timestamp)
+	if selected_block_number == None:
+		consensusLog.info('No new ETH block yet, waiting for Ethereum chain...')
+		return None, False
 	consensusLog.info('New block fund on Ethereum chain')
 	eth_hash = get_hash_from_json_block(selected_block_number)
 	eth_hash_bits = from_hex_to_bits(eth_hash,256)
 
 	# Get Nist hash
-	nist_hash = get_hash_from_NIST(int(timestamp))
+	nist_hash = get_hash_from_NIST_eth_nist(int(timestamp))
+	if nist_hash == None:
+		consensusLog.info('Error on finding NIST hash')
+		return None, False
 	nist_hash = hex(int(nist_hash.replace('L', '').zfill(8), 16))[:-1]
 	nist_hash_bits = from_hex_to_bits(nist_hash,512)
 
 	# Mix both hashes
 	xor = long(eth_hash_bits+eth_hash_bits,2)^long(nist_hash_bits,2)
-	return from_long_to_bits(xor)
+	return from_long_to_bits(xor), True
 
 # Returns the IP Address in a readable format
 def formalize_IP(IP_bit_list):
@@ -224,13 +256,21 @@ def extractor(hash_string):
 	return from_hex_to_bits(new_hash,256)
 
 # Given the protocol type, returns the selected address in the correct format
-def who_signs(protocol, timestamp):
-	hash_res = get_random_hash(timestamp)
+def who_signs(protocol, timestamp, blockhash):
+	if blockhash == 0:	#ETH&NIST
+		hash_res, found_in_chain = get_random_hash_eth_nist(timestamp)
+	elif blockhash == 1:	#ETH
+		hash_res, found_in_chain = get_random_hash_eth(timestamp)
+	elif blockhash == 2:	#NIST
+		hash_res, found_in_chain = get_random_hash_nist(timestamp)
+	else:
+		consensusLog.error('Wrong blockhash selection.')
+		sys.exit(0)
 	if hash_res == None:
-		return None
+		return None, found_in_chain
 	else:
 		entropy_hash = extractor(hash_res)
 		if protocol == "IPv6":
-			return formalize_IP(consensus_for_IPv6(entropy_hash))
+			return formalize_IP(consensus_for_IPv6(entropy_hash)), found_in_chain
 		else:
-			return formalize_IP(consensus_for_IPv4(entropy_hash))
+			return formalize_IP(consensus_for_IPv4(entropy_hash)), found_in_chain

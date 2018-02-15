@@ -33,9 +33,7 @@ BLOCK_CHUNK = 10
 
 def _print(msg):
     print("[{}] {}".format(str(datetime.now()), msg))
-    '''msg = msg + '\n'
-    logFile.write("[{}] {}".format(str(datetime.now()), msg))
-    logFile.flush()'''
+    sys.stdout.flush()
 
 class p2pProtocol(Protocol):
     def __init__(self, factory):
@@ -81,6 +79,7 @@ class p2pProtocol(Protocol):
                     try:
                         data = messages.read_envelope(line)
                         _print (data["msgtype"])
+                        #_print (data)
                         if data["msgtype"] == "ping":
                             #print self.transport.getPeer().host
                             self.sendPong()
@@ -110,7 +109,7 @@ class p2pProtocol(Protocol):
                                 self.factory.ck_num = True
                         elif data["msgtype"] == "set_tx":
                             try:
-                                tx = rlp.decode(data["tx"].decode('hex'), Transaction)
+                                tx = rlp.decode(data["tx"].decode('base64'), Transaction)
                                 self.factory.transactions.add(data["tx"])
                                 if self.factory.notify is not None:
                                     self.factory.notify.sendMsg(b'1\r\n')
@@ -118,9 +117,9 @@ class p2pProtocol(Protocol):
                                 _print ("Wrong Tx")
                         elif data["msgtype"] == "set_block":
                             try:
-                                block = rlp.decode(data["block"].decode('hex'), Block)
+                                block = rlp.decode(data["block"].decode('base64'), Block)
                                 if self.factory.num_block == block.header.number - 1:
-                                    self.factory.blocks[block.header.number] = block
+                                    self.factory.blocks[block.header.number] = data["block"]
                                     self.factory.num_block += 1
                                     #print block.header.number
                                 if self.factory.notify is not None:
@@ -131,7 +130,7 @@ class p2pProtocol(Protocol):
                             if self.factory.bootstrap:
                                 for b in data["blocks"]:
                                     try:
-                                        block = rlp.decode(b.decode('hex'), Block)
+                                        block = rlp.decode(b.decode('base64'), Block)
                                         if block.header.number > self.factory.last_served_block and \
                                         self.factory.blocks.get(block.header.number) is None:
                                             self.factory.blocks[block.header.number] = b
@@ -183,7 +182,7 @@ class p2pProtocol(Protocol):
                                 txs = data["txs"]
                                 for raw_tx in txs:
                                     try:
-                                        tx = rlp.decode(raw_tx.decode('hex'), Transaction)
+                                        tx = rlp.decode(raw_tx.decode('base64'), Transaction)
                                         self.factory.transactions.add(raw_tx)
                                     except:
                                         _print ("Wrong Tx")
@@ -291,6 +290,7 @@ class localProtocol(Protocol):
                     elif data["msgtype"] == "set_block":
                         self.sendPeers(line + '\r\n')
                         self.factory.num_block += 1
+                        self.factory.last_served_block += 1
                     elif data["msgtype"] == "get_block_queries":
                         if not self.factory.block_queries:
                             self.sendMsg(messages.none())
@@ -306,7 +306,7 @@ class localProtocol(Protocol):
                         for peer in peers:
                             blocks = []
                             for b in data["blocks"]:
-                                block = rlp.decode(b.decode('hex'), Block)
+                                block = rlp.decode(b.decode('base64'), Block)
                                 if block.header.number in self.factory.block_queries[peer]:
                                     blocks.append(b)
                                     self.factory.block_queries[peer].discard(block.header.number)
@@ -395,11 +395,13 @@ class myFactory(Factory):
 
     def get_blocks(self):
         last_block = self.last_served_block
-        for i in range(last_block + 1, self.num_block, BLOCK_CHUNK):
+        for i in range(last_block + 1, self.num_block + 1, BLOCK_CHUNK):
             if (i + BLOCK_CHUNK - 1) > self.num_block:
-                self.sendMsgRandomPeer(messages.get_blocks(i, self.num_block))
+                self.sendMsgRandomPeer(messages.get_blocks(i, self.num_block % BLOCK_CHUNK))
+                #print "getblocks 1", i, self.num_block % BLOCK_CHUNK
             else:
                 self.sendMsgRandomPeer(messages.get_blocks(i, BLOCK_CHUNK))
+                #print "getblocks 2", i, BLOCK_CHUNK
             d = task.deferLater(reactor, 5, self.check_blocks, i)
 
     def check_blocks(self, num):
@@ -447,12 +449,6 @@ if __name__ == '__main__':
     elif len(sys.argv) > 3:
         print ("Error: too many arguments")
         sys.exit(1)
-
-    '''global logFile    
-    try:    
-        logFile = open('netlog.txt', 'w')
-    except Exception as e: 
-        print e'''
 
     try:
         factory = myFactory(int(sys.argv[1]))
