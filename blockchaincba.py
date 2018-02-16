@@ -267,7 +267,7 @@ def run():
 
         # Process transactions from the user
         processed = 0
-        if (time.time() - start_time) > 600:
+        if (time.time() - start_time) > 1020:
             try:
                 tx_int = user.get_tx()
                 while tx_int is not None:
