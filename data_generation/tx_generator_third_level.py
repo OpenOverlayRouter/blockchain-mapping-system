@@ -2,6 +2,9 @@
 import sys
 import math
 import radix
+import netaddr
+
+TX_DIST = 60
 
 def write_tx(afi, category, metadata, dest, orig, value, fd):
     
@@ -21,6 +24,14 @@ def extract_v6_prefix(line):
     content = line.split('|')
     return content[3], content[4]
     
+def tx_left_in_buffer(pending_buf):
+    node_list = []
+    for node, array in pending_buf.iteritems():
+        if len(array) != 0:
+            node_list.append(node)
+    return node_list
+        
+        
 
 #File for v6 prefixes not found
 try:    
@@ -146,7 +157,19 @@ for node in nodes:
 print "Created output files:"
 print outputs
     
+#Create temporary tx buffer to avoid 'from' repetition
+from_buffer = {}
+for node in nodes:
+    from_buffer[node] = []
 
+#stores 
+pending4_tx = {}
+for node in nodes:
+    pending4_tx[node] = []
+pending6_tx = {}
+for node in nodes:
+    pending6_tx[node] = []
+    
 #Generate transactions
 print "Generating transactions..."
 
@@ -162,38 +185,116 @@ offset6 = 128
 total6 = 82220
 
 
-
 for pref in prefixes:
     content = pref.split('/')    
     ip = content[0]
     rnode = rtree.search_best(ip)
     if rnode is not None:
-        if (count4 % 8) == 0:
-            pos4 = pos4 + 1
-        des = node_dest_addr[nodes[count4 % 8]][pos4 % 128]
-        #print 'Prefix',pref, 'found in', rnode
-        #print 'Owner', rnode.data['owner'], 'node', rnode.data['node']
-        #print "Will be written to", outputs[rnode.data['node']]
-        write_tx(1, 0, None, des, rnode.data['owner'], pref, outputs[rnode.data['node']])
-        count4 = count4 + 1
+        if rnode.data['owner'] in from_buffer[rnode.data['node']]:
+            #TX from already used in some of the last 60 tx. Wait before writing
+            pending4_tx[rnode.data['node']].append(rnode)
+        else:
+            #TX_DIST is respected. OK to write this tx
+            if len(from_buffer[rnode.data['node']]) < TX_DIST:
+                 from_buffer[rnode.data['node']].append(rnode.data['owner'])
+            else:
+                from_buffer[rnode.data['node']].pop(0)
+                from_buffer[rnode.data['node']].append(rnode.data['owner'])
+            #Normal operation    
+            if (count4 % 8) == 0:
+                pos4 = pos4 + 1
+            des = node_dest_addr[nodes[count4 % 8]][pos4 % 128]
+            #print 'Prefix',pref, 'found in', rnode
+            #print 'Owner', rnode.data['owner'], 'node', rnode.data['node']
+            #print "Will be written to", outputs[rnode.data['node']]
+            write_tx(1, 0, None, des, rnode.data['owner'], pref, outputs[rnode.data['node']])
+            count4 = count4 + 1
     else:
         missed4 = missed4 + 1
-        
+    #try to write pending v4 tx
+    for node in nodes:
+        to_remove = []
+        for rnode in pending4_tx[node]:
+            if rnode.data['owner'] not in from_buffer[node]:
+                #we can write this TX
+                from_buffer[rnode.data['node']].pop(0)
+                from_buffer[rnode.data['node']].append(rnode.data['owner'])
+                to_remove.append(rnode)
+                #Normal operation                    
+                if (count4 % 8) == 0:
+                    pos4 = pos4 + 1
+                des = node_dest_addr[nodes[count4 % 8]][pos4 % 128]
+                write_tx(1, 0, None, des, rnode.data['owner'], pref, outputs[rnode.data['node']])
+                count4 = count4 + 1
+         #Remove tx from the v6 queue                
+        for rnode in to_remove:
+            pending4_tx[node].remove(rnode)                                
+    
     #v6 generation
+        
     line = rir_data6.readline()
     if line != '':
         addr, pref = extract_v6_prefix(line)
-        rnode = rtree6.search_best(addr)   
+        rnode = rtree6.search_best(addr)          
         if rnode is not None:
-            if count6 % 8 == 0:
-                pos6 = pos6 + 1
-            des = node_dest_addr[nodes[count6 % 8]][(pos6 % 32) + offset6]
-            write_tx(2, 0, None, des, rnode.data['owner'], addr + '/' + pref, outputs[rnode.data['node']])
-            count6 = count6 + 1
+            if rnode.data['owner'] in from_buffer[rnode.data['node']]:
+                #TX from already used in some of the last 60 tx. Wait before writing
+                pending6_tx[rnode.data['node']].append(rnode)
+            else:
+                #TX_DIST is respected. OK to write this tx
+                if len(from_buffer[rnode.data['node']]) < TX_DIST:
+                    from_buffer[rnode.data['node']].append(rnode.data['owner'])
+                else:
+                    from_buffer[rnode.data['node']].pop(0)
+                    from_buffer[rnode.data['node']].append(rnode.data['owner'])
+                
+                #Normal operation
+                if count6 % 8 == 0:
+                    pos6 = pos6 + 1
+                des = node_dest_addr[nodes[count6 % 8]][(pos6 % 32) + offset6]
+                write_tx(2, 0, None, des, rnode.data['owner'], addr + '/' + pref, outputs[rnode.data['node']])
+                count6 = count6 + 1
+                #check if we can remove some tx from the queue of this node in particular
+                to_remove = []
+                for rnode in pending6_tx[rnode.data['node']]:
+                    if rnode.data['owner'] not in from_buffer[rnode.data['node']]:
+                        #we can write this TX
+                        from_buffer[rnode.data['node']].pop(0)
+                        from_buffer[rnode.data['node']].append(rnode.data['owner'])
+                        to_remove.append(rnode)
+                        #Normal operation                    
+                        if count6 % 8 == 0:
+                            pos6 = pos6 + 1
+                        des = node_dest_addr[nodes[count6 % 8]][(pos6 % 32) + offset6]
+                        write_tx(2, 0, None, des, rnode.data['owner'], addr + '/' + pref, outputs[rnode.data['node']])
+                        count6 = count6 + 1
+                 #Remove tx from the v6 queue                
+                for rnode in to_remove:
+                    pending6_tx[rnode.data['node']].remove(rnode)                    
         else:
             missed6 = missed6 + 1
             v6_not_found.write(line)
-        
+    else:
+        #write pending tx after all v6 prefixes have been read, for all nodes
+        node_list = tx_left_in_buffer(pending6_tx)
+        for node in node_list:
+            to_remove = []
+            for rnode in pending6_tx[node]:
+                if rnode.data['owner'] not in from_buffer[node]:
+                    #we can write this TX
+                    from_buffer[rnode.data['node']].pop(0)
+                    from_buffer[rnode.data['node']].append(rnode.data['owner'])
+                    to_remove.append(rnode)
+                    #Normal operation                    
+                    if count6 % 8 == 0:
+                        pos6 = pos6 + 1
+                    des = node_dest_addr[nodes[count6 % 8]][(pos6 % 32) + offset6]
+                    write_tx(2, 0, None, des, rnode.data['owner'], addr + '/' + pref, outputs[rnode.data['node']])
+                    count6 = count6 + 1
+             #Remove tx from the v6 queue                
+            for rnode in to_remove:
+                pending6_tx[node].remove(rnode)                                
+            
     if (count4 + count6) % 10000 == 0:
         print "Processed", str(count4+count6), "prefixes, total:",  str(total6 + total4)
 
@@ -207,6 +308,13 @@ print "Total number of v6 transactions generated:", count6
 print "v4 prefixes not found: ", missed4
 print "v6 prefixes not found: ", missed6
         
+
+for node in nodes:
+    if len(pending4_tx[node]) != 0:
+        print len(pending4_tx[node]), "pending tx for v4 in node", node
+    if len(pending6_tx[node]) != 0:
+        print len(pending6_tx[node]), "pending tx for v6 in node", node
+
 
 
 #Close outputs

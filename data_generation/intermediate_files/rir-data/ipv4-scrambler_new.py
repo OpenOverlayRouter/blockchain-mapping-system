@@ -10,7 +10,7 @@ import sys
 #NOTE: can also be used for v6 file!!! Just change the input/output filename :)
 #Load prefixes from RIR files
 try:    
-    in_data = open('all-ipv4-rirs.txt', 'r')
+    in_data = open('all-ipv6-rirs.txt', 'r')
 except Exception as e: 
     print e
     sys.exit(1)
@@ -19,12 +19,12 @@ except Exception as e:
     
 #Output file with scrambled data
 try:    
-    out_data = open('all-ipv4-rirs-scrambled.txt', 'w')
+    out_data = open('all-ipv6-rirs-scrambled.txt', 'w')
 except Exception as e: 
     print e
     sys.exit(1)
 
-NUM_BUFFERS = 250
+NUM_BUFFERS = 2000
 
 buffers = []
 for i in range(NUM_BUFFERS):
