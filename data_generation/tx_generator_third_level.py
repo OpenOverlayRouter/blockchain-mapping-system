@@ -212,7 +212,8 @@ for pref in prefixes:
     else:
         missed4 = missed4 + 1
     #try to write pending v4 tx
-    for node in nodes:
+    node_list = tx_left_in_buffer(pending4_tx)
+    for node in node_list:
         to_remove = []
         for rnode in pending4_tx[node]:
             if rnode.data['owner'] not in from_buffer[node]:
@@ -298,15 +299,49 @@ for pref in prefixes:
     if (count4 + count6) % 10000 == 0:
         print "Processed", str(count4+count6), "prefixes, total:",  str(total6 + total4)
 
+for node in nodes:
+    if len(pending4_tx[node]) != 0:
+        print len(pending4_tx[node]), "pending tx for v4 in node", node
+    if len(pending6_tx[node]) != 0:
+        print len(pending6_tx[node]), "pending tx for v6 in node", node
+        
+print "Attempting buffer purge"        
+for node in nodes:
+    to_remove = []
+    for rnode in pending4_tx[node]:
+        if rnode.data['owner'] not in from_buffer[node]:
+            #we can write this TX
+            from_buffer[rnode.data['node']].pop(0)
+            from_buffer[rnode.data['node']].append(rnode.data['owner'])
+            to_remove.append(rnode)
+            #Normal operation                    
+            if (count4 % 8) == 0:
+                pos4 = pos4 + 1
+            des = node_dest_addr[nodes[count4 % 8]][pos4 % 128]
+            write_tx(1, 0, None, des, rnode.data['owner'], pref, outputs[rnode.data['node']])
+            count4 = count4 + 1
+     #Remove tx from the v4 queue                
+    for rnode in to_remove:
+        pending4_tx[node].remove(rnode)  
+    to_remove = []
+    for rnode in pending6_tx[node]:
+        if rnode.data['owner'] not in from_buffer[node]:
+            #we can write this TX
+            from_buffer[rnode.data['node']].pop(0)
+            from_buffer[rnode.data['node']].append(rnode.data['owner'])
+            to_remove.append(rnode)
+            #Normal operation                    
+            if count6 % 8 == 0:
+                pos6 = pos6 + 1
+            des = node_dest_addr[nodes[count6 % 8]][(pos6 % 32) + offset6]
+            write_tx(2, 0, None, des, rnode.data['owner'], addr + '/' + pref, outputs[rnode.data['node']])
+            count6 = count6 + 1
+     #Remove tx from the v6 queue                
+    for rnode in to_remove:
+        pending6_tx[node].remove(rnode)                                
+        
+        
 
-        
-        
-        
-        
-print "Total number of v4 transactions generated:", count4
-print "Total number of v6 transactions generated:", count6
-print "v4 prefixes not found: ", missed4
-print "v6 prefixes not found: ", missed6
         
 
 for node in nodes:
@@ -315,7 +350,10 @@ for node in nodes:
     if len(pending6_tx[node]) != 0:
         print len(pending6_tx[node]), "pending tx for v6 in node", node
 
-
+print "Total number of v4 transactions generated:", count4
+print "Total number of v6 transactions generated:", count6
+print "v4 prefixes not found: ", missed4
+print "v6 prefixes not found: ", missed6
 
 #Close outputs
 for node in nodes:
