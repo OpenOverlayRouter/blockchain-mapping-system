@@ -225,7 +225,7 @@ for pref in prefixes:
                 if (count4 % 8) == 0:
                     pos4 = pos4 + 1
                 des = node_dest_addr[nodes[count4 % 8]][pos4 % 128]
-                write_tx(1, 0, None, des, rnode.data['owner'], pref, outputs[rnode.data['node']])
+                write_tx(1, 0, None, des, rnode.data['owner'], rnode.prefix, outputs[rnode.data['node']])
                 count4 = count4 + 1
          #Remove tx from the v6 queue                
         for rnode in to_remove:
@@ -267,7 +267,7 @@ for pref in prefixes:
                         if count6 % 8 == 0:
                             pos6 = pos6 + 1
                         des = node_dest_addr[nodes[count6 % 8]][(pos6 % 32) + offset6]
-                        write_tx(2, 0, None, des, rnode.data['owner'], addr + '/' + pref, outputs[rnode.data['node']])
+                        write_tx(2, 0, None, des, rnode.data['owner'], rnode.prefix, outputs[rnode.data['node']])
                         count6 = count6 + 1
                  #Remove tx from the v6 queue                
                 for rnode in to_remove:
@@ -290,7 +290,7 @@ for pref in prefixes:
                     if count6 % 8 == 0:
                         pos6 = pos6 + 1
                     des = node_dest_addr[nodes[count6 % 8]][(pos6 % 32) + offset6]
-                    write_tx(2, 0, None, des, rnode.data['owner'], addr + '/' + pref, outputs[rnode.data['node']])
+                    write_tx(2, 0, None, des, rnode.data['owner'], rnode.prefix, outputs[rnode.data['node']])
                     count6 = count6 + 1
              #Remove tx from the v6 queue                
             for rnode in to_remove:
@@ -318,7 +318,7 @@ for node in nodes:
             if (count4 % 8) == 0:
                 pos4 = pos4 + 1
             des = node_dest_addr[nodes[count4 % 8]][pos4 % 128]
-            write_tx(1, 0, None, des, rnode.data['owner'], pref, outputs[rnode.data['node']])
+            write_tx(1, 0, None, des, rnode.data['owner'], rnode.prefix, outputs[rnode.data['node']])
             count4 = count4 + 1
      #Remove tx from the v4 queue                
     for rnode in to_remove:
@@ -334,7 +334,7 @@ for node in nodes:
             if count6 % 8 == 0:
                 pos6 = pos6 + 1
             des = node_dest_addr[nodes[count6 % 8]][(pos6 % 32) + offset6]
-            write_tx(2, 0, None, des, rnode.data['owner'], addr + '/' + pref, outputs[rnode.data['node']])
+            write_tx(2, 0, None, des, rnode.data['owner'], rnode.prefix, outputs[rnode.data['node']])
             count6 = count6 + 1
      #Remove tx from the v6 queue                
     for rnode in to_remove:
@@ -355,11 +355,33 @@ print "Total number of v6 transactions generated:", count6
 print "v4 prefixes not found: ", missed4
 print "v6 prefixes not found: ", missed6
 
+
+print "Dumping pending prefixes to files"
+
+try:    
+    notused4 = open('intermediate_files/third_level_debug_files/v4notused.txt', 'w')
+except Exception as e: 
+    print e
+    sys.exit(1)
+try:    
+    notused6 = open('intermediate_files/third_level_debug_files/v6notused.txt', 'w')
+except Exception as e: 
+    print e
+    sys.exit(1)
+
+for node in nodes:
+    for rnode in pending4_tx[node]:
+        notused4.write(rnode.data['node']+ ' ' + rnode.data['owner'] + ' ' + rnode.prefix)
+    for rnode in pending6_tx[node]:
+        notused6.write(rnode.data['node']+ ' ' + rnode.data['owner'] + ' ' + rnode.prefix)
+
+notused4.close()
+notused6.close()
 #Close outputs
 for node in nodes:
     outputs[node].close()
 rir_data6.close()
 v6_not_found.close()
     
-    
+print "Done"    
     

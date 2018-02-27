@@ -258,10 +258,11 @@ def run():
                 mainLog.info("Updated own IPs: %s", myIPs)
             timestamp = chain.get_head_block().header.timestamp
             block_num = chain.get_head_block().header.number
-            #if curent time - timestamp >= TIMEOUT * 2 (means 1st backup signer KO, send a new timestamp to the conensus)
-            if (time.time() - timestamp) > (2 * TIMEOUT):
-                mainLog.warning("1st tiemout expired, selecting a new signer")
-                timestamp = timestamp +  2 * TIMEOUT
+#            DOES NOT WORK
+#            #if curent time - timestamp >= TIMEOUT * 2 (means 1st backup signer KO, send a new timestamp to the conensus)
+#            if (time.time() - timestamp) > (2 * TIMEOUT):
+#                mainLog.warning("1st tiemout expired, selecting a new signer")
+#                timestamp = timestamp +  2 * TIMEOUT
             mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
             consensus.calculate_next_signer(myIPs, timestamp, block_num)
         except Exception as e:
