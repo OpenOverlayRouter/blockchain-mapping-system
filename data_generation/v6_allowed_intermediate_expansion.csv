@@ -1,0 +1,13 @@
+         
+         
+         
+NODE v4 v6     "total pref "  
+ "num tx" "num tx" "num used pref" "number not used pref" "not used pref" "num of expansions loaded"  "in file" 
+NCALIRF 8192 290 5 1 2d00::/8 38 6 6 VERITAT
+NVIR 8192 145 4 1 2e00::/7 38 5 5 VERITAT
+SAOP 8192 195 4 1 3000::/4 38 5 5 VERITAT
+FRANK 8192 402 5 0  38 5 5 VERITAT
+IRE 8192 384 5 0  38 5 5 VERITAT
+MUMB 8192 324 5 0  38 5 5 VERITAT
+SYD 8192 322 5 0  38 5 5 VERITAT
+TOK 8192 172 5 0  38 5 5 VERITAT

@@ -220,7 +220,15 @@ class ChainService():
             databaseLog.info("IP address %s is not owned by anybody", str(ipaddr))
         
         return None
-    
+
+    def in_chain(self,tx):
+        assert isinstance(tx, Transaction)
+        return self.db._has_key(b'txindex:' + tx.hash)
+
+    def in_pool(self,tx):
+        assert isinstance(tx, Transaction)
+        return tx in self.transactions
+
     #returns the corresponing blockchain addres for the specified IP address    
     def get_addr_from_ip(self, ipaddr):
         return normalize_address(self.chain.patricia.get_value(str(ipaddr)))

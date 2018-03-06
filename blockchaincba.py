@@ -94,7 +94,7 @@ def init_logger():
 def run():
     
     start_time = time.time()
-    seen_tx = []
+    #seen_tx = []
     init_logger()
 
     mainLog.info("Initializing Chain")
@@ -203,11 +203,12 @@ def run():
             while tx_ext is not None:
                 #Check that the transaction has not been sent from this node or already processed
                 processed = processed + 1
-                if tx_ext.hash not in seen_tx:
+#                if tx_ext.hash not in seen_tx:
+                if not (chain.in_chain(tx_ext) or chain.in_pool(tx_ext)):
                     mainLog.info("Received external transaction: to: %s hash %s", \
                     tx_ext.to.encode('HEX'), tx_ext.hash.encode('HEX'))
                     try:
-                        seen_tx.append(tx_ext.hash)                        
+#                        seen_tx.append(tx_ext.hash)                        
                         chain.add_pending_transaction(tx_ext)
                         # Correct tx
                         p2p.broadcast_tx(tx_ext)
@@ -256,6 +257,11 @@ def run():
                 mainLog.info("Updated own IPs: %s", myIPs)
             timestamp = chain.get_head_block().header.timestamp
             block_num = chain.get_head_block().header.number
+#            DOES NOT WORK
+#            #if curent time - timestamp >= TIMEOUT * 2 (means 1st backup signer KO, send a new timestamp to the conensus)
+#            if (time.time() - timestamp) > (2 * TIMEOUT):
+#                mainLog.warning("1st tiemout expired, selecting a new signer")
+#                timestamp = timestamp +  2 * TIMEOUT
             mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
             consensus.calculate_next_signer(myIPs, timestamp, block_num)
         except Exception as e:
@@ -266,7 +272,7 @@ def run():
 
         # Process transactions from the user
         processed = 0
-        if (time.time() - start_time) > 600:
+        if (time.time() - start_time) > 1020:
             try:
                 tx_int = user.get_tx()
                 while tx_int is not None:
@@ -292,7 +298,7 @@ def run():
                         p2p.broadcast_tx(tx)
                         #mainLog.info("Sent transaction to the network, from: %s --  to: %s --  value: %s", \
                         #tx_int["from"].encode("HEX"), tx.to.encode("HEX"), tx.ip_network)
-                        seen_tx.append(tx.hash)
+#                        seen_tx.append(tx.hash)
                     except Exception as e:
                         mainLog.error("Error when creating user transaction, ignoring transaction.")
                         mainLog.exception(e.message)

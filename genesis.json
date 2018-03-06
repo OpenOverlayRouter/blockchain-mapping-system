@@ -1318,284 +1318,240 @@
    }},
   {"976288a1fb44aed93e9fc7a2533942ad19732315":{
         "balance":{
-            "own_ips":["2001:0000::/23"]
+            "own_ips":["2000::/16"]
         }
    }},
   {"2515259e030fa02ccc1af507179cfbc19449594f":{
         "balance":{
-            "own_ips":["2001:0200::/23"]
+            "own_ips":["2001:0000::/20"]
         }
    }},
   {"e01843732a346e7722d6e1feba73e96cb8a7189d":{
         "balance":{
-            "own_ips":["2001:0400::/23"]
+            "own_ips":["2001:1000::/20"]
         }
    }},
   {"dbec517b433d715576232c766c63633f164581ab":{
         "balance":{
-            "own_ips":["2001:0600::/23"]
+            "own_ips":["2001:2000::/20"]
         }
    }},
   {"a084613bce3fdb81ab1a526d1e260ac2f71b35c0":{
         "balance":{
-            "own_ips":["2001:0800::/23"]
+            "own_ips":["2001:3000::/20"]
         }
    }},
   {"6c0b2719e678f0827367e3ed09dcda85c08319a3":{
         "balance":{
-            "own_ips":["2001:0a00::/23"]
+            "own_ips":["2001:4000::/20"]
         }
    }},
   {"e0b9b9385b082161a3fdd92fef6493197e5d5392":{
         "balance":{
-            "own_ips":["2001:0c00::/23"]
+            "own_ips":["2001:5000::/20"]
         }
    }},
   {"2373f91c579251cd2c65a5bd07a5d2a42ccff5b8":{
         "balance":{
-            "own_ips":["2001:0e00::/23"]
+            "own_ips":["2001:6000::/19"]
         }
    }},
   {"81059ec41cd0c946d8fc8592d17d72f5f4518b7b":{
         "balance":{
-            "own_ips":["2001:1200::/23"]
+            "own_ips":["2001:8000::/19"]
         }
    }},
   {"9a5d07890eb3035e1b8eaf82fa2d32868d1e5c4d":{
         "balance":{
-            "own_ips":["2001:1400::/23"]
+            "own_ips":["2001:A000::/20"]
         }
    }},
   {"21c9abf141f7204a2559f770ada061fbfe6dbde6":{
         "balance":{
-            "own_ips":["2001:1600::/23"]
+            "own_ips":["2001:B000::/20"]
         }
    }},
   {"6547048f19421e84b924eee6584510b41f96597a":{
         "balance":{
-            "own_ips":["2001:1800::/23"]
+            "own_ips":["2001:C000::/18"]
         }
    }},
   {"dd2d28f9d804e2c776952e14e068ec17bcee8702":{
         "balance":{
-            "own_ips":["2001:1a00::/23"]
+            "own_ips":["2002::/16"]
         }
    }},
   {"803376b3c9e188b78548c62a2d8cf99e502f87d0":{
         "balance":{
-            "own_ips":["2001:1c00::/22"]
+            "own_ips":["2003::/16"]
         }
    }},
   {"4f63aa7a7288d8903566963361867410482c52f4":{
         "balance":{
-            "own_ips":["2001:2000::/20"]
+            "own_ips":["2004::/14"]
         }
    }},
   {"aa23bb5c4d7d2073626995be2d88ee584f79645f":{
         "balance":{
-            "own_ips":["2001:3000::/21"]
+            "own_ips":["2008::/13"]
         }
    }},
   {"c59c096e24f1142bc32e657fb123fec0a5debecb":{
         "balance":{
-            "own_ips":["2001:3800::/22"]
+            "own_ips":["2010::/12"]
         }
    }},
   {"37b2ac444b49f5ab65ab9a56b1cde48a84f6a4f2":{
         "balance":{
-            "own_ips":["2001:3c00::/22"]
+            "own_ips":["2020::/11"]
         }
    }},
   {"094f213249523d183f20cf3fe888fe2f098116d1":{
         "balance":{
-            "own_ips":["2001:4000::/23"]
+            "own_ips":["2040::/10"]
         }
    }},
   {"6d9d7a69255548655cae3c90225e5d08550b7a41":{
         "balance":{
-            "own_ips":["2001:4200::/23"]
+            "own_ips":["2080::/9"]
         }
    }},
   {"1d8ffec81e2dc178a3736225d6b4d4eba665227f":{
         "balance":{
-            "own_ips":["2001:4400::/23"]
+            "own_ips":["2100::/8"]
         }
    }},
   {"f8f87950d02faadfbe33bae32f16b06e404856b0":{
         "balance":{
-            "own_ips":["2001:4600::/23"]
+            "own_ips":["2200::/7"]
         }
    }},
   {"6eb14b553953afbad9b6fee36b27642e8e6aa07c":{
         "balance":{
-            "own_ips":["2001:4800::/23"]
+            "own_ips":["2400::/8"]
         }
    }},
   {"5754fe57204b4231b1c4f270d05e68862cada784":{
         "balance":{
-            "own_ips":["2001:4a00::/23"]
+            "own_ips":["2500::/8"]
         }
    }},
   {"8325012a9e4ae6e107f1127b9bc8f3477038a378":{
         "balance":{
-            "own_ips":["2001:4c00::/23"]
+            "own_ips":["2600::/8"]
         }
    }},
   {"2d65d6b46043425b2d0175ca04cdba25916da702":{
         "balance":{
-            "own_ips":["2001:5000::/20"]
+            "own_ips":["2700::/8"]
         }
    }},
   {"6da16a349d4bd1f696bfb71fe2a71e151d5c5318":{
         "balance":{
-            "own_ips":["2001:8000::/19"]
+            "own_ips":["2800::/8"]
         }
    }},
   {"2a18b9ce9af11c0b0fe59a5af86cf3991521d6af":{
         "balance":{
-            "own_ips":["2001:a000::/20"]
+            "own_ips":["2900::/8"]
         }
    }},
   {"042c4acca22d95b11c27dbab45539af932c02fa5":{
         "balance":{
-            "own_ips":["2001:b000::/20"]
+            "own_ips":["2a00::/8"]
         }
    }},
   {"624cf9e5cf913aae833bc1216cf7560ad9aea1fa":{
         "balance":{
-            "own_ips":["2002:0000::/16"]
+            "own_ips":["2b00::/8"]
         }
    }},
   {"3168a0188ecef8938651f43626b5857ce3026ea1":{
         "balance":{
-            "own_ips":["2003:0000::/18"]
+            "own_ips":["2c00::/8"]
         }
    }},
   {"99841464398ebf075d198e27af24b14443ed223d":{
         "balance":{
-            "own_ips":["2400:0000::/12"]
+            "own_ips":["2d00::/8"]
         }
    }},
   {"7f3689ed4802072ce8a16c0a9562b4f7555317ef":{
         "balance":{
-            "own_ips":["2600:0000::/12"]
+            "own_ips":["2e00::/7"]
         }
    }},
   {"839210a7c7da4af336a33b979501cdd63ef20343":{
         "balance":{
-            "own_ips":["2610:0000::/23"]
+            "own_ips":["3000::/4"]
         }
    }},
   {"cfd858f56fa0b23fc71d2ddf8817fa429c8a1d62":{
         "balance":{
-            "own_ips":["2620:0000::/23"]
+            "own_ips":["4000::/3"]
         }
    }},
   {"45f24196eef62677637ed62ae68d88f6ed643929":{
         "balance":{
-            "own_ips":["2800:0000::/12"]
+            "own_ips":["6000::/3"]
         }
    }},
   {"0cbc1c01ed6e25a92695bcd58d277eb6b8b3aa77":{
         "balance":{
-            "own_ips":["2a00:0000::/12"]
+            "own_ips":["8000::/3"]
         }
    }},
   {"511d32285e0d4db012dda903753704e38512c816":{
         "balance":{
-            "own_ips":["2c00:0000::/12"]
+            "own_ips":["a000::/3"]
         }
    }},
   {"df48cf153e0e58335ab2b8bdd1bc2d7d2984eb95":{
         "balance":{
-            "own_ips":["2d00:0000::/8"]
+            "own_ips":["c000::/3"]
         }
    }},
   {"ddccb972fe48fd25a22b3f01819ce244f810c26d":{
         "balance":{
-            "own_ips":["2e00:0000::/7"]
+            "own_ips":["e000::/4"]
         }
    }},
   {"0190c0c8b66cd2a78bd9671a95328da443523184":{
         "balance":{
-            "own_ips":["3000:0000::/4"]
+            "own_ips":["f000::/5"]
         }
    }},
   {"735616f7566bbff7dc78026f0ef3581c3cc8568f":{
         "balance":{
-            "own_ips":["3ffe::/16"]
+            "own_ips":["f800::/6"]
         }
    }},
   {"b57384ea4d47d0542197c75c3e5711f3f8e0098f":{
         "balance":{
-            "own_ips":["5f00::/8"]
+            "own_ips":["fc00::/7"]
         }
    }},
   {"fae1a9837664ab04700e48e4ef2aa50ab2a64e73":{
         "balance":{
-            "own_ips":["4000::/3"]
+            "own_ips":["fe00::/9"]
         }
    }},
   {"be7329d4de1e4d81457188d86cae6972963ab159":{
         "balance":{
-            "own_ips":["6000::/3"]
+            "own_ips":["fe80::/10"]
         }
    }},
   {"b3a97d31011bf80638994168e3ddc75d82edfd5b":{
         "balance":{
-            "own_ips":["8000::/3"]
+            "own_ips":["fec0::/10"]
         }
    }},
   {"db4c2a3ca24a7bef40babae223e70a8c3bc68909":{
         "balance":{
-            "own_ips":["a000::/3"]
-        }
-   }},
-  {"fa8d1982c7fe109f60c88e9e5d2efb66721a215d":{
-        "balance":{
-            "own_ips":["c000::/3"]
-        }
-   }},
-  {"78f531ea2e222fc59dc4df6edeaf761ddf821482":{
-        "balance":{
-            "own_ips":["e000::/4"]
-        }
-   }},
-  {"e4eb4efc2ef38236c7f089bd698718261660b4b1":{
-        "balance":{
-            "own_ips":["f000::/5"]
-        }
-   }},
-  {"d7610372ad2c649a597cafe5ad2f0b96129faa1e":{
-        "balance":{
-            "own_ips":["f800::/6"]
-        }
-   }},
-  {"3852c2218403af9b84f1b69184a07989dff2aa5b":{
-        "balance":{
-            "own_ips":["fc00::/7"]
-        }
-   }},
-  {"c88133c03a20c06257319cbc3694be4b6404bb04":{
-        "balance":{
-            "own_ips":["fe00::/9"]
-        }
-   }},
-  {"ce4f6fb093075d4c1097f75874442a1e4a7e5f85":{
-        "balance":{
-            "own_ips":["fe80::/10"]
-        }
-   }},
-  {"bff1befc9a07983527e77f969f79642343e889c4":{
-        "balance":{
-            "own_ips":["fec0::/10"]
-        }
-   }},
-  {"fe599fa711a37dfd7cf21275736febfc38ecdc91":{
-        "balance":{
             "own_ips":["ff00::/8"]
         }
    }}
+
 
    ]
 }
