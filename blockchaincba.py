@@ -277,7 +277,7 @@ def run():
                 chain.add_block(new_block)
                 after = time.time()
                 delay = after - before
-                delays_blocks.write(str(new_block) + ' ' + str(delay) + '\n' )                
+                delays_blocks.write(str(new_block.number) + ' ' + str(delay) + '\n' )                
                 p2p.broadcast_block(new_block)
                 myIPs = IPSet()
                 for i in range(len(keys)):
