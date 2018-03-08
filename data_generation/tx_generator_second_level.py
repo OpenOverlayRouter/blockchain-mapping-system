@@ -40,6 +40,8 @@ if node not in nodes:
     print "Unknwon node!! Exiting"    
     sys.exit(1)
 
+nodes.remove(node)
+print "Removed node", node, "from destination list"
 
 #Open output files
 try:    
@@ -48,25 +50,36 @@ except Exception as e:
     print e
     sys.exit(1)
     
-try:    
-    owners4 = open('intermediate_files/second_level_owners/second_level_owners4_' + node + '.txt', 'w')
-except Exception as e: 
-    print e
-    sys.exit(1)    
-    
-try:    
-    owners6 = open('intermediate_files/second_level_owners/second_level_owners6_' + node + '.txt', 'w')
-except Exception as e: 
-    print e
-    sys.exit(1)
+#It is required to save in different files
+outputs4 = {}
+
+for one_node in nodes: 
+    try:    
+        outputs4[one_node] = open('intermediate_files/second_level_owners/second_level_owners4_' + one_node + '.txt', 'a')
+    except Exception as e: 
+        print e
+        sys.exit(1)  
+print "Created output files:"
+print outputs4
+
+
+outputs6 = {}    
+for one_node in nodes: 
+    try:    
+        outputs6[one_node] = open('intermediate_files/second_level_owners/second_level_owners6_' + one_node + '.txt', 'a')
+    except Exception as e: 
+        print e
+        sys.exit(1)
+print "Created output files:"
+print outputs6
+
 
 #Load addresses from other nodes to be used as destinations
 
 node_dest_addr = {}
 count = 0
 
-nodes.remove(node)
-print ("Removed node %s from destination list", node)
+
 
 for one_node in nodes:    
     print "Loading node destionations dictionaries ", one_node
@@ -176,7 +189,7 @@ for i in range(64):
             orig = data["owner"]
             des = node_dest_addr[nodes[count4 % 7]][pos % 128]
             write_tx(1, 0, None, des, orig, value, out)
-            record_delegation(value, des, owners4)    
+            record_delegation(value, des, outputs4[nodes[count4 % 7]])    
             count4 = count4 + 1    
         if (j % 2) == 0:
         #Here, for simplicity, we generate all the v6 tx every 64 v4 tx.
@@ -189,7 +202,7 @@ for i in range(64):
                     orig = data["owner"]
                     des = node_dest_addr[nodes[count6 % 7]][(pos6 % 32) + offset6]
                     write_tx(2, 0, None, des, orig, value, out)
-                    record_delegation(value, des, owners6)
+                    record_delegation(value, des, outputs6[nodes[count6 % 7]])
                     count6 = count6 + 1
                     data["num_tx"] = data["num_tx"] - 1
             
@@ -204,10 +217,11 @@ print "Generated", count4, "v4 transactions. Exiting"
 print "Generated", count6, "v6 transactions. Exiting"
 
 out.close()
-owners4.close()
-owners6.close()
-    
 
+for keys, values in outputs4.iteritems():
+    values.close()
+for keys, values in outputs6.iteritems():
+    values.close()
     
     
     

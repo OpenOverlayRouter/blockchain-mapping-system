@@ -40,9 +40,26 @@ MAX_DISC_BLOCKS = 10
 USE_ETH_NIST = 0
 USE_ETH = 1
 USE_NIST = 2
-TIMEOUT = 240
+# 5 minutes
+TIMEOUT = 300
 
 mainLog = logging.getLogger('Main')
+
+def open_log_block_process_delay():
+    try:    
+        out = open('delays-process-block.txt', 'w')
+    except Exception as e: 
+        print e
+        sys.exit(1)
+    return out
+
+def open_log_delay_create_txs():
+    try:    
+        out = open('delays-cerate-txs.txt', 'w')
+    except Exception as e: 
+        print e
+        sys.exit(1)
+    return out
 
 
 def init_chain():
@@ -96,6 +113,9 @@ def run():
     start_time = time.time()
     #seen_tx = []
     init_logger()
+
+    delays_blocks = open_log_block_process_delay()
+    delays_txs = open_log_delay_create_txs()
 
     mainLog.info("Initializing Chain")
     chain = init_chain()
@@ -177,7 +197,11 @@ def run():
                     raise e
                 if res:
                     # correct block
+                    before = time.time()
                     chain.add_block(block)
+                    after = time.time()
+                    delay = after - before
+                    delays_blocks.write(str(block.number) + ' ' + str(delay) + '\n' )
                     myIPs = IPSet()
                     for i in range(len(keys)):
                         myIPs.update(chain.get_own_ips(keys[i].address))
@@ -249,7 +273,11 @@ def run():
                 mainLog.info("Sleeping 2s to give way to clock drift...")
                 time.sleep(2)                                
                 #Like receiving a new block
+                before = time.time()
                 chain.add_block(new_block)
+                after = time.time()
+                delay = after - before
+                delays_blocks.write(str(block.number) + ' ' + str(delay) + '\n' )                
                 p2p.broadcast_block(new_block)
                 myIPs = IPSet()
                 for i in range(len(keys)):
@@ -276,6 +304,7 @@ def run():
             try:
                 tx_int = user.get_tx()
                 while tx_int is not None:
+                    before = time.time()
                     processed = processed + 1                    
                     try:
                         try:
@@ -296,6 +325,9 @@ def run():
                         except Exception as e:
                             raise e
                         p2p.broadcast_tx(tx)
+                        after = time.time()
+                        delay = after - before
+                        delays_txs.write(str(tx.hash.encode("HEX")) + ' ' + str(delay) + '\n' )
                         #mainLog.info("Sent transaction to the network, from: %s --  to: %s --  value: %s", \
                         #tx_int["from"].encode("HEX"), tx.to.encode("HEX"), tx.ip_network)
 #                        seen_tx.append(tx.hash)
