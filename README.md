@@ -29,3 +29,10 @@
 **bitstring** *Socket Messages*
 
 **py-radix** *Alternative Patricia trie*
+
+
+** to use the DHT version, install: **
+
+sudo pip install ipgetter
+sudo pip install -I kademlia==0.6 rpcudp==2.0
+
