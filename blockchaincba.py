@@ -201,7 +201,7 @@ def run():
                     chain.add_block(block)
                     after = time.time()
                     delay = after - before
-                    delays_blocks.write(str(block.number) + ' ' + str(delay) + '\n' )
+                    delays_blocks.write(str(block.number) + ',' + str(delay) + '\n' )
                     delays_txs.write("Added new block no." + str(block.number) + '\n')
                     myIPs = IPSet()
                     for i in range(len(keys)):
@@ -278,7 +278,7 @@ def run():
                 chain.add_block(new_block)
                 after = time.time()
                 delay = after - before
-                delays_blocks.write(str(new_block.number) + ' ' + str(delay) + '\n' )                
+                delays_blocks.write(str(new_block.number) + ',' + str(delay) + '\n' )                
                 delays_txs.write("Added new block no." + str(new_block.number) + '\n')
                 p2p.broadcast_block(new_block)
                 myIPs = IPSet()
@@ -329,7 +329,7 @@ def run():
                         p2p.broadcast_tx(tx)
                         after = time.time()
                         delay = after - before
-                        delays_txs.write(str(tx.hash.encode("HEX")) + ' ' + str(delay) + '\n' )
+                        delays_txs.write(str(tx.hash.encode("HEX")) + ',' + str(delay) + '\n' )
                         #mainLog.info("Sent transaction to the network, from: %s --  to: %s --  value: %s", \
                         #tx_int["from"].encode("HEX"), tx.to.encode("HEX"), tx.ip_network)
 #                        seen_tx.append(tx.hash)
