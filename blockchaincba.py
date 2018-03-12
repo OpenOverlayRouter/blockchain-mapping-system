@@ -41,7 +41,7 @@ USE_ETH_NIST = 0
 USE_ETH = 1
 USE_NIST = 2
 # 5 minutes
-TIMEOUT = 300
+TIMEOUT = 900
 
 mainLog = logging.getLogger('Main')
 
