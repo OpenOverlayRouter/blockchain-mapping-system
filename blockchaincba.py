@@ -202,6 +202,7 @@ def run():
                     after = time.time()
                     delay = after - before
                     delays_blocks.write(str(block.number) + ' ' + str(delay) + '\n' )
+                    delays_txs.write("Added new block no." + str(block.number) + '\n')
                     myIPs = IPSet()
                     for i in range(len(keys)):
                         myIPs.update(chain.get_own_ips(keys[i].address))
@@ -278,6 +279,7 @@ def run():
                 after = time.time()
                 delay = after - before
                 delays_blocks.write(str(new_block.number) + ' ' + str(delay) + '\n' )                
+                delays_txs.write("Added new block no." + str(new_block.number) + '\n')
                 p2p.broadcast_block(new_block)
                 myIPs = IPSet()
                 for i in range(len(keys)):
