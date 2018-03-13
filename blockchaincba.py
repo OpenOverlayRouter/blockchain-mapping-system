@@ -174,7 +174,7 @@ def run():
                 try: 
                     while attempts < MAX_DISC_BLOCKS and not res:
                         attempts = attempts + 1
-                        signer = consensus.get_next_signer() 
+                        signer, found = consensus.get_next_signer() 
                         mainLog.debug("Verifying new block signature, signer should be %s", signer)
                         mainLog.debug("Owner of the previous IP is address %s", chain.get_addr_from_ip(signer).encode("HEX"))
                         mainLog.debug("Coinbase in the block is: %s", block.header.coinbase.encode("HEX"))
@@ -250,10 +250,10 @@ def run():
 
         #Check if the node has to sign the next block
         try:
-            signer = consensus.get_next_signer() 
+            signer, found = consensus.get_next_signer() 
             if signer is not None:
                 signing_addr = chain.get_addr_from_ip(signer)
-                if signing_addr in addresses:
+                if (signing_addr in addresses) and found:
                     mainLog.info("This node has to sign a block, selected IP: %s", signer)
                     mainLog.info("Associated address: %s", signing_addr.encode("HEX"))
                     new_block = chain.create_block(signing_addr)

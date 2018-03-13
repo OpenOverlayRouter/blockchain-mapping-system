@@ -27,7 +27,7 @@ class Consensus():
 		self.timeout = timeout
 
 	def get_next_signer(self):
-		return self.next_signer
+		return self.next_signer, self.found_in_chain
 
 	def calculate_next_signer(self, timestamp, block_number):
 		if block_number % 2 != 0: # block_number is the previous one, so if it is even, next should be IPv6
