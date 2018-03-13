@@ -20,7 +20,7 @@ class Consensus():
 	def __init__(self, blockhash, timeout):
 		self.next_signer = None
 		self.last_timestamp = 0
-		self.ips = []
+#		self.ips = []
 		self.logger = logging.getLogger('Consensus')
 		self.found_in_chain = False
 		self.blockhash = blockhash
@@ -29,7 +29,7 @@ class Consensus():
 	def get_next_signer(self):
 		return self.next_signer
 
-	def calculate_next_signer(self, ips, timestamp, block_number):
+	def calculate_next_signer(self, timestamp, block_number):
 		if block_number % 2 != 0: # block_number is the previous one, so if it is even, next should be IPv6
 			protocol = "IPv4"
 		else:
@@ -55,21 +55,21 @@ class Consensus():
 				consensusLog.info("Detected timestamp change, new signer is %s", new_signer)	
 		self.next_signer = new_signer
 		self.last_timestamp = timestamp
-		self.ips = ips
 		self.found_in_chain = found_in_chain
-
-	def amISigner(self, ips, block_number):
-		if self.next_signer == None: 
-			return False, self.next_signer
-		self.ips = ips
-		ip_next_signer = IPAddress(self.next_signer)
-		if block_number % 2 != 0:
-			f = lambda x: x.version == 4
-		else:
-			f = lambda x: x.version == 6
-		if (ip_next_signer in IPSet(filter(f, ips.iter_cidrs()))) and self.found_in_chain:
-			return True, self.next_signer
-		return False, self.next_signer
+     
+     #NOT USED ANYMORE
+#	def amISigner(self, ips, block_number):
+#		if self.next_signer == None: 
+#			return False, self.next_signer
+#		self.ips = ips
+#		ip_next_signer = IPAddress(self.next_signer)
+#		if block_number % 2 != 0:
+#			f = lambda x: x.version == 4
+#		else:
+#			f = lambda x: x.version == 6
+#		if (ip_next_signer in IPSet(filter(f, ips.iter_cidrs()))) and self.found_in_chain:
+#			return True, self.next_signer
+#		return False, self.next_signer
 
 
 # Returns the HASH of a block

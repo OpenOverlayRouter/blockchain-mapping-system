@@ -160,7 +160,7 @@ def run():
     block_num = chain.get_head_block().header.number
     timestamp = chain.get_head_block().header.timestamp
     mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
-    consensus.calculate_next_signer(myIPs, timestamp, block_num)
+    consensus.calculate_next_signer(timestamp, block_num)
 
 
     while(not end):
@@ -184,7 +184,7 @@ def run():
                             res = False                        
                             mainLog.info("Invalid signer for this block, recalculating signer in case of timeout expiry")
                             timestamp = timestamp + TIMEOUT
-                            consensus.calculate_next_signer(myIPs, timestamp, block_num)
+                            consensus.calculate_next_signer(timestamp, block_num)
                         except Exception as e:
                             raise e
                 except UnsignedBlock as e:
@@ -203,14 +203,10 @@ def run():
                     delay = after - before
                     delays_blocks.write(str(block.number) + ',' + str(delay) + '\n' )
                     delays_txs.write("Added new block no." + str(block.number) + '\n')
-                    myIPs = IPSet()
-                    for i in range(len(keys)):
-                        myIPs.update(chain.get_own_ips(keys[i].address))
-                    mainLog.info("Updated own IPs: %s", myIPs)
                     timestamp = chain.get_head_block().header.timestamp
                     block_num = chain.get_head_block().header.number
                     mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
-                    consensus.calculate_next_signer(myIPs, timestamp, block_num)
+                    consensus.calculate_next_signer(timestamp, block_num)
                 else:
                     mainLog.error("Checked %s times for block signer but did not find it. Ignoring block...", attempts)
                     raise InvalidBlockSigner
@@ -254,46 +250,42 @@ def run():
 
         #Check if the node has to sign the next block
         try:
-            block_num = chain.get_head_block().header.number
-            me, signer = consensus.amISigner(myIPs, block_num)
-            if me:
-                mainLog.info("This node has to sign a block, selected IP: %s", signer)
+            signer = consensus.get_next_signer() 
+            if signer is not None:
                 signing_addr = chain.get_addr_from_ip(signer)
-                mainLog.info("Associated address: %s", signing_addr.encode("HEX"))
-                new_block = chain.create_block(signing_addr)
-                try:
-                    key_pos = addresses.index(signing_addr)
-                except:
-                    raise Exception("FATAL ERROR: This node does not own the indicated key to sign the block (not present in the keystore)")
-                sig_key = keys[key_pos]
-                new_block.sign(sig_key.privkey)
-                mainLog.info("Created new block no. %s, timestamp %s, coinbase %s", \
-                    new_block.header.number, new_block.header.timestamp, new_block.header.coinbase.encode("HEX"))
-                mainLog.info("New block signature data: v %s -- r %s -- s %s", new_block.v, new_block.r, new_block.s)
-                mainLog.info("This block contains %s transactions", new_block.transaction_count)
-                mainLog.info("Sleeping 2s to give way to clock drift...")
-                time.sleep(2)                                
-                #Like receiving a new block
-                before = time.time()
-                chain.add_block(new_block)
-                after = time.time()
-                delay = after - before
-                delays_blocks.write(str(new_block.number) + ',' + str(delay) + '\n' )                
-                delays_txs.write("Added new block no." + str(new_block.number) + '\n')
-                p2p.broadcast_block(new_block)
-                myIPs = IPSet()
-                for i in range(len(keys)):
-                    myIPs.update(chain.get_own_ips(keys[i].address))            
-                mainLog.info("Updated own IPs: %s", myIPs)
+                if signing_addr in addresses:
+                    mainLog.info("This node has to sign a block, selected IP: %s", signer)
+                    mainLog.info("Associated address: %s", signing_addr.encode("HEX"))
+                    new_block = chain.create_block(signing_addr)
+                    try:
+                        key_pos = addresses.index(signing_addr)
+                    except:
+                        raise Exception("FATAL ERROR: This node does not own the indicated key to sign the block (not present in the keystore)")
+                    sig_key = keys[key_pos]
+                    new_block.sign(sig_key.privkey)
+                    mainLog.info("Created new block no. %s, timestamp %s, coinbase %s", \
+                        new_block.header.number, new_block.header.timestamp, new_block.header.coinbase.encode("HEX"))
+                    mainLog.info("New block signature data: v %s -- r %s -- s %s", new_block.v, new_block.r, new_block.s)
+                    mainLog.info("This block contains %s transactions", new_block.transaction_count)
+                    mainLog.info("Sleeping 2s to give way to clock drift...")
+                    time.sleep(2)                                
+                    #Like receiving a new block
+                    before = time.time()
+                    chain.add_block(new_block)
+                    after = time.time()
+                    delay = after - before
+                    delays_blocks.write(str(new_block.number) + ',' + str(delay) + '\n' )                
+                    delays_txs.write("Added new block no." + str(new_block.number) + '\n')
+                    p2p.broadcast_block(new_block)
             timestamp = chain.get_head_block().header.timestamp
             block_num = chain.get_head_block().header.number
-#            DOES NOT WORK
-#            #if curent time - timestamp >= TIMEOUT * 2 (means 1st backup signer KO, send a new timestamp to the conensus)
-#            if (time.time() - timestamp) > (2 * TIMEOUT):
-#                mainLog.warning("1st tiemout expired, selecting a new signer")
-#                timestamp = timestamp +  2 * TIMEOUT
+            #            DOES NOT WORK
+            #            #if curent time - timestamp >= TIMEOUT * 2 (means 1st backup signer KO, send a new timestamp to the conensus)
+            #            if (time.time() - timestamp) > (2 * TIMEOUT):
+            #                mainLog.warning("1st tiemout expired, selecting a new signer")
+            #                timestamp = timestamp +  2 * TIMEOUT
             mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
-            consensus.calculate_next_signer(myIPs, timestamp, block_num)
+            consensus.calculate_next_signer(timestamp, block_num)
         except Exception as e:
             mainLog.critical("Exception while checking if the node has to sign the next block")
             mainLog.exception(e)
