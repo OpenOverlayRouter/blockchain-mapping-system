@@ -32,7 +32,7 @@ from utils import normalize_address
 from oor import Oor
 from own_exceptions import InvalidBlockSigner, UnsignedBlock
 
-EXT_TX_PER_LOOP = 75
+EXT_TX_PER_LOOP = 125
 USER_TX_PER_LOOP = 1
 #Number of times to add 100s to consensus calculation to identify signers in case of timeout
 MAX_DISC_BLOCKS = 10
@@ -184,6 +184,7 @@ def run():
                             res = False                        
                             mainLog.info("Invalid signer for this block, recalculating signer in case of timeout expiry")
                             timestamp = timestamp + TIMEOUT
+                            mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
                             consensus.calculate_next_signer(timestamp, block_num)
                         except Exception as e:
                             raise e

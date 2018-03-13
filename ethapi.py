@@ -23,10 +23,10 @@ def get_hash_from_NIST_nist(timestamp):
 	try:
 		response = urllib.urlopen(url)
 	except SocketError as e:
-		if e.errno != errno.ECONNRESET:
+		if e.errno != (errno.ECONNRESET or errno.ENETUNREACH):
 			raise
 		# Handle connection reset by peer
-		time.sleep(1)
+		time.sleep(10)
 		return None
 	if response.getcode() == 404:
 		return None
