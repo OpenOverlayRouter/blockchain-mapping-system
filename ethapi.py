@@ -24,8 +24,16 @@ def get_hash_from_NIST_nist(timestamp):
 		response = urllib.urlopen(url)
 	except SocketError as e:
 		if e.errno != (errno.ECONNRESET or errno.ENETUNREACH):
-			raise
+			raise e
 		# Handle connection reset by peer
+		print "Consensus: connection error with NIST, sleeping 10s", e 
+		time.sleep(10)
+		return None
+        except IOError as e:
+                if e.errno != (errno.ECONNRESET or errno.ENETUNREACH):
+                        raise e
+		# Handle connection reset by peer
+                print "Consensus: connection error with NIST, sleeping 10s", e 
 		time.sleep(10)
 		return None
 	if response.getcode() == 404:
@@ -40,10 +48,18 @@ def get_hash_from_NIST_eth_nist(timestamp):
 		response = urllib.urlopen(url)
 	except SocketError as e:
 		if e.errno != (errno.ECONNRESET or errno.ENETUNREACH):
-			raise
+			raise e
 		# Handle connection reset by peer
+                print "Consensus: connection error with NIST, sleeping 10s", e 
 		time.sleep(10)
 		return None
+        except IOError as e:
+                if e.errno != (errno.ECONNRESET or errno.ENETUNREACH):
+                        raise e
+		# Handle connection reset by peer
+                print "Consensus: connection error with NIST, sleeping 10s", e 
+		time.sleep(10)
+		return None            
 	if response.getcode() == 404:
 		return None
 	xml_data = minidom.parse(response)
