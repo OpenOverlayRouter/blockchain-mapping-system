@@ -21,7 +21,7 @@ class P2P():
         #self.p = subprocess.Popen([sys.executable, "network.py", last_block, ip])
         self.p = subprocess.Popen(["nohup", "python", "network.py", str(last_block)],
                                   stdout=open('network.out', mode='w+', buffering=0), shell=False)
-        time.sleep(5)
+        time.sleep(10)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((HOST, QUERY_PORT))
         #self.sock.setblocking(0)
