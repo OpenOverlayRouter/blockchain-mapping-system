@@ -23,6 +23,6 @@ nohup.out
 network.out
 
 #Temporal commit to OOR
-data_generation
-keystore_old
-keystore/Tests
+data_generation/
+keystore_old/
+keystore/keystore/
