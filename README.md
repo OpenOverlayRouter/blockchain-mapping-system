@@ -1,4 +1,28 @@
-﻿# BlockChain
+﻿# IPcoins: a blockchain-based mapping system
+
+IPcoins is a blockchain prototype to store IP addresses and prefixes. Similarly to how Bitcoin secures coins, IPcoins allows you to associate IP prefixes to a public key and record your ownership in the blockchain. You can also associate RLOCs and Map Servers to these prefixes to create a secure Mapping System. IPcoins also provides an interface to OOR so it can answer Map Requests. More information in [this IETF draft](https://tools.ietf.org/pdf/draft-paillisse-sidrops-blockchain-01.pdf). 
+
+Please note that this prototype is experimental.
+
+##Creating your keys
+
+In the Python console:
+  from keystore import Keystore
+  import sys
+
+  k = Keystore.new('<key_password>', None, 0, None)
+  k.save(k)
+  #see the key's address
+  print k.address.encode("HEX")
+
+##Running
+
+Before running, make sure:
+- The file Tests/transactions.txt exists
+- The folder 'keystore' exists
+To run:
+
+  python blockchaincba.py
 
 ## Dependencies
 
@@ -30,9 +54,12 @@
 
 **py-radix** *Alternative Patricia trie*
 
+**ipgetter**
 
-** to use the DHT version, install: **
+**kademlia** *v0.6
 
-sudo pip install ipgetter
-sudo pip install -I kademlia==0.6 rpcudp==2.0
+**rpcudp** v2.0
+
+#To properly install the last two packages:
+#sudo pip install -I kademlia==0.6 rpcudp==2.0
 
