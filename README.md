@@ -7,13 +7,15 @@ Please note that this prototype is experimental.
 ##Creating your keys
 
 In the Python console:
-  from keystore import Keystore
-  import sys
+```python
+from keystore import Keystore
+import sys
 
-  k = Keystore.new('<key_password>', None, 0, None)
-  k.save(k)
-  #see the key's address
-  print k.address.encode("HEX")
+k = Keystore.new('<key_password>', None, 0, None)
+k.save(k)
+#see the key's address
+print k.address.encode("HEX")
+```
 
 ##Running
 
@@ -21,9 +23,9 @@ Before running, make sure:
 - The file Tests/transactions.txt exists
 - The folder 'keystore' exists
 To run:
-
-  python blockchaincba.py
-
+```bash
+python blockchaincba.py
+```
 ## Dependencies
 
 **python:** *2.7.8+*
@@ -60,6 +62,8 @@ To run:
 
 **rpcudp** v2.0
 
-#To properly install the last two packages:
-#sudo pip install -I kademlia==0.6 rpcudp==2.0
+To properly install the last two packages:
+```bash
+sudo pip install -I kademlia==0.6 rpcudp==2.0
+```
 
