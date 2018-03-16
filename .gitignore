@@ -21,3 +21,8 @@ docs/_build/
 *.swp
 nohup.out
 network.out
+
+#Temporal commit to OOR
+data_generation
+keystore_old
+keystore/Tests
