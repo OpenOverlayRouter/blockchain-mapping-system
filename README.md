@@ -21,7 +21,8 @@ print k.address.encode("HEX")
 
 Before running, make sure:
 - The file Tests/transactions.txt exists
-- The folder 'keystore' exists
+- The folder keystore exists
+
 To run:
 ```bash
 python blockchaincba.py
