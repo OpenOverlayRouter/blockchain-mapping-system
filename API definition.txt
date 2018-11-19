@@ -27,13 +27,31 @@ answer_block_queries(blocks bls)
 answer_tx_pool_query(transactions txs)
 #response with transactions in the transaction pool (to send to the network)
 
+get_share()
+#returns a new share or None if there is no data
+
+broadcast_share(sahre sh)
+#broadcasts a new share to the network
 
 #####################
 #consensus
 #####################
 
-signer get_next_signer()
-#returns the next IP that has to sign a block
+
+#create_share(count ct)
+returns a new share to send to the network
+
+store_share(share sh)
+#saves a new share internally
+
+shares_ready()
+#returns True if the module has received the minimum T shares, False otherwise
+
+signer get_next_signer(count ct)
+#returns the next IP that has to sign the next block
+
+new_dkg()
+#starts a new DKG
 
 calculate_next_signer(myIPs ip, timestamp t)
 #calculates the next IP that will sign a block. It is stored in an internal variable that get_next_signer() uses

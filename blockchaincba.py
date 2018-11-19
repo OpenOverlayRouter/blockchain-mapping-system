@@ -40,9 +40,13 @@ MAX_DISC_BLOCKS = 10
 USE_ETH_NIST = 0
 USE_ETH = 1
 USE_NIST = 2
-# 5 minutes
-TIMEOUT = 900
 
+
+BLOCK_TIME = 900
+# 5 minutes
+
+TIMEOUT = 1800
+# 10 minutes
 mainLog = logging.getLogger('Main')
 
 def open_log_block_process_delay():
@@ -152,6 +156,7 @@ def run():
     oor = init_oor()
 
     end = 0
+    count = 0
     myIPs = IPSet()
     for i in range(len(keys)):
         myIPs.update(chain.get_own_ips(keys[i].address))
@@ -171,6 +176,10 @@ def run():
                 mainLog.info("Received new block no. %s", block.number)
                 res = False
                 attempts = 0
+                if block.count ==0:
+                    
+                    else:
+                        
                 try: 
                     while attempts < MAX_DISC_BLOCKS and not res:
                         attempts = attempts + 1
@@ -206,11 +215,17 @@ def run():
                     delays_txs.write("Added new block no." + str(block.number) + '\n')
                     timestamp = chain.get_head_block().header.timestamp
                     block_num = chain.get_head_block().header.number
+                    count = chain.get_head_block().header.count
                     mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
-                    consensus.calculate_next_signer(timestamp, block_num)
+                    #consensus.calculate_next_signer(timestamp, block_num)
+                    #after a correct block, create and broadcast new share                     
+                    new_share = consensus.create_share(0)
+                    p2p.broadcast_share(new_share)
+                    mainLog.info("Sent a new share to the network")
+                    
                 else:
-                    mainLog.error("Checked %s times for block signer but did not find it. Ignoring block...", attempts)
-                    raise InvalidBlockSigner
+                    mainLog.error("Received an erroneous block. Ignoring block...")
+                    #raise InvalidBlockSigner
                 block = p2p.get_block()
         except Exception as e:
             mainLog.critical("Exception while processing a received block")
@@ -251,10 +266,10 @@ def run():
 
         #Check if the node has to sign the next block
         try:
-            signer, found = consensus.get_next_signer() 
-            if signer is not None:
+            if consensus.shares_ready():
+                signer = consensus.get_next_signer() 
                 signing_addr = chain.get_addr_from_ip(signer)
-                if (signing_addr in addresses) and found:
+                if (signing_addr in addresses) and ((time.time()-timestamp) >= BLOCK_TIME):
                     mainLog.info("This node has to sign a block, selected IP: %s", signer)
                     mainLog.info("Associated address: %s", signing_addr.encode("HEX"))
                     new_block = chain.create_block(signing_addr)
@@ -278,6 +293,17 @@ def run():
                     delays_blocks.write(str(new_block.number) + ',' + str(delay) + '\n' )                
                     delays_txs.write("Added new block no." + str(new_block.number) + '\n')
                     p2p.broadcast_block(new_block)
+                    #after a correct block, create and broadcast new share                     
+                    new_share = consensus.create_share()
+                    p2p.broadcast_share(new_share)
+                    mainLog.info("Sent a new share to the network")
+            elif time.time() - timestamp >= TIMEOUT:
+                #There's been an error. Recalculate random number
+                count = count + 1
+                consensus.create_share(count)
+                p2p.broadcast_share(new_share)
+                mainLog.info("Timeout expired. Recalculated random no and sent a new share to the network")
+                
             timestamp = chain.get_head_block().header.timestamp
             block_num = chain.get_head_block().header.number
             #            DOES NOT WORK
@@ -379,6 +405,28 @@ def run():
             # Stop P2P
             p2p.stop()
             sys.exit(0)
+    
+        #Get shares from the network
+        try:
+            share = p2p.get_share()
+            while share is not None:
+                consensus.store_share()                
+        except Exception as e:
+            mainLog.critical("Exception while processing received shares")
+            mainLog.exception(e)
+            # Stop P2P
+            p2p.stop()
+            sys.exit(0)
+ 
+ 
+
+        
+
+       
+        #trigger new DKG           
+        if block_num % 100 == 0:
+            consensus.new_dkg()
+            
 
 if __name__ == "__main__":
     run()
