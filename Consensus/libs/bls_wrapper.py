@@ -9,7 +9,7 @@ class Bls():
 
     def initialize(self):
         if not self._isInit:
-            self._isInit = True 
+            self._isInit = True
             subprocess.check_call([EXE, "init"])
 
     def sign(self, m, i=0):
@@ -26,22 +26,3 @@ class Bls():
         for i in ids:
                 cmd.append(str(i))
         subprocess.check_call(cmd)
-
-#def main():
-#	m = "hello bls threshold signature"
-#	n = 10
-#	ids = [1, 5, 3, 7]
-#	k = len(ids)
-#	init()
-#	sign(m)
-#	verify(m)
-#	share(n, k)
-#	for i in ids:
-#		sign(m, i)
-#		verify(m, i)
-#	subprocess.check_call(["rm", "sample/sign.txt"])
-#	recover(ids)
-#	verify(m)
-
-#if __name__ == '__main__':
-#    main()
