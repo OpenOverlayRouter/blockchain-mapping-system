@@ -1,13 +1,32 @@
+DKG-BLS terminiology:
+'share' refers to the shares created to perform the BLS and the recover function to generate random numbers (done for every new block)
+'dkg_share' refers to the shares exchange to setup a new DKG, done every DKG_RENEWAL_INTERVAL
+
 #####################
 #p2p
 #####################
 
+################## RX ##################
 
 block get_block()
 #returns a new block or None if there is no data
 
 transaction get_tx()
 #returns a new transaction or None if there is no data
+
+answer_block_queries(blocks bls)
+#list of the blocks asked from the network
+
+answer_tx_pool_query(transactions txs)
+#response with transactions in the transaction pool (to send to the network)
+
+member, share get_dkg_share()
+#returns a DKG share and the originating member
+
+share get_share()
+#returns a new share received from the network or None if there is no data
+
+################## TX ##################
 
 broadcast_block(block bl)
 #sends a new block to the network
@@ -21,25 +40,26 @@ block_numbers get_block_queries()
 transaction tx_pool_query()
 #returns True if the network requests the transaction pool, False otherwise
 
-answer_block_queries(blocks bls)
-#list of the blocks asked from the network
+send_dkg(id, verif_vector, secret_key_share_contrib)
+#sends a DKG individual verification vector and secret key share contribution to the specified member 
 
-answer_tx_pool_query(transactions txs)
-#response with transactions in the transaction pool (to send to the network)
-
-get_share()
-#returns a new share or None if there is no data
-
-broadcast_share(sahre sh)
+broadcast_share(share sh)
 #broadcasts a new share to the network
 
 #####################
 #consensus
 #####################
 
+get_threshold()
+#returns the configured threshold T
 
-#create_share(count ct)
-returns a new share to send to the network
+signer get_next_signer(count ct)
+#returns the next IP that has to sign the next block
+
+################## share management ##################
+
+share create_share(count ct, block_number)
+#returns a new share to send to the network
 
 store_share(share sh)
 #saves a new share internally
@@ -47,21 +67,25 @@ store_share(share sh)
 shares_ready()
 #returns True if the module has received the minimum T shares, False otherwise
 
-signer get_next_signer(count ct)
-#returns the next IP that has to sign the next block
+################## DKG management ##################
 
 new_dkg()
-#starts a new DKG
+#starts a new DKG. Returns a dictionary of (memberID, data), data is a dictionary with verif_vector and secret_key_share_contrib elements for a specific member
 
+
+verifyContributionShare(member, share['verif_vector'], share['secret_key_share_contrib'])
+#Returns True if the share share is correct, false otherwise. Stores the share internally, and if it has received all shares calculates the new VV and secret key.
+
+dkg_ready()
+#Returns True if the new DKG is ready, false otherwise
+
+
+#I think not needed
 calculate_next_signer(myIPs ip, timestamp t)
 #calculates the next IP that will sign a block. It is stored in an internal variable that get_next_signer() uses
 #myIPs is the set of IPs owned by the node, updated each time a block is added
 #timestamp is the timestamp of the last block added to the chain, used to randomly select the new signer
 
-signer, me amIsigner(myIPs ip)
-#returns the following two variables:
-#	me: True if the node has to sign the new block
-#       signer: IP that has to sign the new block
 
 
 #####################

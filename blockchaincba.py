@@ -42,6 +42,10 @@ USE_ETH = 1
 USE_NIST = 2
 
 
+
+DKG_RENEWAL_INTERVAL = 100
+
+
 BLOCK_TIME = 900
 # 5 minutes
 
@@ -157,6 +161,7 @@ def run():
 
     end = 0
     count = 0
+    dkg_on = False
     myIPs = IPSet()
     for i in range(len(keys)):
         myIPs.update(chain.get_own_ips(keys[i].address))
@@ -219,7 +224,7 @@ def run():
                     mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
                     #consensus.calculate_next_signer(timestamp, block_num)
                     #after a correct block, create and broadcast new share                     
-                    new_share = consensus.create_share(0)
+                    new_share = consensus.create_share(0, block_num)
                     p2p.broadcast_share(new_share)
                     mainLog.info("Sent a new share to the network")
                     
@@ -264,55 +269,49 @@ def run():
             sys.exit(0)
 
 
-        #Check if the node has to sign the next block
+        #Check if the node has to sign the next block. Control also timeouts
+        #Before we wait for the block time
         try:
-            if consensus.shares_ready():
-                signer = consensus.get_next_signer() 
-                signing_addr = chain.get_addr_from_ip(signer)
-                if (signing_addr in addresses) and ((time.time()-timestamp) >= BLOCK_TIME):
-                    mainLog.info("This node has to sign a block, selected IP: %s", signer)
-                    mainLog.info("Associated address: %s", signing_addr.encode("HEX"))
-                    new_block = chain.create_block(signing_addr)
-                    try:
-                        key_pos = addresses.index(signing_addr)
-                    except:
-                        raise Exception("FATAL ERROR: This node does not own the indicated key to sign the block (not present in the keystore)")
-                    sig_key = keys[key_pos]
-                    new_block.sign(sig_key.privkey)
-                    mainLog.info("Created new block no. %s, timestamp %s, coinbase %s", \
-                        new_block.header.number, new_block.header.timestamp, new_block.header.coinbase.encode("HEX"))
-                    mainLog.info("New block signature data: v %s -- r %s -- s %s", new_block.v, new_block.r, new_block.s)
-                    mainLog.info("This block contains %s transactions", new_block.transaction_count)
-                    mainLog.info("Sleeping 2s to give way to clock drift...")
-                    time.sleep(2)                                
-                    #Like receiving a new block
-                    before = time.time()
-                    chain.add_block(new_block)
-                    after = time.time()
-                    delay = after - before
-                    delays_blocks.write(str(new_block.number) + ',' + str(delay) + '\n' )                
-                    delays_txs.write("Added new block no." + str(new_block.number) + '\n')
-                    p2p.broadcast_block(new_block)
-                    #after a correct block, create and broadcast new share                     
-                    new_share = consensus.create_share()
-                    p2p.broadcast_share(new_share)
-                    mainLog.info("Sent a new share to the network")
-            elif time.time() - timestamp >= TIMEOUT:
-                #There's been an error. Recalculate random number
-                count = count + 1
-                consensus.create_share(count)
-                p2p.broadcast_share(new_share)
-                mainLog.info("Timeout expired. Recalculated random no and sent a new share to the network")
-                
             timestamp = chain.get_head_block().header.timestamp
             block_num = chain.get_head_block().header.number
-            #            DOES NOT WORK
-            #            #if curent time - timestamp >= TIMEOUT * 2 (means 1st backup signer KO, send a new timestamp to the conensus)
-            #            if (time.time() - timestamp) > (2 * TIMEOUT):
-            #                mainLog.warning("1st tiemout expired, selecting a new signer")
-            #                timestamp = timestamp +  2 * TIMEOUT
-            mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
-            consensus.calculate_next_signer(timestamp, block_num)
+            if ((time.time()-timestamp) >= BLOCK_TIME):
+                if consensus.shares_ready():
+                    signer = consensus.get_next_signer() 
+                    signing_addr = chain.get_addr_from_ip(signer)
+                    if (signing_addr in addresses) and ((time.time()-timestamp) >= BLOCK_TIME):
+                        mainLog.info("This node has to sign a block, selected IP: %s", signer)
+                        mainLog.info("Associated address: %s", signing_addr.encode("HEX"))
+                        new_block = chain.create_block(signing_addr)
+                        try:
+                            key_pos = addresses.index(signing_addr)
+                        except:
+                            raise Exception("FATAL ERROR: This node does not own the indicated key to sign the block (not present in the keystore)")
+                        sig_key = keys[key_pos]
+                        new_block.sign(sig_key.privkey)
+                        mainLog.info("Created new block no. %s, timestamp %s, coinbase %s", \
+                            new_block.header.number, new_block.header.timestamp, new_block.header.coinbase.encode("HEX"))
+                        mainLog.info("New block signature data: v %s -- r %s -- s %s", new_block.v, new_block.r, new_block.s)
+                        mainLog.info("This block contains %s transactions", new_block.transaction_count)
+                        mainLog.info("Sleeping 2s to give way to clock drift...")
+                        time.sleep(2)                                
+                        #Like receiving a new block
+                        before = time.time()
+                        chain.add_block(new_block)
+                        after = time.time()
+                        delay = after - before
+                        delays_blocks.write(str(new_block.number) + ',' + str(delay) + '\n' )                
+                        delays_txs.write("Added new block no." + str(new_block.number) + '\n')
+                        p2p.broadcast_block(new_block)
+                        #after a correct block, create and broadcast new share                     
+                        new_share = consensus.create_share(count, new_block.number)
+                        p2p.broadcast_share(new_share)
+                        mainLog.info("Sent a new share to the network")
+                elif (time.time() - timestamp) >= TIMEOUT:
+                    #There's been an error. Recalculate random number
+                    count = count + 1
+                    consensus.create_share(count)
+                    p2p.broadcast_share(new_share)
+                    mainLog.info("Timeout expired. Recalculated random no and sent a new share to the network")
         except Exception as e:
             mainLog.critical("Exception while checking if the node has to sign the next block")
             mainLog.exception(e)
@@ -376,7 +375,7 @@ def run():
             p2p.stop()
             sys.exit(0)
 
-        #answer queries from the network
+#########Answer queries from the network
         #blocks
         try:
             block_numbers = p2p.get_block_queries()
@@ -406,11 +405,12 @@ def run():
             p2p.stop()
             sys.exit(0)
     
+########Consensus        
         #Get shares from the network
         try:
             share = p2p.get_share()
             while share is not None:
-                consensus.store_share()                
+                consensus.store_share(share)                
         except Exception as e:
             mainLog.critical("Exception while processing received shares")
             mainLog.exception(e)
@@ -418,15 +418,27 @@ def run():
             p2p.stop()
             sys.exit(0)
  
- 
-
-        
-
+        #TODO: error control
+        #DKG management
        
-        #trigger new DKG           
-        if block_num % 100 == 0:
-            consensus.new_dkg()
-            
+        #Trigger new DKG               
+        if block_num % DKG_RENEWAL_INTERVAL == 0 and not dkg_on:
+            dkg_on = True
+            #TODO: define members
+            to_send = consensus.new_dkg(consensus.get_threshold())
+            for member, data in to_send.iteritems():
+                p2p.send_dkg(member, data['verif_vector'], data['secret_key_share_contrib'])
+        
+        #Collect DKG shares for the new DKG                
+        if dkg_on:
+            dkg_sahre = p2p.get_dkg_shares() 
+            while dkg_share is not None:
+                if consensus.verifyContributionShare(member, share['verif_vector'], share['secret_key_share_contrib']):
+                    if consenus.dkg_ready():
+                        dkg_on = False
+                else:
+                    mainLog.warning("Received invalid share. Ingoring.")                            
+                dkg_sahre = p2p.get_dkg_shares() 
 
 if __name__ == "__main__":
     run()
