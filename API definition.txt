@@ -54,11 +54,11 @@ get_threshold()
 #returns the configured threshold T
 
 signer get_next_signer(count ct)
-#returns the next IP that has to sign the next block
+#returns the next IP that has to sign the next block. If count != 0, it should recalculate the random number count times
 
 ################## share management ##################
 
-share create_share(count ct, block_number)
+share create_share(block_number)
 #returns a new share to send to the network
 
 store_share(share sh)
@@ -80,12 +80,14 @@ dkg_ready()
 #Returns True if the new DKG is ready, false otherwise
 
 
+
+OLD#################################################################
 #I think not needed
 calculate_next_signer(myIPs ip, timestamp t)
 #calculates the next IP that will sign a block. It is stored in an internal variable that get_next_signer() uses
 #myIPs is the set of IPs owned by the node, updated each time a block is added
 #timestamp is the timestamp of the last block added to the chain, used to randomly select the new signer
-
+OLD#################################################################
 
 
 #####################

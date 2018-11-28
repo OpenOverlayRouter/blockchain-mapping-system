@@ -18,6 +18,14 @@ import messages
 from transactions import Transaction
 from block import Block, BlockHeader
 import rlp
+import ConfigParser
+
+
+#Load config
+config = ConfigParser.RawConfigParser()
+config.read('chain_config.cfg')   
+
+
 
 DHT_PORT = 5005
 QUERY_PORT = 5006
@@ -25,7 +33,7 @@ P2P_PORT = 5007
 LOCALHOST = '127.0.0.1'
 MY_IP = ipgetter.myip()
 
-BOOTSTRAP_NODE = "84.88.81.69"
+BOOTSTRAP_NODE = config.get('P2P','bootstrap_node')
 
 PING_TIME = 300 # 5min
 BLOCK_CHUNK = 10

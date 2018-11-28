@@ -127,5 +127,19 @@ class P2P():
         except:
             p2pLog.error("P2P answer_tx_pool_query")
 
+    def send_dkg(self, share):
+        raise NotImplemented
+   
+    def get_dkg_share(self):
+        raise NotImplemented
+        
+    def broadcast_share(self, share):
+        raise NotImplemented
+        
+    def get_share(self):
+        raise NotImplemented
+        
+
+
 if __name__ == '__main__':
     pass

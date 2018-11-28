@@ -9,6 +9,7 @@ import sys
 #from transactions import Transaction
 #from block import Block
 #import chain
+import ConfigParser
 import time
 from config import Env
 from db import LevelDB
@@ -32,25 +33,7 @@ from utils import normalize_address
 from oor import Oor
 from own_exceptions import InvalidBlockSigner, UnsignedBlock
 
-EXT_TX_PER_LOOP = 125
-USER_TX_PER_LOOP = 1
-#Number of times to add 100s to consensus calculation to identify signers in case of timeout
-MAX_DISC_BLOCKS = 10
 
-USE_ETH_NIST = 0
-USE_ETH = 1
-USE_NIST = 2
-
-
-
-DKG_RENEWAL_INTERVAL = 100
-
-
-BLOCK_TIME = 900
-# 5 minutes
-
-TIMEOUT = 1800
-# 10 minutes
 mainLog = logging.getLogger('Main')
 
 def open_log_block_process_delay():
@@ -117,7 +100,18 @@ def init_logger():
 
 
 def run():
-    
+
+    #Load config    
+    config_data = ConfigParser.RawConfigParser()
+    config_data.read('chain_config.cfg')   
+    EXT_TX_PER_LOOP = config_data.getint('Transaction generation and processing','ext_tx_per_loop')
+    USER_TX_PER_LOOP = config_data.getint('Transaction generation and processing','user_tx_per_loop')
+    START_TIME = config_data.getint('Transaction generation and processing','start_time')
+    DKG_RENEWAL_INTERVAL = config_data.getint('Consensus','dkg_renewal_interval')
+    BLOCK_TIME = config_data.getint('General','block_time')
+    TIMEOUT = config_data.getint('General','timeout')
+
+    #Telemetry initialization
     start_time = time.time()
     #seen_tx = []
     init_logger()
@@ -125,15 +119,15 @@ def run():
     delays_blocks = open_log_block_process_delay()
     delays_txs = open_log_delay_create_txs()
 
+    #Modules initialization
     mainLog.info("Initializing Chain")
     chain = init_chain()
-
 
     last_block = chain.get_head_block().header.number
     mainLog.debug("Last block: %s", last_block)
     mainLog.info("Initializing P2P")
     p2p = init_p2p(chain.get_head_block().header.number)
-
+    #TODO: adapt
     mainLog.info("Initializing Consensus")
     consensus = init_consensus(USE_NIST)
 
@@ -159,6 +153,7 @@ def run():
     mainLog.info("Initializing OOR")
     oor = init_oor()
 
+    #Variables initialization
     end = 0
     count = 0
     dkg_on = False
@@ -169,45 +164,37 @@ def run():
     
     block_num = chain.get_head_block().header.number
     timestamp = chain.get_head_block().header.timestamp
-    mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
-    consensus.calculate_next_signer(timestamp, block_num)
-
-
+    
+    before = time.time()
+    perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs)
+    after = time.time()
+    elapsed = after - before
+    mainLog.info("Bootstrap finished. Elapsed time: %s", elapsed)
+    
     while(not end):
-        #Process new blocks
+        #Process new blocks. DOES NOT support bootstrap
         try:
             block = p2p.get_block()
             while block is not None:
                 mainLog.info("Received new block no. %s", block.number)
+                
                 res = False
-                attempts = 0
-                if block.count ==0:
-                    
-                    else:
-                        
                 try: 
-                    while attempts < MAX_DISC_BLOCKS and not res:
-                        attempts = attempts + 1
-                        signer, found = consensus.get_next_signer() 
-                        mainLog.debug("Verifying new block signature, signer should be %s", signer)
-                        mainLog.debug("Owner of the previous IP is address %s", chain.get_addr_from_ip(signer).encode("HEX"))
-                        mainLog.debug("Coinbase in the block is: %s", block.header.coinbase.encode("HEX"))
-                        try:                
-                            res = chain.verify_block_signature(block, signer)
-                        except InvalidBlockSigner:
-                            res = False                        
-                            mainLog.info("Invalid signer for this block, recalculating signer in case of timeout expiry")
-                            timestamp = timestamp + TIMEOUT
-                            mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
-                            consensus.calculate_next_signer(timestamp, block_num)
-                        except Exception as e:
-                            raise e
+                    signer = consensus.get_next_signer(block.count) 
+                    mainLog.debug("Verifying new block signature, signer should be %s", signer)
+                    mainLog.debug("Owner of the previous IP is address %s", chain.get_addr_from_ip(signer).encode("HEX"))
+                    mainLog.debug("Coinbase in the block is: %s", block.header.coinbase.encode("HEX"))
+                    res = chain.verify_block_signature(block, signer)
                 except UnsignedBlock as e:
                     mainLog.exception(e)
                     mainLog.error("Unsigned block. Skipping")
                     res = False
+                except InvalidBlockSigner as e:
+                    mainLog.exception(e)
+                    mainLog.error("Block no. %s signautre is invalid! Ignoring.", block.number)
+                    res = False                        
                 except Exception as e:
-                    mainLog.error("Block no. %s signautre is invalid!", block.number)
+                    mainLog.error("Unrecoverable error when checking block signature. Exiting.", block.number)
                     mainLog.exception(e)
                     raise e
                 if res:
@@ -219,18 +206,15 @@ def run():
                     delays_blocks.write(str(block.number) + ',' + str(delay) + '\n' )
                     delays_txs.write("Added new block no." + str(block.number) + '\n')
                     timestamp = chain.get_head_block().header.timestamp
-                    block_num = chain.get_head_block().header.number
-                    count = chain.get_head_block().header.count
-                    mainLog.info("Data sent to consensus: timestamp: %s -- block no. %s", timestamp, block_num)
-                    #consensus.calculate_next_signer(timestamp, block_num)
+                    block_num = chain.get_head_block().header.number                    
                     #after a correct block, create and broadcast new share                     
-                    new_share = consensus.create_share(0, block_num)
+                    count = 0
+                    new_share = consensus.create_share(count, block_num)
                     p2p.broadcast_share(new_share)
                     mainLog.info("Sent a new share to the network")
-                    
                 else:
                     mainLog.error("Received an erroneous block. Ignoring block...")
-                    #raise InvalidBlockSigner
+                    
                 block = p2p.get_block()
         except Exception as e:
             mainLog.critical("Exception while processing a received block")
@@ -275,13 +259,22 @@ def run():
             timestamp = chain.get_head_block().header.timestamp
             block_num = chain.get_head_block().header.number
             if ((time.time()-timestamp) >= BLOCK_TIME):
-                if consensus.shares_ready():
-                    signer = consensus.get_next_signer() 
+                #Time to create a new block
+                if (time.time() - timestamp) >= TIMEOUT:
+                #The expected signer didn't create a block. Trigger a recalculation of the random number to select a new signer
+                    count = count + 1
+                    timeout_expired =  True
+#                    consensus.create_share(count)
+#                    p2p.broadcast_share(new_share)
+#                    mainLog.info("Timeout expired. Recalculated random no and sent a new share to the network")
+                    mainLog.info("Timeout expired. Recalculated random no.")
+                if consensus.shares_ready() or timeout_expired:
+                    signer = consensus.get_next_signer(count) 
                     signing_addr = chain.get_addr_from_ip(signer)
-                    if (signing_addr in addresses) and ((time.time()-timestamp) >= BLOCK_TIME):
+                    if signing_addr in addresses:
                         mainLog.info("This node has to sign a block, selected IP: %s", signer)
                         mainLog.info("Associated address: %s", signing_addr.encode("HEX"))
-                        new_block = chain.create_block(signing_addr)
+                        new_block = chain.create_block(count, signing_addr)
                         try:
                             key_pos = addresses.index(signing_addr)
                         except:
@@ -303,15 +296,12 @@ def run():
                         delays_txs.write("Added new block no." + str(new_block.number) + '\n')
                         p2p.broadcast_block(new_block)
                         #after a correct block, create and broadcast new share                     
-                        new_share = consensus.create_share(count, new_block.number)
+                        count = 0
+                        timeout_expired = False
+                        new_share = consensus.create_share(new_block.number)
                         p2p.broadcast_share(new_share)
                         mainLog.info("Sent a new share to the network")
-                elif (time.time() - timestamp) >= TIMEOUT:
-                    #There's been an error. Recalculate random number
-                    count = count + 1
-                    consensus.create_share(count)
-                    p2p.broadcast_share(new_share)
-                    mainLog.info("Timeout expired. Recalculated random no and sent a new share to the network")
+
         except Exception as e:
             mainLog.critical("Exception while checking if the node has to sign the next block")
             mainLog.exception(e)
@@ -320,7 +310,7 @@ def run():
 
         # Process transactions from the user
         processed = 0
-        if (time.time() - start_time) > 2100:
+        if (time.time() - start_time) > START_TIME:
             try:
                 tx_int = user.get_tx()
                 while tx_int is not None:
@@ -431,14 +421,59 @@ def run():
         
         #Collect DKG shares for the new DKG                
         if dkg_on:
-            dkg_sahre = p2p.get_dkg_shares() 
+            dkg_share = p2p.get_dkg_shares() 
             while dkg_share is not None:
                 if consensus.verifyContributionShare(member, share['verif_vector'], share['secret_key_share_contrib']):
-                    if consenus.dkg_ready():
+                    if consensus.dkg_ready():
                         dkg_on = False
                 else:
                     mainLog.warning("Received invalid share. Ingoring.")                            
-                dkg_sahre = p2p.get_dkg_shares() 
+                dkg_share = p2p.get_dkg_shares() 
+                
+def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs):
+    #Code here is exaclty equal to the 'Process new blocks' part in the main, but without generating shares afterr adding the block.
+    try:
+        block = p2p.get_block()
+        while block is not None:
+            mainLog.info("Received new block no. %s", block.number)
+            
+            res = False
+            try: 
+                signer = consensus.get_next_signer(block.count) 
+                #TODO: in theory we should get the random no. from the previous block to calculate the next signer
+                mainLog.debug("Verifying new block signature, signer should be %s", signer)
+                mainLog.debug("Owner of the previous IP is address %s", chain.get_addr_from_ip(signer).encode("HEX"))
+                mainLog.debug("Coinbase in the block is: %s", block.header.coinbase.encode("HEX"))
+                res = chain.verify_block_signature(block, signer)
+            except UnsignedBlock as e:
+                mainLog.exception(e)
+                mainLog.error("Unsigned block. Skipping")
+                res = False
+            except InvalidBlockSigner as e:
+                mainLog.exception(e)
+                mainLog.error("Block no. %s signautre is invalid! Ignoring.", block.number)
+                res = False                        
+            except Exception as e:
+                mainLog.error("Unrecoverable error when checking block signature. Exiting.", block.number)
+                mainLog.exception(e)
+                raise e
+            if res:
+                # correct block
+                before = time.time()
+                chain.add_block(block)
+                after = time.time()
+                delay = after - before
+                delays_blocks.write(str(block.number) + ',' + str(delay) + '\n' )
+                delays_txs.write("Added new block no." + str(block.number) + '\n')
+            else:
+                mainLog.error("Received an erroneous block. Ignoring block...")
+                
+            block = p2p.get_block()
+    except Exception as e:
+        mainLog.critical("Exception in bootstrap process (block verification)")
+        mainLog.exception(e)
+        p2p.stop()
+        sys.exit(0)
 
 if __name__ == "__main__":
     run()
