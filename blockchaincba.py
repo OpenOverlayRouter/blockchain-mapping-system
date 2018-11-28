@@ -68,8 +68,8 @@ def init_p2p(last_block_num):
     return p2p
 
 
-def init_consensus(blockhash):
-    return Consensus(blockhash, TIMEOUT)
+def init_consensus(blockhash, dkg_participants, dkg_threshold):
+    return Consensus(blockhash, dkg_participants, dkg_threshold)
 
 
 def init_user():
@@ -129,7 +129,7 @@ def run():
     p2p = init_p2p(chain.get_head_block().header.number)
     #TODO: adapt
     mainLog.info("Initializing Consensus")
-    consensus = init_consensus(USE_NIST)
+    consensus = init_consensus(config_data.getint('Consensus','dkg_participants'), config_data.getint('Consensus','dkg_threshold'))
 
     mainLog.info("Initializing Keystore")
     keys, addresses = init_keystore()
