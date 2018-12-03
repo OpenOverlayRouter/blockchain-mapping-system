@@ -156,7 +156,40 @@ def answer_tx_pool_query(txs):
         list_tx.append(rawtx)
     kwargs = {"txs": list_tx}
     return make_envelope("answer_tx_pool_query", **kwargs)
+        
+def set_share(share):
+    '''Send a share to the network
+    share: A share to generate the random number'''
+    rawshare = rlp.encode(share).encode('base64')
+    kwargs = {"share": rawshare}
+    return make_envelope("set_share", **kwargs)
 
+def get_share():
+    '''Get a share from the network'''
+    return make_envelope("get_share")
+    
+def set_share_local(share):
+    '''Set Share Local 
+    share: Raw Share'''
+    kwargs = {"share": share}
+    return make_envelope("set_share_local", **kwargs)
+   
+def set_dkg_share(share):
+    '''Send a DKG share to the network
+    share: A share to generate the distributed group key'''
+    rawshare = rlp.encode(share).encode('base64')
+    kwargs = {"share": rawshare}
+    return make_envelope("set_dkg_share", **kwargs)
+
+def get_dkg_share():
+    '''Get a DKG share from the network'''
+    return make_envelope("get_dkg_share")
+    
+def set_dkg_share_local(share):
+    '''Set DKG Share Local 
+    share: Raw Share'''
+    kwargs = {"dkg_share": share}
+    return make_envelope("set_dkg_share_local", **kwargs)
 
 if __name__ == "__main__":
     print ping()

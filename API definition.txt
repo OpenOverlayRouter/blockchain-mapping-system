@@ -40,7 +40,7 @@ block_numbers get_block_queries()
 transaction tx_pool_query()
 #returns True if the network requests the transaction pool, False otherwise
 
-send_dkg(id, verif_vector, secret_key_share_contrib)
+send_dkg_share(id, verif_vector, secret_key_share_contrib)
 #sends a DKG individual verification vector and secret key share contribution to the specified member 
 
 broadcast_share(share sh)

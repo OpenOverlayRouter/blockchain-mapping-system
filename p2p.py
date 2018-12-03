@@ -6,6 +6,7 @@ import messages
 import rlp
 from transactions import Transaction
 from block import Block, BlockHeader
+from dkg import Share, Dkg_Share
 import logging.config
 
 import time
@@ -126,20 +127,46 @@ class P2P():
             self.sock.send(messages.answer_tx_pool_query(pool))
         except:
             p2pLog.error("P2P answer_tx_pool_query")
-
-    def send_dkg(self, share):
-        raise NotImplemented
-   
-    def get_dkg_share(self):
-        raise NotImplemented
-        
+       
     def broadcast_share(self, share):
-        raise NotImplemented
+        try:
+            self.sock.send(messages.set_share(share))
+        except:
+            p2pLog.error("P2P broadcast_share error")        
         
     def get_share(self):
-        raise NotImplemented
+        try:
+            self.sock.send(messages.get_share())
+            data = self.read()
+            if data["msgtype"] == "none":
+                self.share = False
+                return None
+            else:
+                share = rlp.decode(data["share"].decode('base64'), Share)
+                return share
+        except:
+            p2pLog.error("P2P get_share error")
         
-
+    def send_dkg_share(self, node, dkg_share):
+        #ToDo: needs node ID???
+        try:
+            self.sock.send(messages.set_dkg_share(dkg_share))
+        except:
+            p2pLog.error("P2P set_dkg_share error")        
+   
+    def get_dkg_share(self):
+        try:
+            self.sock.send(messages.get_dkg_share())
+            data = self.read()
+            if data["msgtype"] == "none":
+                self.share = False
+                return None
+            else:
+                share = rlp.decode(data["dkg_share"].decode('base64'), Dkg_Share)
+                return share
+        except:
+            p2pLog.error("P2P get_dkg_share error")
+        
 
 if __name__ == '__main__':
     pass

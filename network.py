@@ -1,7 +1,7 @@
 import sys
 from datetime import datetime
 from os import urandom
-import socket
+#import socket
 import random
 
 from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
@@ -19,7 +19,7 @@ from transactions import Transaction
 from block import Block, BlockHeader
 import rlp
 import ConfigParser
-
+from dkg import Share, Dkg_Share
 
 #Load config
 config = ConfigParser.RawConfigParser()
@@ -44,7 +44,7 @@ def _print(msg):
     print("[{}] {}".format(str(datetime.now()), msg))
     sys.stdout.flush()
 
-
+#External connectivity
 class p2pProtocol(Protocol):
     def __init__(self, factory):
         self.factory = factory
@@ -183,6 +183,18 @@ class p2pProtocol(Protocol):
                                     except:
                                         _print ("Wrong Tx")
                                 self.factory.tx_pool = True                
+                        elif data["msgtype"] == "set_share":
+                            try:
+                                share = rlp.decode(data["share"].decode('base64'), Share)
+                                self.factory.shares.add(data["share"])
+                            except:
+                                _print ("Wrong Share")
+                        elif data["msgtype"] == "set_dkg_share":
+                            try:
+                                share = rlp.decode(data["share"].decode('base64'), Dkg_Share)
+                                self.factory.dkg_shares.add(data["share"])
+                            except:
+                                _print ("Wrong DKG Share")
                     except Exception as exception:
                         print "except", exception.__class__.__name__, exception
                         self.transport.loseConnection()
@@ -211,7 +223,7 @@ class p2pProtocol(Protocol):
     def sendGetNumBlocks(self):
         self.sendMsg(messages.get_num_blocks())
 
-
+#Communication with p2p.py
 class localProtocol(Protocol):
     def __init__(self, factory):
         self.factory = factory
@@ -297,6 +309,22 @@ class localProtocol(Protocol):
                         while self.factory.tx_pool_query:
                             peer = self.factory.tx_pool_query.pop()
                             peer.sendMsg(messages.set_tx_pool(data["txs"]))
+                    elif data["msgtype"] ==  "set_share":
+                        self.sendPeers(line + '\r\n')
+                    elif data["msgtype"] == "get_share":
+                        if not self.factory.shares:
+                            self.sendMsg(messages.none())
+                        else:
+                            share = self.factory.shares.pop().encode('utf-8')
+                            self.sendMsg(messages.set_share_local(share))
+                    elif data["msgtype"] ==  "set_dkg_share":
+                        self.sendPeers(line + '\r\n')
+                    elif data["msgtype"] == "get_dkg_share":
+                        if not self.factory.dkg_shares:
+                            self.sendMsg(messages.none())
+                        else:
+                            share = self.factory.dkg_shares.pop().encode('utf-8')
+                            self.sendMsg(messages.set_dkg_share_local(share))
                     '''else:
                         for nodeid, address in self.factory.peers.items():
                             address.sendMsg(line + '\r\n')'''
@@ -311,7 +339,6 @@ class localProtocol(Protocol):
     def sendPeers(self, msg):
         for nodeid, address in self.factory.peers.items():
             address.sendMsg(msg)
-
 
 class myFactory(Factory):
     def __init__(self, last_block):
@@ -336,6 +363,8 @@ class myFactory(Factory):
         self.tx_pool_query = set()
         self.dht = None
         self.ck_dht_block = task.LoopingCall(self.check_dht)
+        self.shares = set()
+        self.dkg_shares = set()
     
     def stopFactory(self):
         pass
