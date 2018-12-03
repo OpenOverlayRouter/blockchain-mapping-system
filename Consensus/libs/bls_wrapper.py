@@ -7,11 +7,11 @@ class Bls():
     def __init__(self):
         self._isInit = False
 
-    def initialize(self):
+    def initialize(self, id):
         if not self._isInit:
             self._isInit = True
             try:
-                out = subprocess.check_output([EXE, "init"])
+                out = subprocess.check_output([EXE, "init", "-id", str(id)])
             except subprocess.CalledProcessError:
                 return False
 

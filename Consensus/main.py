@@ -5,12 +5,13 @@ from libs.bls_wrapper import Bls
 
 def main():
 
+    myId = 1234
     m = "hello bls threshold signature"
     ids = [ 1, 5, 3]
     k = 2
 
     bls = Bls()
-    bls.initialize()
+    bls.initialize(myId)
     _, sm = bls.sign(m)
     
     if not bls.verify(m, sm):
