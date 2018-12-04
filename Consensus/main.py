@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.7
 
-from libs.bls_wrapper import Bls
+from libs.bls_wrapper import *
 
 
 def main():
@@ -22,8 +22,8 @@ def main():
     
     sigs = []
     for share in shares:
-        _, aux = bls.sign(m, share["sk"])
-        if not bls.verify(m, aux, share["pk"]):
+        _, aux = bls_sign(m, share["sk"])
+        if not bls_verify(m, aux, share["pk"]):
             print("Error verifying message from id " + str(share["id"]))
             return
 

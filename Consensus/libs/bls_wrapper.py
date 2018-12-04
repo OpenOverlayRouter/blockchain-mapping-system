@@ -25,34 +25,17 @@ class Bls():
 
         return True
 
-    def sign(self, m, sk=None):
+    def sign(self, m):
         if not self._isInit:
             return False, ""
         
-        if sk is None:
-            sk = self.secKey
+        return bls_sign(m, self.secKey)
 
-        try:
-            out = subprocess.check_output([EXE, "sign", "-m", m, "-sk", str(sk)])
-        except subprocess.CalledProcessError:
-            return False, ""
-
-        m = re.search(r"sMsg: (.+)", out)
-        return True, m.group(1)
-
-    def verify(self, m, sm, pk=None):
+    def verify(self, m, sm):
         if not self._isInit:
             return False
         
-        if pk is None:
-            pk = self.pubKey
-
-        try:
-            subprocess.check_output([EXE, "verify", "-pk", pk, "-m", m, "-sm", sm])
-        except subprocess.CalledProcessError:
-            return False
-
-        return True
+        return bls_verify(m, sm, self.pubKey)
 
     def share(self, k, ids):
         result = []
@@ -65,7 +48,7 @@ class Bls():
         except subprocess.CalledProcessError:
             return False, []
 
-        matches = re.findall( r"share-0x\d: sk=(.+) pk=(.+)", out)
+        matches = re.findall( r"share-0x.+: sk=(.+) pk=(.+)", out)
         if len(matches) != len(ids):
             return False, []
 
@@ -94,3 +77,31 @@ class Bls():
 
         m = re.search(r"recovered: (.+)", out)
         return True, m.group(1)
+
+
+def bls_getPublicKey(sk):
+    cmd = [EXE, "getpk", "-sk", sk]
+    try:
+        out = subprocess.check_output(cmd)
+    except subprocess.CalledProcessError:
+        return ""
+
+    return re.match(r"pk: (.+)", out).group(1)
+
+def bls_sign(m, sk):
+    try:
+        out = subprocess.check_output([EXE, "sign", "-m", m, "-sk", str(sk)])
+    except subprocess.CalledProcessError:
+        return False, ""
+
+    m = re.search(r"sMsg: (.+)", out)
+    return True, m.group(1)
+
+
+def bls_verify(m, sm, pk):
+    try:
+        subprocess.check_output([EXE, "verify", "-pk", pk, "-m", m, "-sm", sm])
+    except subprocess.CalledProcessError:
+        return False
+
+    return True
