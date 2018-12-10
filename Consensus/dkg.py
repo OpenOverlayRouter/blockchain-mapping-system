@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.7
 
 import libs.bls_wrapper as blslib
+from random import randint
 
 def generateContribution(threshold, ids):
     vVec = []
@@ -88,7 +89,13 @@ def main():
     msg = "Hello world"
     sigs = []
     signerIds = []
-    for i in range(threshold):
+
+    while len(sigs) < threshold:
+        i = randint(0, len(members)-1)
+        if members[i]["id"] in signerIds:
+            continue
+        
+        print(str(i) + " is signing the message")
         sig = blslib.sign(msg, members[i]["secretKeyShare"])
         sigs.append(sig)
         signerIds.append(members[i]["id"])
