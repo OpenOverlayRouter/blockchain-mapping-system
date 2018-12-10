@@ -170,3 +170,15 @@ def secretKeyAdd(sk1, sk2):
         return ""
 
     return m.group(1)
+
+def publicKeyAdd(pk1, pk2):
+    try:
+        out = subprocess.check_output([EXE, "addpks", "-keys", str(pk1), str(pk2)])
+    except subprocess.CalledProcessError:
+        return ""
+
+    m = re.match(r"pk: (.+)", out)
+    if not m:
+        return ""
+
+    return m.group(1)

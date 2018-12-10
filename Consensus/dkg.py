@@ -19,8 +19,8 @@ def generateContribution(threshold, ids):
     
     return vVec, skContrib
 
-def verifyContributionShare(id, contribution, vvec):
-    pk1 = blslib.publicKeyShare(id, vvec)
+def verifyContributionShare(id, contribution, vVec):
+    pk1 = blslib.publicKeyShare(id, vVec)
     pk2 = blslib.getPublicKey(contribution)
 
     return blslib.publicKeyIsEqual(pk1, pk2)
@@ -31,6 +31,18 @@ def addContributionShares(secretKeyShares):
         first = blslib.secretKeyAdd(first, sk)
     
     return first
+
+def addVerificationVectors(vVecs):
+    groupsvVec = [None] * len(vVecs[0])
+    for vVec in vVecs:
+        for i, pk2 in enumerate(vVec):
+            pk1 = groupsvVec[i]
+            if not pk1:
+                groupsvVec[i] = pk2
+            else:
+                groupsvVec[i] = blslib.publicKeyAdd(pk1, pk2)
+
+    return groupsvVec
 
 def main():
     members = []
@@ -65,6 +77,12 @@ def main():
         member["secretKeyShare"] = sk
 
     print("Secret shares have been generated")
+
+    groupsvVec = addVerificationVectors(vVecs)
+    print("Verification vector computed")
+
+    groupsPk = groupsvVec[0]
+
 
 if __name__ == "__main__":
     main()
