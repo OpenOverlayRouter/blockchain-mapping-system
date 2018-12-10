@@ -109,3 +109,15 @@ def bls_verify(m, sm, pk):
         return False
 
     return True
+
+def bls_generateContributionShare(id, sKeys):
+    cmd = [EXE, "secshare", "-id", str(id), "-sks"]
+    for sk in sKeys:
+        cmd.append(sk)
+
+    try:
+        out = subprocess.check_output(cmd)
+    except subprocess.CalledProcessError:
+        return ""
+
+    return re.match(r"sk: (.+)", out).group(1)
