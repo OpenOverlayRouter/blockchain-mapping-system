@@ -82,6 +82,7 @@ def main():
     print("Verification vector computed")
 
     groupsPk = groupsvVec[0]
+    print("group public key: " + blslib.publicKeyExport(groupsPk))
 
 
 if __name__ == "__main__":

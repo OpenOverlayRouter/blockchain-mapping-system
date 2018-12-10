@@ -182,3 +182,15 @@ def publicKeyAdd(pk1, pk2):
         return ""
 
     return m.group(1)
+
+def publicKeyExport(pk):
+    try:
+        out = subprocess.check_output([EXE, "exportpk", "-pk", str(pk)])
+    except subprocess.CalledProcessError:
+        return ""
+
+    m = re.match(r"pk: (.+)", out)
+    if not m:
+        return ""
+
+    return m.group(1)
