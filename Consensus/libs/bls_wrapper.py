@@ -7,11 +7,14 @@ class Bls():
     def __init__(self):
         self._isInit = False
 
-    def initialize(self, id):
+    def initialize(self, id=None):
         if not self._isInit:
-            self._isInit = True
             try:
-                out = subprocess.check_output([EXE, "init", "-id", str(id)])
+                cmd = [EXE, "init"]
+                if id is not None:
+                    cmd.extend([ "-id", str(id) ]);
+
+                out = subprocess.check_output(cmd)
             except subprocess.CalledProcessError:
                 return False
 
@@ -23,18 +26,19 @@ class Bls():
             self.secKey = m.group(1)
             self.pubKey = m.group(2)
 
+        self._isInit = True
         return True
 
     def sign(self, m):
         if not self._isInit:
             return False, ""
-        
+
         return bls_sign(m, self.secKey)
 
     def verify(self, m, sm):
         if not self._isInit:
             return False
-        
+
         return bls_verify(m, sm, self.pubKey)
 
     def share(self, k, ids):

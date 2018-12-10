@@ -11,15 +11,18 @@ def main():
     k = 2
 
     bls = Bls()
-    bls.initialize(myId)
-    _, sm = bls.sign(m)
-    
+    if not bls.initialize():
+        print("Error initializing bls")
+        return
+
+    b, sm = bls.sign(m)
+
     if not bls.verify(m, sm):
         print("Error verifying initial message")
         return
 
     _, shares = bls.share(k, ids)
-    
+
     sigs = []
     for share in shares:
         _, aux = bls_sign(m, share["sk"])
@@ -28,7 +31,7 @@ def main():
             return
 
         sigs.append(aux)
-    
+
     _, s = bls.recover(ids, sigs)
     if not bls.verify(m, s):
         print("Recover failed")
