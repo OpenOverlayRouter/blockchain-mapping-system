@@ -52,7 +52,6 @@ def main():
         bls.initialize(member)
         members.append({
             "id": bls.secKey,
-            "bls": bls,
             "receivedShares": []
         })
 
@@ -83,6 +82,25 @@ def main():
 
     groupsPk = groupsvVec[0]
     print("group public key: " + blslib.publicKeyExport(groupsPk))
+
+    print("testing signature")
+
+    msg = "Hello world"
+    sigs = []
+    signerIds = []
+    for i in range(threshold):
+        sig = blslib.sign(msg, members[i]["secretKeyShare"])
+        sigs.append(sig)
+        signerIds.append(members[i]["id"])
+    
+    groupsSig = blslib.recover(signerIds, sigs)
+    print("sigtest result: " + blslib.signatureExport(groupsSig))
+
+    verified = blslib.verify(msg, groupsSig, groupsPk)
+    if verified:
+        print("VERIFIED!")
+    else:
+        print("NOT VERIFIED!")
 
 
 if __name__ == "__main__":

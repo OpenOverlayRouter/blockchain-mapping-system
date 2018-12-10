@@ -65,26 +65,6 @@ class Bls():
 
         return result
 
-    def recover(self, ids, sigs):
-        cmd = [EXE, "recover", "-ids"]
-        for i in ids:
-            cmd.append(str(i))
-
-        cmd.append("-sigs")
-        for sig in sigs:
-            cmd.append(str(sig))
-
-        try:
-            out = subprocess.check_output(cmd)
-        except subprocess.CalledProcessError:
-            return ""
-
-        m = re.search(r"recovered: (.+)", out)
-        if not m:
-            return ""
-
-        return m.group(1)
-
 def sign(m, sk):
     try:
         out = subprocess.check_output([EXE, "sign", "-m", m, "-sk", str(sk)])
@@ -99,12 +79,35 @@ def sign(m, sk):
 
 
 def verify(m, sm, pk):
+    cmd = [EXE, "verify", "-pk", pk, "-m", m, "-sm", sm]
+
     try:
-        subprocess.check_output([EXE, "verify", "-pk", pk, "-m", m, "-sm", sm])
+        subprocess.check_output(cmd)
     except subprocess.CalledProcessError:
         return False
 
     return True
+
+def recover(ids, sigs):
+    cmd = [EXE, "recover", "-ids"]
+    for i in ids:
+        cmd.append(str(i))
+
+    cmd.append("-sigs")
+    for sig in sigs:
+        cmd.append(str(sig))
+
+    try:
+        out = subprocess.check_output(cmd)
+    except subprocess.CalledProcessError:
+        return ""
+
+    m = re.search(r"recovered: (.+)", out)
+    if not m:
+        return ""
+
+    return m.group(1)
+
 
 def getPublicKey(sk):
     cmd = [EXE, "getpk", "-sk", sk]
@@ -190,6 +193,18 @@ def publicKeyExport(pk):
         return ""
 
     m = re.match(r"pk: (.+)", out)
+    if not m:
+        return ""
+
+    return m.group(1)
+
+def signatureExport(sig):
+    try:
+        out = subprocess.check_output([EXE, "exportsig", "-sig", str(sig)])
+    except subprocess.CalledProcessError:
+        return ""
+
+    m = re.match(r"sig: (.+)", out)
     if not m:
         return ""
 

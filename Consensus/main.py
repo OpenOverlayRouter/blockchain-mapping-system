@@ -32,7 +32,7 @@ def main():
 
         sigs.append(aux)
 
-    s = bls.recover(ids, sigs)
+    s = blslib.recover(ids, sigs)
     if not bls.verify(m, s):
         print("Recover failed")
         return
