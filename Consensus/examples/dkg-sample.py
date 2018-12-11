@@ -47,13 +47,12 @@ def dkgSetup(ids, threshold):
 
     return members, groupsvVec
 
-def dkgTest(members, vVec, threshold):
+def dkgTest(msg, members, vVec, threshold):
     groupsPk = vVec[0]
-    msg = "Hello world"
     sigs = []
     signerIds = []
 
-    print("Testing signature")
+    print("Testing signature on message \"" + msg + "\"")
 
     while len(sigs) < threshold:
         i = randint(0, len(members)-1)
@@ -72,22 +71,30 @@ def dkgTest(members, vVec, threshold):
     verified = bls.verify(msg, groupsSig, groupsPk)
     print(("\033[92m" if verified else "\033[91mNOT ") + "VERIFIED \033[0m\n")
 
+    return groupsSig
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", help="Ids of members of the dkg", nargs="*", default=[ 10314, 30911, 25411, 8608, 31524, 15441, 23399], type=int)
     parser.add_argument("-th", help="Threshold of the threshold signature that will be setup", nargs="?", type=int)
-    parser.add_argument("-nt", help="Amount of times a dkg test will be performed for the same setup", nargs="?", default=5, type=int)
+    parser.add_argument("-rr", help="Amount of times a dkg round will be repeated (for the same message)", nargs="?", default=2, type=int)
+    parser.add_argument("-nr", help="Amount of rounds, where the message from the previous round will be signed", nargs="?", default=5, type=int)
     args = parser.parse_args()
 
     ids = args.m
     threshold = args.th if args.th else len(ids)/2 + len(ids)%2
-
-    numTests = args.nt
-
+    numRounds = args.nr
+    roundRepeat = args.rr
 
     members, vVec = dkgSetup(ids, threshold)
-    for i in range(numTests):
-        dkgTest(members, vVec, threshold)
+
+    msg = "This is a dkg sample"
+    for i in range(numRounds):
+        print("ROUND " + str(i+1))
+        print("----------------------------------------")
+        roundMsg = msg
+        for j in range(roundRepeat):
+            msg = dkgTest(roundMsg, members, vVec, threshold)
 
 
 if __name__ == "__main__":
