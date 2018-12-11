@@ -5,17 +5,21 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 import libs.bls_wrapper as bls
 import dkg as dkg
 from random import randint
+import argparse
 
 def dkgSetup(ids, threshold):
     members = []
     for member in ids:
         secKey, _ = bls.genKeys(member)
         members.append({
+            "originalId": member,
             "id": secKey,
             "receivedShares": []
         })
 
     print("Beginning the secret instantation round...")
+    print("\tUsing members: " + " ".join(map(str, ids)))
+    print("\tUsing threshold of: " + str(threshold))
 
     vVecs = []
     for _ in members:
@@ -35,11 +39,11 @@ def dkgSetup(ids, threshold):
         sk = dkg.addContributionShares(member["receivedShares"])
         member["secretKeyShare"] = sk
 
-    print("Secret shares have been generated")
+    print("-> Secret shares have been generated")
 
     groupsvVec = dkg.addVerificationVectors(vVecs)
-    print("Verification vector computed")
-    print("Secret instantation round completed with groupPk: " + (groupsvVec[0]))
+    print("-> Verification vector computed")
+    print("Resulting group public key is " + (groupsvVec[0]) + "\n")
 
     return members, groupsvVec
 
@@ -57,25 +61,31 @@ def dkgTest(members, vVec, threshold):
             continue
 
         skShare = members[i]["secretKeyShare"]
-        print(str(i) + " is signing the message with share: " + skShare)
+        print("-> Member " + str(members[i]["originalId"]) + " signs with share: " + skShare)
         sig = bls.sign(msg, skShare)
         sigs.append(sig)
         signerIds.append(members[i]["id"])
 
     groupsSig = bls.recover(signerIds, sigs)
-    print("sigtest result: " + groupsSig)
+    print("Resulting sig: " + groupsSig)
 
     verified = bls.verify(msg, groupsSig, groupsPk)
-    if verified:
-        print("VERIFIED!")
-    else:
-        print("NOT VERIFIED!")
+    print(("\033[92m" if verified else "\033[91mNOT ") + "VERIFIED \033[0m\n")
 
 def main():
-    ids = [ 10314, 30911, 25411, 8608, 31524, 15441, 23399 ]
-    threshold = 4
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-m", help="Ids of members of the dkg", nargs="*", default=[ 10314, 30911, 25411, 8608, 31524, 15441, 23399], type=int)
+    parser.add_argument("-th", help="Threshold of the threshold signature that will be setup", nargs="?", type=int)
+    parser.add_argument("-nt", help="Amount of times a dkg test will be performed for the same setup", nargs="?", default=5, type=int)
+    args = parser.parse_args()
+
+    ids = args.m
+    threshold = args.th if args.th else len(ids)/2 + len(ids)%2
+
+    numTests = args.nt
+
+
     members, vVec = dkgSetup(ids, threshold)
-    numTests = 5
     for i in range(numTests):
         dkgTest(members, vVec, threshold)
 
