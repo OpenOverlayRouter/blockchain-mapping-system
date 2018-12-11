@@ -1,6 +1,8 @@
 #!/usr/bin/env python2.7
 
-import libs.bls_wrapper as blslib
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+import libs.bls_wrapper as bls
 
 
 def main():
@@ -10,30 +12,30 @@ def main():
     ids = [ 1, 5, 3]
     k = 2
 
-    bls = blslib.Bls()
-    if not bls.initialize():
+    sk, pk = bls.genKeys()
+    if not sk:
         print("Error initializing bls")
         return
 
-    sm = bls.sign(m)
+    sm = bls.sign(m, sk)
 
-    if not bls.verify(m, sm):
+    if not bls.verify(m, sm, pk):
         print("Error verifying initial message")
         return
 
-    shares = bls.share(k, ids)
+    shares = bls.share(sk, k, ids)
 
     sigs = []
     for share in shares:
-        aux = blslib.sign(m, share["sk"])
-        if not blslib.verify(m, aux, share["pk"]):
+        aux = bls.sign(m, share["sk"])
+        if not bls.verify(m, aux, share["pk"]):
             print("Error verifying message from id " + str(share["id"]))
             return
 
         sigs.append(aux)
 
-    s = blslib.recover(ids, sigs)
-    if not bls.verify(m, s):
+    s = bls.recover(ids, sigs)
+    if not bls.verify(m, s, pk):
         print("Recover failed")
         return
 

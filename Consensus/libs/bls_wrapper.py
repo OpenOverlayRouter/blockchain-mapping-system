@@ -2,68 +2,45 @@ import os, re, sys, subprocess
 
 EXE='utils/bls.exe'
 
-class Bls():
+def genKeys(id=None):
+    cmd = [EXE, "init"]
+    if id is not None:
+        cmd.extend([ "-id", str(id) ]);
+    try:
+        out = subprocess.check_output(cmd)
+    except subprocess.CalledProcessError:
+        return "", ""
 
-    def __init__(self):
-        self._isInit = False
+    m = re.search(r"secKey: (.+)\npubKey: (.+)", out)
 
-    def initialize(self, id=None):
-        if not self._isInit:
-            try:
-                cmd = [EXE, "init"]
-                if id is not None:
-                    cmd.extend([ "-id", str(id) ]);
+    if not m:
+        return "", ""
 
-                out = subprocess.check_output(cmd)
-            except subprocess.CalledProcessError:
-                return False
+    return m.group(1), m.group(2)
 
-            m = re.search(r"secKey: (.+)\npubKey: (.+)", out)
+def share(sk, k, ids):
+    result = []
+    cmd = [EXE, "share", "-sk", sk, "-k", str(k), "-ids"]
+    for i in ids:
+        cmd.append(str(i))
 
-            if not m:
-                return False
+    try:
+        out = subprocess.check_output(cmd)
+    except subprocess.CalledProcessError:
+        return []
 
-            self.secKey = m.group(1)
-            self.pubKey = m.group(2)
+    matches = re.findall( r"share-0x.+: sk=(.+) pk=(.+)", out)
+    if len(matches) != len(ids):
+        return []
 
-        self._isInit = True
-        return True
+    for index, id in enumerate(ids):
+        result.append({
+            "id": id,
+            "sk": matches[index][0],
+            "pk": matches[index][1]
+        })
 
-    def sign(self, m):
-        if not self._isInit:
-            return ""
-
-        return sign(m, self.secKey)
-
-    def verify(self, m, sm):
-        if not self._isInit:
-            return False
-
-        return verify(m, sm, self.pubKey)
-
-    def share(self, k, ids):
-        result = []
-        cmd = [EXE, "share", "-sk", self.secKey, "-k", str(k), "-ids"]
-        for i in ids:
-            cmd.append(str(i))
-
-        try:
-            out = subprocess.check_output(cmd)
-        except subprocess.CalledProcessError:
-            return []
-
-        matches = re.findall( r"share-0x.+: sk=(.+) pk=(.+)", out)
-        if len(matches) != len(ids):
-            return []
-
-        for index, id in enumerate(ids):
-            result.append({
-                "id": id,
-                "sk": matches[index][0],
-                "pk": matches[index][1]
-            })
-
-        return result
+    return result
 
 def sign(m, sk):
     try:
@@ -74,7 +51,7 @@ def sign(m, sk):
     m = re.search(r"sMsg: (.+)", out)
     if not m:
         return ""
-    
+
     return m.group(1)
 
 
@@ -181,30 +158,6 @@ def publicKeyAdd(pk1, pk2):
         return ""
 
     m = re.match(r"pk: (.+)", out)
-    if not m:
-        return ""
-
-    return m.group(1)
-
-def publicKeyExport(pk):
-    try:
-        out = subprocess.check_output([EXE, "exportpk", "-pk", str(pk)])
-    except subprocess.CalledProcessError:
-        return ""
-
-    m = re.match(r"pk: (.+)", out)
-    if not m:
-        return ""
-
-    return m.group(1)
-
-def signatureExport(sig):
-    try:
-        out = subprocess.check_output([EXE, "exportsig", "-sig", str(sig)])
-    except subprocess.CalledProcessError:
-        return ""
-
-    m = re.match(r"sig: (.+)", out)
     if not m:
         return ""
 
