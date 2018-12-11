@@ -14,7 +14,8 @@ def dkgSetup(ids, threshold):
         members.append({
             "originalId": member,
             "id": secKey,
-            "receivedShares": []
+            "receivedShares": [],
+            "secretKeyShare": None
         })
 
     print("Beginning the secret instantation round...")
