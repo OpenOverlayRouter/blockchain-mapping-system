@@ -67,4 +67,6 @@ To properly install the last two packages:
 ```bash
 sudo pip install -I kademlia==0.6 rpcudp==2.0
 ```
-
+To compile the BLS:
+sudo apt install libgmp-dev libssl-dev
+./Consensus/getDependencies.sh
