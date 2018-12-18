@@ -20,6 +20,9 @@ class BlockHeader(rlp.Serializable):
         ('tx_root', trie_root),
         ('number', big_endian_int),
         ('coinbase', address)
+        ('random_number', )
+        ('verif_vector',)
+        
     ]
 
     def __init__(self,

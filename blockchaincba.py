@@ -431,7 +431,7 @@ def run():
                 dkg_share = p2p.get_dkg_shares() 
                 
 def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs):
-    #Code here is exaclty equal to the 'Process new blocks' part in the main, but without generating shares afterr adding the block.
+    #Code here is exaclty equal to the 'Process new blocks' part in the main, but without generating shares after adding the block.
     try:
         block = p2p.get_block()
         while block is not None:
