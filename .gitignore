@@ -26,3 +26,5 @@ network.out
 data_generation/
 keystore_old/
 keystore/keystore/
+
+**/log.txt
