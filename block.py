@@ -1,7 +1,7 @@
 import rlp
 import trie
 from rlp.sedes import big_endian_int, Binary, binary, CountableList
-from utils import hash32, trie_root, address, sha3
+from utils import hash32, trie_root, address, sha3, group_sig
 from rlp.utils import encode_hex
 from config import default_config
 from transactions import Transaction
@@ -20,8 +20,8 @@ class BlockHeader(rlp.Serializable):
         ('tx_root', trie_root),
         ('number', big_endian_int),
         ('coinbase', address)
-        ('random_number', )
-        ('verif_vector',)
+        ('random_number', hash32)
+        ('group_pubkey', group_sig)
         
     ]
 

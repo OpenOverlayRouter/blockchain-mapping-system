@@ -27,8 +27,8 @@ sudo apt-get -y install python
 sudo apt-get -y install python-scrypt
 sudo apt-get -y install python-pip
 sudo pip install --upgrade pip
-sudo pip install py_ecc 
-sudo pip install rlp
+sudo pip install py_ecc==1.1.3
+sudo pip install rlp==0.6.0
 sudo pip install PyCryptodome
 sudo pip install netaddr
 sudo pip install ipaddr
@@ -39,6 +39,7 @@ sudo pip install twisted
 sudo pip install pytricia
 sudo pip install bitstring
 sudo pip install py-radix
+sudo pip install -I kademlia==0.6 rpcudp==2.0
 
 echo "Adjusting keystore and transactions for location" $location
 rm -r keystore

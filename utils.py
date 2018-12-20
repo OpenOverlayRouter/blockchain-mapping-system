@@ -170,3 +170,9 @@ int256 = BigEndianInt(256)
 hash32 = Binary.fixed_length(32)
 trie_root = Binary.fixed_length(32, allow_empty=True)
 null_address = b'\xff' * 20
+#For DKG
+#When encoding hex strings, binary lenght is half of the hex number of chars
+share = Binary.fixed_length(32, allow_empty=True)
+#dkg_contrib = Binary.fixed_length(268, allow_empty=True)
+group_pubkey = Binary.fixed_length(128, allow_empty=True)
+group_sig = Binary.fixed_length(64, allow_empty=True)
