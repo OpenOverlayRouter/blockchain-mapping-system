@@ -17,18 +17,45 @@ trap "kill 0" EXIT
 
 topDir=$(git rev-parse --show-toplevel)
 utilsDir="$topDir/Consensus/examples/tcp-utils"
-members=($(cat "$utilsDir"/members.txt))
-amountMembers=${#members[@]}
-threshold=$((amountMembers/2 + 1))
 port=1111
+amountMembers=0
+aux=""
+if [ -f "$utilsDir"/members.txt ]; then
+    members=($(cat "$utilsDir"/members.txt))
+    amountMembers=${#members[@]}
+    threshold=$((amountMembers/2 + 1))
+fi
 
 # MEMBERS
 echo "-------------------------------------"
-echo "Members are:"
-echo "${members[*]}"
-ValidText_ "\nThere are $amountMembers members"
-echo "(Remember that members are specified in file $utilsDir/members.txt)"
+if [ $amountMembers -gt 0 ]; then
+    echo "Members ($amountMembers) are:"
+    echo "${members[*]}"
+    read -p "Do you want to generate a new list of members? (y/N) " aux
+fi
 
+if [ $amountMembers -eq 0 -o "$aux" == "y" ]; then
+    read -p "Indicate lowest id that can be generated (default is 10000) " low
+    if ! [[ $low =~ ^[-+]?[0-9]+$ ]]; then
+        low=10000
+    fi
+
+    read -p "Indicate highest id that can be generated (default is 30000) " high
+    if ! [[ $high =~ ^[-+]?[0-9]+$ ]]; then
+        high=30000
+    fi
+
+    read -p "Indicate amount of ids that will be generated (default is 100) " amount
+    if ! [[ $amount =~ ^[-+]?[0-9]+$ ]]; then
+        amount=100
+    fi
+    "$utilsDir"/genMembers.sh "$low" "$high" "$amount"
+    members=($(cat "$utilsDir"/members.txt))
+    amountMembers=${#members[@]}
+    threshold=$((amountMembers/2 + 1))
+fi
+
+ValidText_ "\nThere are $amountMembers members"
 # THRESHOLD
 echo "-------------------------------------"
 read -p "Indicate a new threshold or press enter for default($threshold) " aux
@@ -72,7 +99,7 @@ echo -e "Launching nodes\n"
 cd "$topDir/Consensus" > /dev/null 2>&1
 
 for m in "${members[@]}"; do
-    ./examples/tcp-utils/node.py -id "$m" -ids ${members[*]} -p "$port" -t "$threshold" &
+    ./examples/tcp-utils/node.py -id "$m" -p "$port" -t "$threshold" &
     echo "Launched node $m"
 done
 

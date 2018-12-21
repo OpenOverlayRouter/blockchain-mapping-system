@@ -14,10 +14,11 @@ import logger
 
 signal.signal(signal.SIGINT, signal.SIG_DFL);
 
-def init(oid, oids, threshold, port):
+def init(oid, threshold, port):
     global log
     log = logger.setup_custom_logger(str(oid))
     members = {}
+    oids = [int(line.rstrip('\n')) for line in open("examples/tcp-utils/members.txt")]
 
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
@@ -133,8 +134,7 @@ def sendMsg(to, data):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-id", help="Id of this node", required=True, type=int)
-    parser.add_argument("-ids", help="Ids of all the nodes", nargs="*", required=True, type=int)
     parser.add_argument("-p", help="Port of socket that sends setup time", required=True, type=int)
     parser.add_argument("-t", help="Threshold", required=True, type=int)
     args = parser.parse_args()
-    init(args.id, args.ids, args.t, args.p)
+    init(args.id, args.t, args.p)

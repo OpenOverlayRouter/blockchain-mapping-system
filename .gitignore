@@ -27,4 +27,6 @@ data_generation/
 keystore_old/
 keystore/keystore/
 
+# Consensus tmp files
 **/log.txt
+**/members.txt
