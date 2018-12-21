@@ -1,1 +1,1 @@
-These script must be called from Consensus directory in order to work.
+Python scripts from this folder must be called from Consensus directory in order to work.

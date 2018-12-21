@@ -1,7 +1,7 @@
 #!/usr/bin/env python2.7
 
 import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))
 import libs.bls_wrapper as bls
 import dkg as dkg
 import zmq
@@ -14,10 +14,9 @@ import logger
 
 signal.signal(signal.SIGINT, signal.SIG_DFL);
 
-def init(oid, oids, port):
+def init(oid, oids, threshold, port):
     global log
     log = logger.setup_custom_logger(str(oid))
-    threshold = int(len(oids)/2 + len(oids)%2)
     members = {}
 
     ctx = zmq.Context()
@@ -42,7 +41,8 @@ def init(oid, oids, port):
     while not end:
         socks = dict(poller.poll())
         if sub in socks and socks[sub] == zmq.POLLIN:
-            if sub.recv() == "setup":
+            msg = sub.recv()
+            if msg == "setup":
                 setup(members, oid, oids, threshold)
         if socket in socks and socks[socket] == zmq.POLLIN:
             msg = json.loads(socket.recv())
@@ -135,5 +135,6 @@ if __name__ == "__main__":
     parser.add_argument("-id", help="Id of this node", required=True, type=int)
     parser.add_argument("-ids", help="Ids of all the nodes", nargs="*", required=True, type=int)
     parser.add_argument("-p", help="Port of socket that sends setup time", required=True, type=int)
+    parser.add_argument("-t", help="Threshold", required=True, type=int)
     args = parser.parse_args()
-    init(args.id, args.ids, args.p)
+    init(args.id, args.ids, args.t, args.p)
