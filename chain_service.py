@@ -229,6 +229,9 @@ class ChainService():
         assert isinstance(tx, Transaction)
         return tx in self.transactions
 
-    #returns the corresponing blockchain addres for the specified IP address    
+    #returns the corresponing blockchain address for the specified IP address    
     def get_addr_from_ip(self, ipaddr):
         return normalize_address(self.chain.patricia.get_value(str(ipaddr)))
+        
+    def get_current_dkg_group():
+        
