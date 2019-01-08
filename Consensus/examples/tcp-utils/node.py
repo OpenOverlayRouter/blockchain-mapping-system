@@ -8,11 +8,14 @@ import zmq
 import signal
 import json
 import argparse
-from threading import Thread
-import Queue
 import logger
 
 signal.signal(signal.SIGINT, signal.SIG_DFL);
+
+log = None
+sk = None
+groupPk = None
+state = "ipchain"
 
 def init(oid, threshold, port):
     global log
@@ -32,11 +35,7 @@ def init(oid, threshold, port):
     poller.register(socket, zmq.POLLIN)
     poller.register(sub, zmq.POLLIN)
 
-    contribQueue = Queue.Queue()
     end = False
-
-    thread = Thread(target = handleContribs, args = (contribQueue, end, members, oid))
-    thread.start()
 
     log.info("%d: Started communications..." % oid)
     while not end:
@@ -45,30 +44,20 @@ def init(oid, threshold, port):
             msg = sub.recv()
             if msg == "setup":
                 setup(members, oid, oids, threshold)
+            elif msg == "consensus":
+                print("CONSENSUS?")
+
         if socket in socks and socks[socket] == zmq.POLLIN:
             msg = json.loads(socket.recv())
             topic = msg["topic"]
             if topic == "contrib":
-                contribQueue.put(msg)
+                receiveContribution(msg, members, oid)
                 socket.send("OK")
-            elif topic == "vvec":
-                vvec = []
-                if oid in members:
-                    vvec = members[oid]["vvec"]
-                socket.send(json.dumps(vvec))
-
-    thread.join()
-
-def handleContribs(contribQueue, end, members, oid):
-    while not end:
-        receiveContribution(contribQueue.get(), members, oid)
-
 
 def receiveContribution(msg, members, m_oid):
     oid = msg["oid"]
     contrib = msg["contrib"]
-
-    vVec = getVerificationVector(m_oid, oid)
+    vVec = msg["vvec"]
 
     if dkg.verifyContributionShare(members[m_oid]["id"], contrib, vVec):
         members[oid]["receivedShare"] = contrib
@@ -78,10 +67,12 @@ def receiveContribution(msg, members, m_oid):
         log.info("Received invalid share from member %s" % oid)
 
     if allSharesReceived(members):
+        global sk, groupPk
         sk = dkg.addContributionShares( [ member["receivedShare"] for _,member in members.iteritems() ])
         groupsvVec = dkg.addVerificationVectors( [ member["vvec"] for _,member in members.iteritems() ])
+        groupPk = groupsvVec[0]
         log.info("DKG setup completed")
-        log.info("Resulting group public key is " + (groupsvVec[0]) + "\n")
+        log.info("Resulting group public key is " + groupPk + "\n")
 
 def setup(members, m_oid, oids, threshold):
     members.clear()
@@ -104,6 +95,7 @@ def setup(members, m_oid, oids, threshold):
         else:
             sendMsg(oid, {
                 "oid": m_oid,
+                "vvec": vVec,
                 "topic": "contrib",
                 "contrib": skContrib[i]
             })

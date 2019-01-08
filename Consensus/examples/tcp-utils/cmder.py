@@ -23,7 +23,7 @@ def main(port):
                 socket.send("setup")
                 print("Initializing DKG...")
             elif cmd == "consensus" or cmd == "c":
-                print("Reaching consensus...")
+                socket.send("consensus")
             else:
                 print("Unknown command %s" % cmd)
 
