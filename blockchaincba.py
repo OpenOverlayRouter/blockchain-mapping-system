@@ -433,11 +433,8 @@ def run():
         if dkg_on:
             dkg_share = p2p.get_dkg_shares() 
             while dkg_share is not None:
-                if consensus.verifyContributionShare(member, share['verif_vector'], share['secret_key_share_contrib']):
-                    if consensus.dkg_ready():
-                        dkg_on = False
-                else:
-                    mainLog.warning("Received invalid share. Ingoring.")                            
+                if consensus.verify_dkg_contribution(dkg_share, my_id):
+                    dkg_on = False
                 dkg_share = p2p.get_dkg_shares() 
                 
 def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs):
