@@ -8,8 +8,10 @@ import logger
 import logging
 import hashlib
 import ConfigParser
-import Consensus.examples.libs.bls_wrapper as bls
+import Consensus.libs.bls_wrapper as bls
 import Consensus.dkg as dkg
+
+
 
 
 
@@ -40,7 +42,7 @@ class Consensus():
         self.shares = []
         self.shares_ids = []
         self.msg = ''
-        
+        #print THRESHOLD
         
        #TODO: adjunst 
     def get_next_signer(self):
