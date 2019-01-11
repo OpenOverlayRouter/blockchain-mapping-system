@@ -17,7 +17,8 @@ trap "kill 0" EXIT
 
 topDir=$(git rev-parse --show-toplevel)
 utilsDir="$topDir/Consensus/examples/tcp-utils"
-port=1111
+pport=1111
+sport=1112
 amountMembers=0
 aux=""
 if [ -f "$utilsDir"/members.txt ]; then
@@ -74,24 +75,32 @@ fi
 
 ValidText_ "Threshold $threshold is OK"
 
-# PORT
+# PORTS
 echo "-------------------------------------"
-read -p "Indicate a new port or press enter for default($port) " aux
+read -p "Indicate a new publish port or press enter for default($pport) " aux
 if [ -n "$aux" ]; then
-    port=$aux
+    pport=$aux
 fi
 
-echo "Verifying port $port..."
-echo -e "(This step will require administrative privileges)\n"
-if sudo netstat -tulpn | grep LISTEN | grep ":$port" > /dev/null 2>&1; then
-    LogAndExit_ "Port is in use! You need to specify a different port"
+read -p "Indicate a new subscribe port or press enter for default($sport) " aux
+if [ -n "$aux" ]; then
+    sport=$aux
 fi
 
-if [[ " ${members[@]} " =~ " ${port} " ]]; then
-    LogAndExit_ "Port belongs to a member! You need to specify a different port"
-fi
+ports=($pport $sport)
+for port in ${ports[@]}; do
+    echo "Verifying port $port..."
+    echo -e "(This step will require administrative privileges)\n"
+    if sudo netstat -tulpn | grep LISTEN | grep ":$port" > /dev/null 2>&1; then
+        LogAndExit_ "Port $port is in use! You need to specify a different port"
+    fi
 
-ValidText_ "Port $port is OK"
+    if [[ " ${members[@]} " =~ " ${port} " ]]; then
+        LogAndExit_ "Port $port belongs to a member! You need to specify a different port"
+    fi
+
+    ValidText_ "Port $port is OK"
+done
 
 # NODES
 echo "-------------------------------------"
@@ -99,11 +108,16 @@ echo -e "Launching nodes\n"
 cd "$topDir/Consensus" > /dev/null 2>&1
 
 for m in "${members[@]}"; do
-    ./examples/tcp-utils/node.py -id "$m" -p "$port" -t "$threshold" &
+    ./examples/tcp-utils/node.py -id "$m" -p "$pport" -s "$sport" -t "$threshold" &
     echo "Launched node $m"
 done
 
 cd -
+
+# BROKER
+echo "-------------------------------------"
+echo "Launching broker"
+"$utilsDir"/broker.py -p "$pport" -s "$sport" &
 
 # COMMANDER
 echo "-------------------------------------"
@@ -112,6 +126,6 @@ echo "To trace the output of the nodes, open another terminal and exec:"
 echo -e "\ttail -f $topDir/Consensus/log.txt\n"
 
 
-"$utilsDir"/cmder.py -p "$port"
+"$utilsDir"/cmder.py -p "$pport"
 
 wait

@@ -17,7 +17,7 @@ sk = None
 groupPk = None
 state = "ipchain"
 
-def init(oid, threshold, port):
+def init(oid, threshold, pport, sport):
     global log
     log = logger.setup_custom_logger(str(oid))
     members = {}
@@ -25,8 +25,11 @@ def init(oid, threshold, port):
 
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
-    sub.connect("tcp://localhost:%s" % port)
+    sub.connect("tcp://localhost:%s" % sport)
     sub.setsockopt(zmq.SUBSCRIBE, "")
+
+    pub = ctx.socket(zmq.PUB)
+    pub.connect("tcp://localhost:%s" % pport)
 
     socket = ctx.socket(zmq.REP)
     socket.bind("tcp://*:%s" % oid)
@@ -126,7 +129,8 @@ def sendMsg(to, data):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-id", help="Id of this node", required=True, type=int)
-    parser.add_argument("-p", help="Port of socket that sends setup time", required=True, type=int)
+    parser.add_argument("-s", help="Subscribe broker socket", required=True, type=int)
+    parser.add_argument("-p", help="Publish broker socket", required=True, type=int)
     parser.add_argument("-t", help="Threshold", required=True, type=int)
     args = parser.parse_args()
-    init(args.id, args.t, args.p)
+    init(args.id, args.t, args.p, args.s)
