@@ -7,13 +7,13 @@ import argparse
 def usage():
     print("You have the following commands available:")
     print("\tsetup/s \t Nodes will attempt to perform a DKG")
-    print("\tconsensus/c \t Nodes will atempt to reach consensus on c")
+    print("\tconsensus/c \t Nodes will atempt to reach consensus")
     print("\thelp/h \t This message will be displayed")
 
 def main(port):
         context = zmq.Context()
         socket = context.socket(zmq.PUB)
-        socket.bind("tcp://*:%s" % port)
+        socket.connect("tcp://localhost:%s" % port)
 
         while True:
             cmd = raw_input("\nInput a command: ")
@@ -29,7 +29,7 @@ def main(port):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-p", help="Port of the socket that sends setup", required=True, type=int)
+    parser.add_argument("-p", help="Publish broker socket", required=True, type=int)
     args = parser.parse_args()
     print("Launched commander on port %d" % args.p)
     usage();
