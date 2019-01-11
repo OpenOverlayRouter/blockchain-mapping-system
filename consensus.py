@@ -42,6 +42,7 @@ class Consensus():
         self.shares = []
         self.shares_ids = []
         self.msg = ''
+        self.verified = False
         #print THRESHOLD
         
        #TODO: adjunst 
@@ -61,9 +62,14 @@ class Consensus():
             self.shares_ids.append(share['from'])
             self.shares.append(share['signature'])
             if len(self.shares_ids) >= THRESHOLD:
+                
+                #TODO: verify sig and also signal shares are ready
                 self.group_sig = bls.recover(self.shares_ids, self.shares)
-                self.verified = bls.verify(self.msg, self.group_sig, self.groups_key)
-                return self.group_sig
+                self.verified = bls.verify(hashlib.sha256(self.msg).hexdigest(), self.group_sig, self.groups_key)
+                if self.verified:                
+                    return self.verified, self.group_sig
+                else:
+                    raise Exception BlsError as e
             else:
                 return None
         else:
@@ -73,7 +79,8 @@ class Consensus():
         
         
         
-    #def shares_ready(self):
+    def shares_ready(self):
+        return self.verified
         
     #DKG stuff
         
@@ -95,6 +102,8 @@ class Consensus():
         vVec, secretContribs = dkg.generateContribution(THRESHOLD, 
                                                [ member["id"] for _,member in self.members.iteritems() ] )
 
+        consensusLog.debug("vVec lenght: %s", len(vVec))
+        consensusLog.debug("secret contribs are: %s", secretContribs)
         to_send = {}                
         i = 0
         for oid, member in self.members.iteritems():
