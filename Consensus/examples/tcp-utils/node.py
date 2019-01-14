@@ -16,6 +16,9 @@ log = None
 sk = None
 groupPk = None
 state = "ipchain"
+sigs = None
+sigIds = None
+
 
 def init(oid, threshold, pport, sport):
     global log
@@ -45,10 +48,13 @@ def init(oid, threshold, pport, sport):
         socks = dict(poller.poll())
         if sub in socks and socks[sub] == zmq.POLLIN:
             msg = sub.recv()
-            if msg == "setup":
+            type = msg.split("_", 1)[0]
+            if type == "setup":
                 setup(members, oid, oids, threshold)
-            elif msg == "consensus":
-                print("CONSENSUS?")
+            elif type == "consensus":
+                pub.send(genNewSig(oid))
+            elif type == "sig":
+                handleSig(json.loads(msg.split("_", 1)[1]), threshold, members)
 
         if socket in socks and socks[socket] == zmq.POLLIN:
             msg = json.loads(socket.recv())
@@ -56,6 +62,32 @@ def init(oid, threshold, pport, sport):
             if topic == "contrib":
                 receiveContribution(msg, members, oid)
                 socket.send("OK")
+
+def genNewSig(m_oid):
+    global state, sk, sigs, sigIds
+    sig = bls.sign(state, sk)
+    sigs = []
+    sigIds = []
+
+    return ("sig_" + json.dumps({
+            "oid": m_oid,
+            "sig": sig
+        }))
+
+def handleSig(msg, threshold, members):
+    global sigs, groupPk, state, sigIds
+
+    sigs.append(msg["sig"]);
+    sigIds.append(members[msg["oid"]]["id"]);
+
+    log.info("Received secretShare %s" % msg["sig"])
+
+    if (len(sigs) >= threshold):
+        groupsSig = bls.recover(sigIds, sigs)
+
+        if bls.verify(state, groupsSig, groupPk):
+            state = groupsSig
+            log.info("Verified sig %s. Updating state..." % groupsSig)
 
 def receiveContribution(msg, members, m_oid):
     oid = msg["oid"]
