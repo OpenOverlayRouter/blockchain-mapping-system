@@ -21,7 +21,7 @@ sigIds = None
 
 
 def init(oid, threshold, pport, sport):
-    global log
+    global log, sk
     log = logger.setup_custom_logger(str(oid))
     members = {}
     oids = [int(line.rstrip('\n')) for line in open("examples/tcp-utils/members.txt")]
@@ -51,8 +51,8 @@ def init(oid, threshold, pport, sport):
             type = msg.split("_", 1)[0]
             if type == "setup":
                 setup(members, oid, oids, threshold)
-            elif type == "consensus":
-                pub.send(genNewSig(oid))
+            elif type == "consensus" and sk is not None:
+                    pub.send(genNewSig(oid))
             elif type == "sig":
                 handleSig(json.loads(msg.split("_", 1)[1]), threshold, members)
 
@@ -76,6 +76,9 @@ def genNewSig(m_oid):
 
 def handleSig(msg, threshold, members):
     global sigs, groupPk, state, sigIds
+
+    if not groupPk:
+        return
 
     sigs.append(msg["sig"]);
     sigIds.append(members[msg["oid"]]["id"]);
