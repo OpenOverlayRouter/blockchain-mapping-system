@@ -18,21 +18,32 @@ groupPk = None
 state = "ipchain"
 sigs = None
 sigIds = None
+addrs = {}
+brokerAddr = None
 
 
 def init(oid, threshold, pport, sport):
-    global log, sk
+    global log, sk, addrs, brokerAddr
     log = logger.setup_custom_logger(str(oid))
     members = {}
-    oids = [int(line.rstrip('\n')) for line in open("examples/tcp-utils/members.txt")]
+    oids = []
+
+    for line in open("examples/tcp-utils/members.txt").readlines():
+        lines = line.split(' ')
+        id = int(lines[0])
+        addr = lines[1].rstrip("\n")
+        oids.append(id)
+        if not brokerAddr:
+            brokerAddr = addr
+        addrs[id] = addr
 
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
-    sub.connect("tcp://localhost:%s" % sport)
+    sub.connect("tcp://%s:%s" % (brokerAddr, sport))
     sub.setsockopt(zmq.SUBSCRIBE, "")
 
     pub = ctx.socket(zmq.PUB)
-    pub.connect("tcp://localhost:%s" % pport)
+    pub.connect("tcp://%s:%s" % (brokerAddr, pport))
 
     socket = ctx.socket(zmq.REP)
     socket.bind("tcp://*:%s" % oid)
@@ -155,9 +166,10 @@ def allSharesReceived(members):
     return True
 
 def sendMsg(to, data):
+    global addrs
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
-    socket.connect("tcp://localhost:%d" % to)
+    socket.connect("tcp://%s:%d" % (addrs[to], to))
     socket.send(json.dumps(data));
     return context, socket
 

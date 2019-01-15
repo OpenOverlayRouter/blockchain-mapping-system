@@ -29,4 +29,3 @@ keystore/keystore/
 
 # Consensus tmp files
 **/log.txt
-**/members.txt

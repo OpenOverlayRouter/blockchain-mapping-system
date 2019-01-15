@@ -13,18 +13,29 @@ function ValidText_
     printf "\033[92m$1\033[0m\n"
 }
 
+function setupMembers_
+{
+    owned=($(cat "$utilsDir"/members.txt | grep "$addr" | awk {'print $1'}))
+    members=($(cat "$utilsDir"/members.txt | awk {'print $1'}))
+    amountMembers=${#members[@]}
+    threshold=$((amountMembers/2 + 1))
+}
+
 trap "kill 0" EXIT
 
+addr=$(ifconfig | grep inet | head -n 1 | awk {'print $2'} | cut -d ":" -f2)
 topDir=$(git rev-parse --show-toplevel)
 utilsDir="$topDir/Consensus/examples/tcp-utils"
 pport=1111
 sport=1112
 amountMembers=0
 aux=""
+isMain=false
+if [ "$addr" = "$(cat "$utilsDir"/participants.txt | head -n1)" ]; then
+    isMain=true
+fi
 if [ -f "$utilsDir"/members.txt ]; then
-    members=($(cat "$utilsDir"/members.txt))
-    amountMembers=${#members[@]}
-    threshold=$((amountMembers/2 + 1))
+    setupMembers_
 fi
 
 # MEMBERS
@@ -50,10 +61,9 @@ if [ $amountMembers -eq 0 -o "$aux" == "y" ]; then
     if ! [[ $amount =~ ^[-+]?[0-9]+$ ]]; then
         amount=100
     fi
+
     "$utilsDir"/genMembers.sh "$low" "$high" "$amount"
-    members=($(cat "$utilsDir"/members.txt))
-    amountMembers=${#members[@]}
-    threshold=$((amountMembers/2 + 1))
+    setupMembers_
 fi
 
 ValidText_ "\nThere are $amountMembers members"
@@ -95,7 +105,7 @@ for port in ${ports[@]}; do
         LogAndExit_ "Port $port is in use! You need to specify a different port"
     fi
 
-    if [[ " ${members[@]} " =~ " ${port} " ]]; then
+    if [[ " ${owned[@]} " =~ " ${port} " ]]; then
         LogAndExit_ "Port $port belongs to a member! You need to specify a different port"
     fi
 
@@ -107,25 +117,31 @@ echo "-------------------------------------"
 echo -e "Launching nodes\n"
 cd "$topDir/Consensus" > /dev/null 2>&1
 
-for m in "${members[@]}"; do
+for m in "${owned[@]}"; do
     ./examples/tcp-utils/node.py -id "$m" -p "$pport" -s "$sport" -t "$threshold" &
     echo "Launched node $m"
 done
 
 cd -
 
-# BROKER
-echo "-------------------------------------"
-echo "Launching broker"
-"$utilsDir"/broker.py -p "$pport" -s "$sport" &
+if $isMain; then
 
-# COMMANDER
-echo "-------------------------------------"
-echo "Launching commander"
-echo "To trace the output of the nodes, open another terminal and exec:"
-echo -e "\ttail -f $topDir/Consensus/log.txt\n"
+    # BROKER
+    echo "-------------------------------------"
+    echo "Launching broker"
+    "$utilsDir"/broker.py -p "$pport" -s "$sport" &
 
+    # COMMANDER
+    echo "-------------------------------------"
+    echo "Launching commander"
+    echo "To trace the output of the nodes, open another terminal and exec:"
+    echo -e "\ttail -f $topDir/Consensus/log.txt\n"
 
-"$utilsDir"/cmder.py -p "$pport"
+    "$utilsDir"/cmder.py -p "$pport"
+    wait
 
-wait
+else
+
+    tail -f "$topDir"/Consensus/log.txt
+
+fi
