@@ -150,14 +150,6 @@ def setup(members, m_oid, oids, threshold):
             })
         i += 1
 
-def getVerificationVector(m_oid, oid):
-    ctx, socket = sendMsg(oid, {
-        "topic": "vvec",
-        "oid": m_oid
-    })
-
-    return json.loads(socket.recv())
-
 def allSharesReceived(members):
     for _,member in members.iteritems():
         if not member["receivedShare"]:
