@@ -31,3 +31,7 @@ class UnsignedBlock(InvalidBlock):
 
 class InvalidBlockSigner(InvalidBlock):
     pass
+
+class InvalidBlsGroupSignature(Exception):
+    pass
+

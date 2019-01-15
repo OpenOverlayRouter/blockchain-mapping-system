@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-import sys
+
 
 
 #from netaddr import IPNetwork
@@ -9,22 +9,20 @@ import sys
 #from transactions import Transaction
 #from block import Block
 #import chain
+#from netaddr import IPNetwork
+#from ipaddr import IPv4Network
+#import rlp
+import sys
 import ConfigParser
-import time
+import time, os, glob
+from netaddr import IPSet
+
 from config import Env
 from db import LevelDB
 from chain_service import ChainService
-#from netaddr import IPNetwork
-#from ipaddr import IPv4Network
-import os
-import glob
-#import rlp
 from keystore import Keystore
 from consensus import Consensus
-
-from netaddr import IPSet
 from p2p import P2P
-
 import logging
 import logging.config
 import logger
@@ -64,7 +62,7 @@ def init_p2p(last_block_num):
     p2p = P2P(last_block_num)
     while (p2p.bootstrap()):
         time.sleep(1)
-    mainLog.info("Bootstrap finished")
+    mainLog.info("P2P Bootstrap finished")
     return p2p
 
 
@@ -152,7 +150,9 @@ def run():
     end = 0
     count = 0
     dkg_on = False
-    dkgIDs = []
+    shares_ready = False
+    current_random_no = chain.get_head_block().header.random_number
+    my_dkgIDs = []
     
     myIPs = IPSet()
     for i in range(len(keys)):
@@ -160,10 +160,10 @@ def run():
     mainLog.info("Own IPs at startup are: %s", myIPs)
     
     dkg_group = chain.get_current_dkg_group()
-    in_dkg_group, dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
+    in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
     
     mainLog.info("Initializing Consensus")
-    consensus = Consensus(dkg_group, dkgIDs)
+    consensus = Consensus(dkg_group, my_dkgIDs, current_random_no)
     
     
     
@@ -215,9 +215,9 @@ def run():
                     #after a correct block, create and broadcast new share                                         
                     if in_dkg_group:
                         count = 0
-                        new_shares = consensus.create_shares(count, block_num, dkgIDs)
-                        for shares in new_shares:
-                            p2p.broadcast_share(shares)
+                        new_shares = consensus.create_shares(current_random_no, block_num, my_dkgIDs, count)
+                        for share in new_shares:
+                            p2p.broadcast_share(share)
                             mainLog.info("Sent a new share to the network")
                 else:
                     mainLog.error("Received an erroneous block. Ignoring block...")
@@ -236,12 +236,10 @@ def run():
             while tx_ext is not None:
                 #Check that the transaction has not been sent from this node or already processed
                 processed = processed + 1
-#                if tx_ext.hash not in seen_tx:
                 if not (chain.in_chain(tx_ext) or chain.in_pool(tx_ext)):
                     mainLog.info("Received external transaction: to: %s hash %s", \
                     tx_ext.to.encode('HEX'), tx_ext.hash.encode('HEX'))
                     try:
-#                        seen_tx.append(tx_ext.hash)                        
                         chain.add_pending_transaction(tx_ext)
                         # Correct tx
                         p2p.broadcast_tx(tx_ext)
@@ -281,7 +279,7 @@ def run():
                     if signing_addr in addresses:
                         mainLog.info("This node has to sign a block, selected IP: %s", signer)
                         mainLog.info("Associated address: %s", signing_addr.encode("HEX"))
-                        new_block = chain.create_block(count, signing_addr)
+                        new_block = chain.create_block(count, signing_addr, consensus.get_current_random_no())
                         try:
                             key_pos = addresses.index(signing_addr)
                         except:
@@ -302,12 +300,14 @@ def run():
                         delays_blocks.write(str(new_block.number) + ',' + str(delay) + '\n' )                
                         delays_txs.write("Added new block no." + str(new_block.number) + '\n')
                         p2p.broadcast_block(new_block)
-                        #after a correct block, create and broadcast new share                     
+                        #after a correct block, create and broadcast new share    
                         count = 0
                         timeout_expired = False
-                        new_share = consensus.create_share(new_block.number)
-                        p2p.broadcast_share(new_share)
-                        mainLog.info("Sent a new share to the network")
+                        if in_dkg_group:
+                            new_shares = consensus.create_shares(current_random_no, new_block.number, my_dkgIDs, count)
+                            for share in new_shares:
+                                p2p.broadcast_share(share)
+                                mainLog.info("Sent a new share to the network")                        
 
         except Exception as e:
             mainLog.critical("Exception while checking if the node has to sign the next block")
@@ -407,7 +407,10 @@ def run():
         try:
             share = p2p.get_share()
             while share is not None:
-                consensus.store_share(share)                
+                msg = str(current_random_no) + str(block_num) + str(count)
+                res = consensus.store_share(share, msg)                
+                if res:
+                    current_random_no = consensus.get_current_random_no()                    
         except Exception as e:
             mainLog.critical("Exception while processing received shares")
             mainLog.exception(e)
@@ -422,18 +425,18 @@ def run():
         if block_num % DKG_RENEWAL_INTERVAL == 0 and not dkg_on:
             dkg_on = True
             #TODO: define members
-            
-            
-            
-            to_send = consensus.new_dkg(consensus.get_threshold())
-            for member, data in to_send.iteritems():
-                p2p.send_dkg(member, data['verif_vector'], data['secret_key_share_contrib'])
+            dkg_group = chain.get_current_dkg_group()
+            in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
+            if in_dkg_group:        
+                to_send = consensus.new_dkg()
+                for member, data in to_send.iteritems():
+                    p2p.send_dkg(member, data['verif_vector'], data['secret_key_share_contrib'])
         
         #Collect DKG shares for the new DKG                
-        if dkg_on:
+        if dkg_on and in_dkg_group:
             dkg_share = p2p.get_dkg_shares() 
             while dkg_share is not None:
-                if consensus.verify_dkg_contribution(dkg_share, my_id):
+                if consensus.verify_dkg_contribution(dkg_share, my_dkgIDs):
                     dkg_on = False
                 dkg_share = p2p.get_dkg_shares() 
                 

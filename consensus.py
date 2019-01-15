@@ -10,11 +10,8 @@ import hashlib
 import ConfigParser
 import Consensus.libs.bls_wrapper as bls
 import Consensus.dkg as dkg
-
-
-
-
-
+from own_exceptions import InvalidBlsGroupSignature
+from netaddr import IPAddress
 
 
 IPv4_PREFIX_LENGTH = 32
@@ -32,22 +29,25 @@ consensusLog = logging.getLogger('Consensus')
 
 class Consensus():
     
-    def __init__(self, dkg_group, node_ids):
+    def __init__(self, dkg_group, node_ids, randno):
+#TODO: initizlize members correctly                
         self.current_ids = dkg_group
         self.own_ids = node_ids
-#TODO: initizlize members correctly        
-        
-        #self.secretKey = ''
-        #self.group_key = ''
+        self.current_random_no = randno
+        self.secretKey = None
+        self.group_key = None
         self.shares = []
         self.shares_ids = []
         self.msg = ''
         self.verified = False
-        #print THRESHOLD
+        self.next_signer = None
+                
+       
+    def get_next_signer(self, count):
+        return self.next_signer
         
-       #TODO: adjunst 
-    def get_next_signer(self):
-        return self.next_signer, self.found_in_chain
+    def get_current_random_no(self):
+        return self.current_random_no
         
     #BLS stuff
     def create_share(self, prev_rand_no, block_num, my_id, count=0):
@@ -57,25 +57,27 @@ class Consensus():
         share = {'from': my_id, 'signature': sig}
         return share
             
-    def store_share(self, share):
+    def store_share(self, share, expected_message, block_no):
         if share['from'] not in self.shares_ids:
             self.shares_ids.append(share['from'])
             self.shares.append(share['signature'])
+            consensusLog.info("Stored share from: %s", share['from'])
             if len(self.shares_ids) >= THRESHOLD:
-                
-                #TODO: verify sig and also signal shares are ready
+                consensusLog.debug("THRESHOLD shares received. Attempting to verify group signature with message %.", expected_message)
                 self.group_sig = bls.recover(self.shares_ids, self.shares)
-                self.verified = bls.verify(hashlib.sha256(self.msg).hexdigest(), self.group_sig, self.groups_key)
+                self.verified = bls.verify(hashlib.sha256(expected_message).hexdigest(), self.group_sig, self.groups_key)
                 if self.verified:                
-                    return self.verified, self.group_sig
+                    self.current_random_no = hashlib.sha256(self.group_signature).hexdigest()
+                    self.calculate_next_signer(block_no)
+                    consensusLog.info("Group signature verified correctly. New random number is: %s", self.current_random_no)
+                    return True
                 else:
-                    raise Exception BlsError as e
+                    raise InvalidBlsGroupSignature() 
             else:
-                return None
+                return False
         else:
-            return None
+            return False
             
-        
         
         
         
@@ -140,6 +142,39 @@ class Consensus():
         for _,member in self.members.iteritems():
             if not member["receivedShare"]:
                 return False
-    
+   
         return True    
+                
+    # Returns the IP Address in a readable format
+    def formalize_IP(IP_bit_list):
+        ip = int(IP_bit_list,2)
+        return IPAddress(ip)
+
+    # Given a random HASH, returns the selected address in a list
+    def consensus_for_IPv6(hash):
+        ngroup = len(hash)/IPv6_PREFIX_LENGTH
+        address = ""
+        for i in range (0,len(hash),ngroup):
+            ini_xor = int(hash[i],2)
+            for j in range (i+1,i+ngroup):
+                ini_xor = ini_xor^int(hash[j],2)
+            address = address+str(ini_xor)
+        return address
+    
+    # Given a random HASH, returns the selected address in a list
+    def consensus_for_IPv4(hash):
+        ngroup = len(hash)/IPv4_PREFIX_LENGTH
+        address = ""
+        for i in range (0,len(hash),ngroup):
+            ini_xor = int(hash[i],2)
+            for j in range (i,i+ngroup):
+                ini_xor = ini_xor^int(hash[j],2)
+            address = address+str(ini_xor)
+        return address
+
+    def calculate_next_signer(self, block_number):
+        if block_number % 2 != 0: # block_number is the previous one, so if it is even, next should be IPv6
+             return self.formalize_IP(self.consensus_for_IPv4(self.current_random_no))
+        else:
+             return self.formalize_IP(self.consensus_for_IPv6(self.current_random_no))    
         
