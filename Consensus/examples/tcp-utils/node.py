@@ -170,8 +170,7 @@ def sendMsg(to, data):
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://%s:%d" % (addrs[to], to))
-    socket.send(json.dumps(data));
-    return context, socket
+    socket.send(json.dumps(data), zmq.NOBLOCK);
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
