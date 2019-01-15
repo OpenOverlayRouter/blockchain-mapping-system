@@ -1,4 +1,3 @@
 * DKG contributions must be signed by sender and receiver using public/private crypto so they can't be read by other nodes.
 * Shares should be validated using node pk.
-* Hex ids must be preceded by 0x.
 
