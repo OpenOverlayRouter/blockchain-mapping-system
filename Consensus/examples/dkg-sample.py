@@ -76,7 +76,8 @@ def dkgTest(msg, members, vVec, threshold):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-m", help="Ids of members of the dkg", nargs="*", default=[ 10314, 30911, 25411, 8608, 31524, 15441, 23399], type=int)
+    ids = [ '0x0be38dcb62b45984cf4ffdeabb68de5e78151304', '0x0eccc8117f80534a9001874c256c11573c9a31bc', '0x219fb4dc55bf5f4e3144ea9e8b4fc0835175fabe', '0x243278af80ab7e23e559e3b6c4f4d494bfe624a9']
+    parser.add_argument("-m", help="Ids of members of the dkg", nargs="*", default=[ '0x0be38dcb62b45984cf4ffdeabb68de5e78151304', '0x0eccc8117f80534a9001874c256c11573c9a31bc', '0x219fb4dc55bf5f4e3144ea9e8b4fc0835175fabe', '0x243278af80ab7e23e559e3b6c4f4d494bfe624a9'], type=int)
     parser.add_argument("-th", help="Threshold of the threshold signature that will be setup", nargs="?", type=int)
     parser.add_argument("-rr", help="Amount of times a dkg round will be repeated (for the same message)", nargs="?", default=2, type=int)
     parser.add_argument("-nr", help="Amount of rounds, where the message from the previous round will be signed", nargs="?", default=5, type=int)

@@ -7,9 +7,8 @@ import libs.bls_wrapper as bls
 
 def main():
 
-    myId = 1234
     m = "hello bls threshold signature"
-    ids = [ 1, 5, 3]
+    ids = [ '0x0be38dcb62b45984cf4ffdeabb68de5e78151304', '0x0eccc8117f80534a9001874c256c11573c9a31bc', '0x219fb4dc55bf5f4e3144ea9e8b4fc0835175fabe', '0x243278af80ab7e23e559e3b6c4f4d494bfe624a9']
     k = 2
 
     sk, pk = bls.genKeys()
