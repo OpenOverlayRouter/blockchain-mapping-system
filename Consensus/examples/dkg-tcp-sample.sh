@@ -23,7 +23,7 @@ function setupMembers_
 
 trap "kill 0" EXIT
 
-addr=$(ifconfig | grep inet | head -n 1 | awk {'print $2'} | cut -d ":" -f2)
+addr=$(curl https://ipinfo.io/ip)
 topDir=$(git rev-parse --show-toplevel)
 utilsDir="$topDir/Consensus/examples/tcp-utils"
 pport=1111
@@ -142,6 +142,7 @@ if $isMain; then
 
 else
 
+    sleep 1
     tail -f "$topDir"/Consensus/log.txt
 
 fi
