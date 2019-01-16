@@ -233,5 +233,18 @@ class ChainService():
     def get_addr_from_ip(self, ipaddr):
         return normalize_address(self.chain.patricia.get_value(str(ipaddr)))
         
-    def get_current_dkg_group():
+    def get_current_dkg_group(self, renewal_interval):
+        #Recover random no. from block previous trigger new DKG
+        last_block_no = self.get_head_block().header.number
+        last_old_dkg_block = last_block_no - (last_block_no % renewal_interval)
+        random_no = self.get_block_by_number(last_old_dkg_block).header.random_number
+        
+        #List all addresses at the moment in the chain
+        
+        #Create the new group
+        dkg_group = []
+        
+        
+        return dkg_group
+        
         

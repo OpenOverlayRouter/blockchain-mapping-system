@@ -7,6 +7,7 @@ Created on Tue Jan  8 11:50:44 2019
 import logger
 import logging
 import hashlib
+import zlib
 import ConfigParser
 import Consensus.libs.bls_wrapper as bls
 import Consensus.dkg as dkg
@@ -26,6 +27,11 @@ consensusLog = logging.getLogger('Consensus')
 
 #Important: original ids (blockchain addresses expressed in hex) are converted 
 #           to integers when used in the DKG
+#No problem. Deixo apuntades aquí altres opcions per si es vol seguir investigant:
+#- Intentar fer funcionar la funció idVecSerialize de bls.h per un idVec vàlid i analitzar l'output. 
+#  Ara que ho penso això potser es pot fer també a partir de la classe Id de C++.
+#- Trobar on es definex l'struct "Fr" i mirar com fa la funció serialize/deserialize. 
+#  Ens hauria de donar una pista sobre què espera Id per construir-se a partir d'un string.
 
 class Consensus():
     
@@ -41,6 +47,7 @@ class Consensus():
         self.msg = ''
         self.verified = False
         self.next_signer = None
+        
                 
        
     def get_next_signer(self, count):
@@ -84,6 +91,11 @@ class Consensus():
     def shares_ready(self):
         return self.verified
         
+    def reset_bls(self):
+        self.shares = []
+        self.shares_ids = []
+            
+        
     #DKG stuff
         
     # Create a new DKG with a new list of members
@@ -94,7 +106,10 @@ class Consensus():
         self.members = {}
         #Create internal structures
         for oid in original_ids:
-            secKey, _ = bls.genKeys(int(oid,16))
+            #We have to convert the 160 bit ethereum address to a 32-bit integer because the DKG libarary IDs can 
+            #are 32-bit int maximum. However, this is NOT SECURE and a VULNERABILITY. Ideally we should be able 
+            # to use the FULL 160 bit address converted to integer as an ID, or its hex string
+            secKey, _ = bls.genKeys(zlib.adler32(oid))
             self.members[oid] = {
                 "id": secKey,
                 "receivedShare": None,
@@ -137,6 +152,9 @@ class Consensus():
             self.group_key = groupsvVec[0]
             consensusLog.info("DKG setup completed")
             consensusLog.info("Resulting group public key is " + self.group_key + "\n")
+            return True
+        else:
+            return False
         
     def allSharesReceived(self):
         for _,member in self.members.iteritems():

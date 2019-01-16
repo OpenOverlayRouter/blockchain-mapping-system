@@ -20,7 +20,7 @@ class BlockHeader(rlp.Serializable):
         ('tx_root', trie_root),
         ('number', big_endian_int),
         ('coinbase', address)
-        ('random_number', hash32)
+        ('random_number', hash32)   #256 bit hash
         ('group_pubkey', group_sig)
         ('count', big_endian_int)
         

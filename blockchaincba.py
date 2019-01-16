@@ -29,7 +29,7 @@ import logger
 from user import Parser
 from utils import normalize_address
 from oor import Oor
-from own_exceptions import InvalidBlockSigner, UnsignedBlock
+from own_exceptions import InvalidBlockSigner, UnsignedBlock, InvalidBlsGroupSignature
 
 
 mainLog = logging.getLogger('Main')
@@ -104,6 +104,7 @@ def run():
     DKG_RENEWAL_INTERVAL = config_data.getint('Consensus','dkg_renewal_interval')
     BLOCK_TIME = config_data.getint('General','block_time')
     TIMEOUT = config_data.getint('General','timeout')
+    DKG_TIMEOUT = config_data.getint('Consensus','dkg_timeout')
 
     #Telemetry initialization
     start_time = time.time()
@@ -150,7 +151,7 @@ def run():
     end = 0
     count = 0
     dkg_on = False
-    shares_ready = False
+    
     current_random_no = chain.get_head_block().header.random_number
     my_dkgIDs = []
     
@@ -159,7 +160,7 @@ def run():
         myIPs.update(chain.get_own_ips(keys[i].address))
     mainLog.info("Own IPs at startup are: %s", myIPs)
     
-    dkg_group = chain.get_current_dkg_group()
+    dkg_group = chain.get_current_dkg_group(DKG_RENEWAL_INTERVAL)
     in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
     
     mainLog.info("Initializing Consensus")
@@ -267,8 +268,11 @@ def run():
                 #Time to create a new block
                 if (time.time() - timestamp) >= TIMEOUT:
                 #The expected signer didn't create a block. Trigger a recalculation of the random number to select a new signer
+                    #TODO: does NOT work because it will enter all the time when the timeout expires
                     count = count + 1
                     timeout_expired =  True
+                    if count == 0:
+                        consensus.reset_bls()
 #                    consensus.create_share(count)
 #                    p2p.broadcast_share(new_share)
 #                    mainLog.info("Timeout expired. Recalculated random no and sent a new share to the network")
@@ -410,7 +414,7 @@ def run():
                 msg = str(current_random_no) + str(block_num) + str(count)
                 res = consensus.store_share(share, msg)                
                 if res:
-                    current_random_no = consensus.get_current_random_no()                    
+                    current_random_no = consensus.get_current_random_no()
         except Exception as e:
             mainLog.critical("Exception while processing received shares")
             mainLog.exception(e)
@@ -418,27 +422,43 @@ def run():
             p2p.stop()
             sys.exit(0)
  
-        #TODO: error control
         #DKG management
        
         #Trigger new DKG               
-        if block_num % DKG_RENEWAL_INTERVAL == 0 and not dkg_on:
-            dkg_on = True
-            #TODO: define members
-            dkg_group = chain.get_current_dkg_group()
-            in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
-            if in_dkg_group:        
-                to_send = consensus.new_dkg()
-                for member, data in to_send.iteritems():
-                    p2p.send_dkg(member, data['verif_vector'], data['secret_key_share_contrib'])
+        try:
+            if (block_num % DKG_RENEWAL_INTERVAL == 0) and not dkg_on:
+                dkg_on = True
+                #TODO: define members
+                dkg_group = chain.get_current_dkg_group(DKG_RENEWAL_INTERVAL)
+                in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
+                if in_dkg_group:        
+                    to_send = consensus.new_dkg()
+                    for member, data in to_send.iteritems():
+                        p2p.send_dkg(member, data['verif_vector'], data['secret_key_share_contrib'])
+        except Exception as e:
+            mainLog.critical("Exception while creating DKG shares")
+            mainLog.exception(e)
+            # Stop P2P
+            p2p.stop()
+            sys.exit(0)
         
         #Collect DKG shares for the new DKG                
-        if dkg_on and in_dkg_group:
-            dkg_share = p2p.get_dkg_shares() 
-            while dkg_share is not None:
-                if consensus.verify_dkg_contribution(dkg_share, my_dkgIDs):
-                    dkg_on = False
+        try:        
+            if dkg_on and in_dkg_group:
                 dkg_share = p2p.get_dkg_shares() 
+                while dkg_share is not None:
+                    if consensus.verify_dkg_contribution(dkg_share, my_dkgIDs):
+                        dkg_on = False
+                    elif (time.time() - timestamp) >= DKG_TIMEOUT:
+                        mainLog.critical("Fatal Error. DKG renewal timeout expired. Stopping...")
+                        raise e
+                    dkg_share = p2p.get_dkg_shares() 
+        except Exception as e:
+            mainLog.critical("Exception while processing received DKG shares")
+            mainLog.exception(e)
+            # Stop P2P
+            p2p.stop()
+            sys.exit(0)
                 
 def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs):
     #Code here is exaclty equal to the 'Process new blocks' part in the main, but without generating shares after adding the block.
