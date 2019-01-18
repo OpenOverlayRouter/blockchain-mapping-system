@@ -334,6 +334,9 @@ class State():
         s.cache = {}
         return s
 
+    def list_all_addresses(self):
+        return self.trie.list_all_addresses()
+        
 def prev_header_to_dict(h):
     return {
         "hash": '0x' + encode_hex(h.hash),

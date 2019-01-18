@@ -160,7 +160,7 @@ def run():
         myIPs.update(chain.get_own_ips(keys[i].address))
     mainLog.info("Own IPs at startup are: %s", myIPs)
     
-    dkg_group = chain.get_current_dkg_group(DKG_RENEWAL_INTERVAL)
+    dkg_group = chain.get_current_dkg_group()
     in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
     
     mainLog.info("Initializing Consensus")
@@ -429,7 +429,7 @@ def run():
             if (block_num % DKG_RENEWAL_INTERVAL == 0) and not dkg_on:
                 dkg_on = True
                 #TODO: define members
-                dkg_group = chain.get_current_dkg_group(DKG_RENEWAL_INTERVAL)
+                dkg_group = chain.get_current_dkg_group()
                 in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
                 if in_dkg_group:        
                     to_send = consensus.new_dkg()

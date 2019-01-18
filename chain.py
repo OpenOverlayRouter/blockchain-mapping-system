@@ -377,3 +377,6 @@ class Chain(object):
     @property
     def config(self):
         return self.env.config
+        
+    def get_all_current_addresses(self):
+        return self.state.list_all_addresses()

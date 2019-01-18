@@ -18,8 +18,17 @@ from map_reply import Response, LocatorRecord, MapReplyRecord, MapServers
 from netaddr import IPNetwork
 import logging
 import sys
+import ConfigParser
+import hashlib
+
 
 databaseLog = logging.getLogger('Database')
+
+config_data = ConfigParser.RawConfigParser()
+config_data.read('chain_config.cfg')   
+DKG_RENEWAL_INTERVAL = config_data.getint('Consensus','dkg_renewal_interval')
+DKG_NUMBER_PARTICIPANTS = config_data.getint('Consensus','dkg_participants')
+
 
 class ChainService():
     """
@@ -233,17 +242,21 @@ class ChainService():
     def get_addr_from_ip(self, ipaddr):
         return normalize_address(self.chain.patricia.get_value(str(ipaddr)))
         
-    def get_current_dkg_group(self, renewal_interval):
+    #Selects a group of addresses to perform the DKG
+    def get_current_dkg_group(self):
         #Recover random no. from block previous trigger new DKG
         last_block_no = self.get_head_block().header.number
-        last_old_dkg_block = last_block_no - (last_block_no % renewal_interval)
+        last_old_dkg_block = last_block_no - (last_block_no % DKG_RENEWAL_INTERVAL)
         random_no = self.get_block_by_number(last_old_dkg_block).header.random_number
         
         #List all addresses at the moment in the chain
-        
-        #Create the new group
+        all_addresses = self.chain.get_all_current_addresses()
+        #Randomly select participants from all the addresses
         dkg_group = []
-        
+        for i in range(DKG_NUMBER_PARTICIPANTS):
+            random_pos = random_no % len(all_addresses)
+            dkg_group.append(all_addresses.pop(random_pos))            
+            random_no = hashlib.sha256(random_no).hexdigest()
         
         return dkg_group
         
