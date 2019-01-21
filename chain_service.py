@@ -251,6 +251,8 @@ class ChainService():
         
         #List all addresses at the moment in the chain
         all_addresses = self.chain.get_all_current_addresses()
+        databaseLog.debug("Recovered the list of current addresses, lenght: %s", len(all_addresses))
+        databaseLog.debug("Addresses in the list: %s", all_addresses)
         #Randomly select participants from all the addresses
         dkg_group = []
         for i in range(DKG_NUMBER_PARTICIPANTS):

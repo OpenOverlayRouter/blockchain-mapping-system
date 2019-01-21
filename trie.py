@@ -767,10 +767,3 @@ class Trie(object):
         if self.root_hash == BLANK_ROOT:
             return True
         return self.root_hash in self.db
-        
-    def list_all_addresses(self):
-        all_addresses = []
-        for node in all_nodes:
-            if self._get_node_type(node) == NODE_TYPE_LEAF:
-                all_addresses.append(node.)
-        return all_addresses

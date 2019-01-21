@@ -1,11 +1,11 @@
 import rlp
 import trie
 from rlp.sedes import big_endian_int, Binary, binary, CountableList
-from utils import hash32, trie_root, address, sha3, group_sig
+from utils import hash32, trie_root, address, sha3, group_pubkey
 from rlp.utils import encode_hex
 from config import default_config
 from transactions import Transaction
-from utils import address, sha3, normalize_key, ecsign, privtoaddr, ecrecover_to_pub, int_to_bytes, encode_hex, bytes_to_int, encode_int8
+from utils import normalize_key, ecsign, privtoaddr, ecrecover_to_pub, int_to_bytes, encode_hex, bytes_to_int, encode_int8
 from own_exceptions import InvalidBlock
 
 secpk1n = 115792089237316195423570985008687907852837564279074904382605163141518161494337
@@ -21,7 +21,7 @@ class BlockHeader(rlp.Serializable):
         ('number', big_endian_int),
         ('coinbase', address)
         ('random_number', hash32)   #256 bit hash
-        ('group_pubkey', group_sig)
+        ('group_pubkey', group_pubkey)  #Zero in all blocks except number % DKG_RENEWAL_INTERVAL == 0
         ('count', big_endian_int)
         
     ]

@@ -14,7 +14,7 @@ class Share(rlp.Serializable):
 
     fields = [
     ('source', address),        
-    ('share', text),
+    ('share', text)
 
 #Reserved in case we have to sign the shares
 #        ('v', big_endian_int),
@@ -103,6 +103,7 @@ class Dkg_Share(rlp.Serializable):
     fields = [
     ('to', address),
     ('share', text),
+    ('vVec', text)
 
 #Reserved in case we have to sign the shares
 #        ('v', big_endian_int),

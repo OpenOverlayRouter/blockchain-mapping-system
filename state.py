@@ -335,8 +335,12 @@ class State():
         return s
 
     def list_all_addresses(self):
-        return self.trie.list_all_addresses()
-        
+        all_addresses = []
+        for addr in self.trie.to_dict().keys():
+            all_addresses.append(encode_hex(addr))
+        return all_addresses    
+            
+                    
 def prev_header_to_dict(h):
     return {
         "hash": '0x' + encode_hex(h.hash),
