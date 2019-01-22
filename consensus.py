@@ -56,6 +56,9 @@ class Consensus():
     def get_current_random_no(self):
         return self.current_random_no
         
+    def get_current_group_key(self):
+        return self.group_key
+        
     #BLS stuff
     def create_share(self, prev_rand_no, block_num, my_id, count=0):
         self.msg = str(prev_rand_no) + str(block_num) + str(count)
@@ -72,7 +75,7 @@ class Consensus():
             if len(self.shares_ids) >= THRESHOLD:
                 consensusLog.debug("THRESHOLD shares received. Attempting to verify group signature with message %.", expected_message)
                 self.group_sig = bls.recover(self.shares_ids, self.shares)
-                self.verified = bls.verify(hashlib.sha256(expected_message).hexdigest(), self.group_sig, self.groups_key)
+                self.verified = bls.verify(hashlib.sha256(expected_message).hexdigest(), self.group_sig, self.group_key)
                 if self.verified:                
                     self.current_random_no = hashlib.sha256(self.group_signature).hexdigest()
                     self.calculate_next_signer(block_no)
