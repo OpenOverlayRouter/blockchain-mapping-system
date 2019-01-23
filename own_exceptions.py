@@ -32,6 +32,25 @@ class UnsignedBlock(InvalidBlock):
 class InvalidBlockSigner(InvalidBlock):
     pass
 
-class InvalidBlsGroupSignature(Exception):
+#For DKG and BLS
+#DKG errors
+class DkgAddContributionSharesError(Exception):
     pass
 
+class DkgAddVerificationVectorsError(Exception):
+    pass
+
+class DkgGenKeysError(Exception):
+    pass
+
+class DkgGenerateSecretKeyShareError(Exception):
+    pass
+#BLS Errors
+class BlsInvalidGroupSignature(Exception):
+    pass
+
+class BlsSignError(Exception):
+    pass
+
+class BlsRecoverError(Exception):
+    pass

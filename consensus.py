@@ -11,7 +11,8 @@ import zlib
 import ConfigParser
 import Consensus.libs.bls_wrapper as bls
 import Consensus.dkg as dkg
-from own_exceptions import InvalidBlsGroupSignature
+from own_exceptions import DkgAddContributionSharesError, DkgAddVerificationVectorsError, DkgGenKeysError, DkgGenerateSecretKeyShareError
+from own_exceptions import BlsInvalidGroupSignature, BlsSignError, BlsRecoverError
 from netaddr import IPAddress
 
 
@@ -64,6 +65,8 @@ class Consensus():
         self.msg = str(prev_rand_no) + str(block_num) + str(count)
         digest = hashlib.sha256(self.msg).hexdigest()
         sig = bls.sign(digest, self.secretKey)
+        if sig == "":
+            raise BlsSignError()
         share = {'from': my_id, 'signature': sig}
         return share
             
@@ -73,8 +76,10 @@ class Consensus():
             self.shares.append(share['signature'])
             consensusLog.info("Stored share from: %s", share['from'])
             if len(self.shares_ids) >= THRESHOLD:
-                consensusLog.debug("THRESHOLD shares received. Attempting to verify group signature with message %.", expected_message)
+                consensusLog.debug("THRESHOLD shares received. Attempting to verify group signature with message %s", expected_message)
                 self.group_sig = bls.recover(self.shares_ids, self.shares)
+                if self.group_sig == "":
+                    raise BlsRecoverError()
                 self.verified = bls.verify(hashlib.sha256(expected_message).hexdigest(), self.group_sig, self.group_key)
                 if self.verified:                
                     self.current_random_no = hashlib.sha256(self.group_signature).hexdigest()
@@ -82,7 +87,7 @@ class Consensus():
                     consensusLog.info("Group signature verified correctly. New random number is: %s", self.current_random_no)
                     return True
                 else:
-                    raise InvalidBlsGroupSignature() 
+                    raise BlsInvalidGroupSignature() 
             else:
                 return False
         else:
@@ -113,6 +118,8 @@ class Consensus():
             #are 32-bit int maximum. However, this is NOT SECURE and a VULNERABILITY. Ideally we should be able 
             # to use the FULL 160 bit address converted to integer as an ID, or its hex string
             secKey, _ = bls.genKeys(zlib.adler32(oid))
+            if secKey == "":
+                raise DkgGenKeysError()            
             self.members[oid] = {
                 "id": secKey,
                 "receivedShare": None,
@@ -121,6 +128,10 @@ class Consensus():
         #Generate contributions
         vVec, secretContribs = dkg.generateContribution(THRESHOLD, 
                                                [ member["id"] for _,member in self.members.iteritems() ] )
+        for contrib in secretContribs:
+            if contrib == "":
+                consensusLog.error("Error in generating the secret contributions. Position with error: %s", secretContribs.index(contrib))
+                raise DkgGenerateSecretKeyShareError()
 
         consensusLog.debug("vVec lenght: %s", len(vVec))
         consensusLog.debug("secret contribs are: %s", secretContribs)
@@ -151,8 +162,12 @@ class Consensus():
         if self.allSharesReceived():
             #global sk, groupPk
             self.secretKey = dkg.addContributionShares( [ member["receivedShare"] for _,member in self.members.iteritems() ])
+            if self.secretKey == "":
+                raise DkgAddContributionSharesError()
             groupsvVec = dkg.addVerificationVectors( [ member["vvec"] for _,member in self.members.iteritems() ])
             self.group_key = groupsvVec[0]
+            if self.group_key == "":
+                raise DkgAddVerificationVectorsError()
             consensusLog.info("DKG setup completed")
             consensusLog.info("Resulting group public key is " + self.group_key + "\n")
             return True
