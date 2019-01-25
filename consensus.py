@@ -43,6 +43,7 @@ class Consensus():
         self.current_random_no = randno
         self.secretKey = None
         self.group_key = None
+        self.group_sig =  None
         self.shares = []
         self.shares_ids = []
         self.msg = ''
@@ -64,6 +65,7 @@ class Consensus():
     def create_share(self, prev_rand_no, block_num, my_id, count=0):
         self.msg = str(prev_rand_no) + str(block_num) + str(count)
         digest = hashlib.sha256(self.msg).hexdigest()
+        consensusLog.info("Creating a new share with message %s, message hash: %s", self.msg, digest)
         sig = bls.sign(digest, self.secretKey)
         if sig == "":
             raise BlsSignError()
@@ -82,7 +84,7 @@ class Consensus():
                     raise BlsRecoverError()
                 self.verified = bls.verify(hashlib.sha256(expected_message).hexdigest(), self.group_sig, self.group_key)
                 if self.verified:                
-                    self.current_random_no = hashlib.sha256(self.group_signature).hexdigest()
+                    self.current_random_no = hashlib.sha256(self.group_sig).hexdigest()
                     self.calculate_next_signer(block_no)
                     consensusLog.info("Group signature verified correctly. New random number is: %s", self.current_random_no)
                     return True
