@@ -45,7 +45,7 @@ class Consensus():
         self.group_key = None
         self.group_sig =  None
         self.shares = []
-        self.shares_ids = []
+        self.shares_ids = []        #These IDs have to be the DKG IDs, not the original blockchain addresses
         self.msg = ''
         self.verified = False
         self.next_signer = None
@@ -73,8 +73,9 @@ class Consensus():
         return share
             
     def store_share(self, share, expected_message, block_no):
-        if share['from'] not in self.shares_ids:
-            self.shares_ids.append(share['from'])
+        dkg_id = self.members[share['from']]['id']
+        if dkg_id not in self.shares_ids:
+            self.shares_ids.append(dkg_id)
             self.shares.append(share['signature'])
             consensusLog.info("Stored share from: %s", share['from'])
             if len(self.shares_ids) >= THRESHOLD:
@@ -104,7 +105,24 @@ class Consensus():
     def reset_bls(self):
         self.shares = []
         self.shares_ids = []
+        
+    #Only when the node DOES NOT PARTICIPATE IN THE DKG-BLS, but wants 
+    #to have all the ids available to verify the BLS signatures
+    def store_ids(self, original_ids, my_id):
+        self.members = {}
+        for oid in original_ids:
+            secKey, _ = bls.genKeys(zlib.adler32(oid))
+            if secKey == "":
+                raise DkgGenKeysError()            
+            self.members[oid] = {
+                "id": secKey,
+                "receivedShare": None,
+                "vvec": None
+            }   
             
+    def store_group_key(self, gp_key):
+        self.group_key = gp_key
+        
         
     #DKG stuff
         
@@ -184,12 +202,12 @@ class Consensus():
         return True    
                 
     # Returns the IP Address in a readable format
-    def formalize_IP(IP_bit_list):
+    def formalize_IP(self, IP_bit_list):
         ip = int(IP_bit_list,2)
         return IPAddress(ip)
 
     # Given a random HASH, returns the selected address in a list
-    def consensus_for_IPv6(hash):
+    def consensus_for_IPv6(self, hash):
         ngroup = len(hash)/IPv6_PREFIX_LENGTH
         address = ""
         for i in range (0,len(hash),ngroup):
@@ -200,7 +218,7 @@ class Consensus():
         return address
     
     # Given a random HASH, returns the selected address in a list
-    def consensus_for_IPv4(hash):
+    def consensus_for_IPv4(self, hash):
         ngroup = len(hash)/IPv4_PREFIX_LENGTH
         address = ""
         for i in range (0,len(hash),ngroup):
@@ -211,8 +229,10 @@ class Consensus():
         return address
 
     def calculate_next_signer(self, block_number):
+        #Consensus for v4 and v6 operate at bit level, transform from hex to bits
+        random_no_in_bits = bin(int(self.current_random_no,16))[2:].zfill(256)
         if block_number % 2 != 0: # block_number is the previous one, so if it is even, next should be IPv6
-             return self.formalize_IP(self.consensus_for_IPv4(self.current_random_no))
+             return self.formalize_IP(self.consensus_for_IPv4(random_no_in_bits))
         else:
-             return self.formalize_IP(self.consensus_for_IPv6(self.current_random_no))    
+             return self.formalize_IP(self.consensus_for_IPv6(random_no_in_bits))    
         

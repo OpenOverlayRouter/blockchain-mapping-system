@@ -435,6 +435,9 @@ def run():
                     to_send = consensus.new_dkg()
                     for member, data in to_send.iteritems():
                         p2p.send_dkg(member, data['verif_vector'], data['secret_key_share_contrib'])
+                else:
+                    consensus.store_ids(dkg_group)
+                    consensus.store_group_key(current_group_key)
         except Exception as e:
             mainLog.critical("Exception while creating DKG shares")
             mainLog.exception(e)
