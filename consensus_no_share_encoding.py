@@ -9,15 +9,11 @@ import logging
 import hashlib
 import zlib
 import ConfigParser
-from netaddr import IPAddress
-
-
 import Consensus.libs.bls_wrapper as bls
 import Consensus.dkg as dkg
-from shares import Share, Dkg_Share
 from own_exceptions import DkgAddContributionSharesError, DkgAddVerificationVectorsError, DkgGenKeysError, DkgGenerateSecretKeyShareError
 from own_exceptions import BlsInvalidGroupSignature, BlsSignError, BlsRecoverError
-
+from netaddr import IPAddress
 
 
 IPv4_PREFIX_LENGTH = 32
@@ -73,15 +69,15 @@ class Consensus():
         sig = bls.sign(digest, self.secretKey)
         if sig == "":
             raise BlsSignError()
-        #share = {'from': my_id, 'signature': sig}
-        return Share(my_id, sig)
+        share = {'from': my_id, 'signature': sig}
+        return share
             
     def store_share(self, share, expected_message, block_no):
-        dkg_id = self.members[share.source]['id']
+        dkg_id = self.members[share['from']]['id']
         if dkg_id not in self.shares_ids:
             self.shares_ids.append(dkg_id)
-            self.shares.append(share.signature)
-            consensusLog.info("Stored share from: %s", share.source)
+            self.shares.append(share['signature'])
+            consensusLog.info("Stored share from: %s", share['from'])
             if len(self.shares_ids) >= THRESHOLD:
                 consensusLog.debug("THRESHOLD shares received. Attempting to verify group signature with message %s", expected_message)
                 self.group_sig = bls.recover(self.shares_ids, self.shares)
@@ -159,23 +155,22 @@ class Consensus():
 
         consensusLog.debug("vVec lenght: %s", len(vVec))
         consensusLog.debug("secret contribs are: %s", secretContribs)
-        to_send = []                
+        to_send = {}                
         i = 0
         for oid, member in self.members.iteritems():
             if oid == my_id:
                 self.members[my_id]["vvec"] = vVec
                 self.members[my_id]["receivedShare"] = secretContribs[i]
-            else:
-                to_send.append(Dkg_Share(oid, my_id, secretContribs[i], vVec))
-#                to_send[oid] = {'secret_key_share_contrib': secretContribs[i], 'from': my_id, 'verif_vec': vVec}
+            else:               
+                to_send[oid] = {'secret_key_share_contrib': secretContribs[i], 'from': my_id, 'verif_vec': vVec}
             i += 1                                               
                                                
         return to_send
         
     def verify_dkg_contribution(self, dkg_contribution, my_id):
-        oid = dkg_contribution.source
-        contrib = dkg_contribution.secret_share_contrib
-        vVec = dkg_contribution.vVec
+        oid = dkg_contribution['from']
+        contrib = dkg_contribution['secret_key_share_contrib']
+        vVec = dkg_contribution['verif_vec']
 
         if dkg.verifyContributionShare(self.members[my_id]["id"], contrib, vVec):
             self.members[oid]["receivedShare"] = contrib

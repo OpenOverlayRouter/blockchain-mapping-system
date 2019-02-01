@@ -13,7 +13,7 @@ from utils import address, normalize_address, sha3
 class Share(rlp.Serializable):
 
     fields = [
-    ('from', address),        
+    ('source', address),        
     ('signature', Binary)
 
 #Reserved in case we have to sign the shares
