@@ -33,7 +33,10 @@ class BlockHeader(rlp.Serializable):
                  number=0,
                  timestamp=0,
                  coinbase=default_config['GENESIS_COINBASE'],
-                 extra_data=''):
+                 extra_data='',
+                 random_number=default_config['GENESIS_RANDOM_NO'], 
+                 group_pubkey=default_config['GENESIS_GROUP_PUBLIC_KEY'],
+                 count = 0):
         self.prevhash = prevhash
         self.coinbase = coinbase
         self.state_root = state_root
@@ -41,6 +44,9 @@ class BlockHeader(rlp.Serializable):
         self.number = number
         self.timestamp = timestamp
         self.extra_data = extra_data
+        self.random_number = random_number
+        self.group_pubkey = group_pubkey
+        self.count = count
 
     @property
     def hash(self):

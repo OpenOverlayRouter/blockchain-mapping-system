@@ -32,6 +32,9 @@ class UnsignedBlock(InvalidBlock):
 class InvalidBlockSigner(InvalidBlock):
     pass
 
+class DkgBlockRequiresGroupKey(Exception):
+    pass
+
 #For DKG and BLS
 #DKG errors
 class DkgAddContributionSharesError(Exception):

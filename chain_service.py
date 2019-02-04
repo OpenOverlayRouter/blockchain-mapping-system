@@ -12,7 +12,7 @@ import state
 import rlp
 from apply import apply_transaction
 from utils import normalize_address
-from own_exceptions import UnsignedTransaction
+from own_exceptions import UnsignedTransaction, DkgBlockRequiresGroupKey
 #from state import State
 from map_reply import Response, LocatorRecord, MapReplyRecord, MapServers
 from netaddr import IPNetwork
@@ -66,12 +66,19 @@ class ChainService():
         
 
     # creates a block with the list of pending transactions, creates its tries and returns it
-    def create_block(self, coinbase):
+    def create_block(self, coinbase, random_no, group_key, count):
+        
         self.chain.process_time_queue()
         prevhash = self.chain.head_hash
         prevnumber = self.chain.state.block_number
         coinbase = normalize_address(coinbase)
-        block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, number=prevnumber + 1, coinbase=coinbase))
+        if (prevnumber + 1) % DKG_RENEWAL_INTERVAL == 0: 
+		    if ((group_key is None) or (group_key == '')):
+	            raise DkgBlockRequiresGroupKey()
+        else:
+            group_key = ''
+        block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, \
+            number=prevnumber + 1, coinbase=coinbase, random_number=random_no,  group_pubkey=group_key, count=count))
         snapshot = self.chain.state.to_snapshot()
         s = state.State().from_snapshot(snapshot, Env(_EphemDB()))
         databaseLog.info("Creating block with block number %s", str(prevnumber+1))
@@ -241,6 +248,12 @@ class ChainService():
     #returns the corresponing blockchain address for the specified IP address    
     def get_addr_from_ip(self, ipaddr):
         return normalize_address(self.chain.patricia.get_value(str(ipaddr)))
+        
+    #Retruns the group key from the last DKG
+    def get_current_group_key(self):
+        last_block_no = self.get_head_block().header.number
+        last_old_dkg_block = last_block_no - (last_block_no % DKG_RENEWAL_INTERVAL)
+        return self.get_block_by_number(last_old_dkg_block).header.group_pubkey
         
     #Selects a group of addresses to perform the DKG
     def get_current_dkg_group(self):

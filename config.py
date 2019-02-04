@@ -14,6 +14,9 @@ default_config = dict(
     # Gas limit adjustment algo:
     # block.gas_limit=block.parent.gas_limit * 1023/1024 +
     #                   (block.gas_used * 6 / 5) / 1024
+    #SHA-256 hash of 'IPchain is a blockchain developed at the Broadband Communications Research Group, used to study the feasability of a Proof of Stake blockchain to store and exchange IP addresses'    
+    GENESIS_RANDOM_NO = 'a37172904aa905e74d00879fced7b721444ebdd2a598a1a5daf4726b66698782',
+    GENESIS_GROUP_PUBLIC_KEY = '',
     GASLIMIT_EMA_FACTOR=1024,
     GASLIMIT_ADJMAX_FACTOR=1024,
     BLOCK_GAS_LIMIT=4712388,
@@ -23,6 +26,8 @@ default_config = dict(
     NETWORK_ID=1,
     ACCOUNT_INITIAL_NONCE=0,
     PREV_HEADER_DEPTH=256,
+    
+    
 )
 
 

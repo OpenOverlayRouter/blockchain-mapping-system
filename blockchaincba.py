@@ -153,6 +153,7 @@ def run():
     dkg_on = False
     
     current_random_no = chain.get_head_block().header.random_number
+    current_group_key = chain.get_current_group_key()
     my_dkgIDs = []
     
     myIPs = IPSet()
@@ -164,7 +165,7 @@ def run():
     in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
     
     mainLog.info("Initializing Consensus")
-    consensus = Consensus(dkg_group, my_dkgIDs, current_random_no)
+    consensus = Consensus(dkg_group, my_dkgIDs, current_random_no, current_group_key)
     
     
     
@@ -283,7 +284,7 @@ def run():
                     if signing_addr in addresses:
                         mainLog.info("This node has to sign a block, selected IP: %s", signer)
                         mainLog.info("Associated address: %s", signing_addr.encode("HEX"))
-                        new_block = chain.create_block(count, signing_addr, consensus.get_current_random_no())
+                        new_block = chain.create_block(signing_addr, consensus.get_current_random_no(), current_group_key, count)
                         try:
                             key_pos = addresses.index(signing_addr)
                         except:
@@ -436,8 +437,7 @@ def run():
                     for member, data in to_send.iteritems():
                         p2p.send_dkg(member, data['verif_vector'], data['secret_key_share_contrib'])
                 else:
-                    consensus.store_ids(dkg_group)
-                    consensus.store_group_key(current_group_key)
+                    consensus.store_ids(dkg_group)                    
         except Exception as e:
             mainLog.critical("Exception while creating DKG shares")
             mainLog.exception(e)
