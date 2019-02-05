@@ -36,7 +36,7 @@ class Share(rlp.Serializable):
     
 class Dkg_Share(rlp.Serializable):
     fields = [
-    ('source', address)
+    ('source', address),
     ('to', address),
     ('secret_share_contrib', Binary),
     ('vVec', Binary)

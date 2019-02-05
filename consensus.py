@@ -77,11 +77,11 @@ class Consensus():
         return Share(my_id, sig)
             
     def store_share(self, share, expected_message, block_no):
-        dkg_id = self.members[share.source]['id']
+        dkg_id = self.members[share.source.encode("hex")]['id']
         if dkg_id not in self.shares_ids:
             self.shares_ids.append(dkg_id)
             self.shares.append(share.signature)
-            consensusLog.info("Stored share from: %s", share.source)
+            consensusLog.info("Stored share from: %s", share.source.encode("hex"))
             if len(self.shares_ids) >= THRESHOLD:
                 consensusLog.debug("THRESHOLD shares received. Attempting to verify group signature with message %s", expected_message)
                 self.group_sig = bls.recover(self.shares_ids, self.shares)
@@ -90,7 +90,7 @@ class Consensus():
                 self.verified = bls.verify(hashlib.sha256(expected_message).hexdigest(), self.group_sig, self.group_key)
                 if self.verified:                
                     self.current_random_no = hashlib.sha256(self.group_sig).hexdigest()
-                    self.calculate_next_signer(block_no)
+                    self.next_signer = self.calculate_next_signer(block_no)
                     consensusLog.info("Group signature verified correctly. New random number is: %s", self.current_random_no)
                     return True
                 else:
@@ -109,6 +109,7 @@ class Consensus():
     def reset_bls(self):
         self.shares = []
         self.shares_ids = []
+        self.verified = False
         
     #Only when the node DOES NOT PARTICIPATE IN THE DKG-BLS, but wants 
     #to have all the ids available to verify the BLS signatures
@@ -166,14 +167,14 @@ class Consensus():
                 self.members[my_id]["vvec"] = vVec
                 self.members[my_id]["receivedShare"] = secretContribs[i]
             else:
-                to_send.append(Dkg_Share(oid, my_id, secretContribs[i], vVec))
+                to_send.append(Dkg_Share(my_id,oid, secretContribs[i], vVec))
 #                to_send[oid] = {'secret_key_share_contrib': secretContribs[i], 'from': my_id, 'verif_vec': vVec}
             i += 1                                               
                                                
         return to_send
         
     def verify_dkg_contribution(self, dkg_contribution, my_id):
-        oid = dkg_contribution.source
+        oid = dkg_contribution.source.encode("hex")
         contrib = dkg_contribution.secret_share_contrib
         vVec = dkg_contribution.vVec
 

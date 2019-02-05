@@ -41,6 +41,8 @@ sudo pip install bitstring
 sudo pip install py-radix
 sudo pip install -I kademlia==0.6 rpcudp==2.0
 
+#Give execution permission to the BLS executable
+chmod 744 Consensus/utils/bls.exe
 echo "Adjusting keystore and transactions for location" $location
 rm -r keystore
 mv data_generation/keystore-$location keystore

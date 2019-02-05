@@ -73,7 +73,7 @@ class ChainService():
         prevnumber = self.chain.state.block_number
         coinbase = normalize_address(coinbase)
         if (prevnumber + 1) % DKG_RENEWAL_INTERVAL == 0: 
-		    if ((group_key is None) or (group_key == '')):
+            if ((group_key is None) or (group_key == '')):
 	            raise DkgBlockRequiresGroupKey()
         else:
             group_key = ''
