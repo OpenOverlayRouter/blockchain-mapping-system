@@ -450,8 +450,8 @@ def run():
             if dkg_on and in_dkg_group:
                 dkg_share = p2p.get_dkg_shares() 
                 while dkg_share is not None:
-                    if dkg_share.source.encode('hex') in my_dkgIDs:
-                        if consensus.verify_dkg_contribution(dkg_share, my_dkgIDs):
+                    if dkg_share.to.encode('hex') in my_dkgIDs:
+                        if consensus.verify_dkg_contribution(dkg_share):
                             dkg_on = False
                         elif (time.time() - timestamp) >= DKG_TIMEOUT:
                             mainLog.critical("Fatal Error. DKG renewal timeout expired. Stopping...")

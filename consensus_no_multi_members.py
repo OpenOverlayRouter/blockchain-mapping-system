@@ -42,10 +42,10 @@ class Consensus():
     
     def __init__(self, dkg_group, node_ids, randno):
 #TODO: initizlize members correctly                
-        self.dkg_group = dkg_group
+        self.current_ids = dkg_group
         self.own_ids = node_ids
         self.current_random_no = randno
-        self.secretKeys = {}
+        self.secretKey = None
         self.group_key = None
         self.group_sig =  None
         self.shares = []
@@ -66,27 +66,19 @@ class Consensus():
         return self.group_key
         
     #BLS stuff
-    def create_shares(self, block_num, count=0):
-        self.msg = str(self.current_random_no) + str(block_num) + str(count)
+    def create_share(self, prev_rand_no, block_num, my_id, count=0):
+        self.msg = str(prev_rand_no) + str(block_num) + str(count)
         digest = hashlib.sha256(self.msg).hexdigest()
         consensusLog.info("Creating a new share with message %s, message hash: %s", self.msg, digest)
-        new_shares =  []
-        #Create one share for each of the node IDs        
-        for oid in self.own_ids:
-            sig = bls.sign(digest, self.secretKeys[oid])
-            if sig == "":
-                raise BlsSignError()
-            new_shares.append(Share(oid, sig))
-        #Directly store these shares internally
-        for share in new_shares:
-            self.store_share(share, self.msg, block_num)
-        return new_shares
+        sig = bls.sign(digest, self.secretKey)
+        if sig == "":
+            raise BlsSignError()
+        #share = {'from': my_id, 'signature': sig}
+        return Share(my_id, sig)
             
     def store_share(self, share, expected_message, block_no):
-        #To obtain the dkg_id we take the first dictionary because the ids are the same for all nodes     
-        dkg_id = self.members[self.members.keys()[0]][share.source.encode("hex")]['id']
-        #Sanity checks: avoid adding already seen shares, do not recompute if enough shares received
-        if dkg_id not in self.shares_ids and not self.verified:
+        dkg_id = self.members[share.source.encode("hex")]['id']
+        if dkg_id not in self.shares_ids:
             self.shares_ids.append(dkg_id)
             self.shares.append(share.signature)
             consensusLog.info("Stored share from: %s", share.source.encode("hex"))
@@ -118,20 +110,16 @@ class Consensus():
         self.shares = []
         self.shares_ids = []
         self.verified = False
-
         
     #Only when the node DOES NOT PARTICIPATE IN THE DKG-BLS, but wants 
     #to have all the ids available to verify the BLS signatures
-    def store_ids(self, new_dkg_group):
-        self.dkg_group = new_dkg_group
-        self.own_ids = []        
-        self.members = {}       
-        self.members['no_asociated_dkg'] = {}       
-        for oid in new_dkg_group:
+    def store_ids(self, original_ids, my_id):
+        self.members = {}
+        for oid in original_ids:
             secKey, _ = bls.genKeys(zlib.adler32(oid))
             if secKey == "":
                 raise DkgGenKeysError()            
-            self.members['no_asociated_dkg'][oid] = {
+            self.members[oid] = {
                 "id": secKey,
                 "receivedShare": None,
                 "vvec": None
@@ -144,95 +132,80 @@ class Consensus():
     #DKG stuff
         
     # Create a new DKG with a new list of members
-    #Params: new_dkg_group: list of new blockchain addresses that will participate in this DKG
-    #        new_node_ids: id that is calling the function
+    #Params: original_ids: list of new blockchain addresses that will participate in this DKG
+    #        my_ids: id that is calling the function
     #Needs to be called once for each different IDs of the node!!!!
-    def new_dkg(self, new_dkg_group, new_node_ids):
+    def new_dkg(self, original_ids, my_id):
         self.members = {}
-        self.dkg_group = new_dkg_group
-        self.own_ids = new_node_ids
         #Create internal structures
-        for node_id in self.own_ids:
-            self.members[node_id] = {}
-            for oid in new_dkg_group:
-                #We have to convert the 160 bit ethereum address to a 32-bit integer because the DKG libarary IDs can 
-                #are 32-bit int maximum. However, this is NOT SECURE and a VULNERABILITY. Ideally we should be able 
-                # to use the FULL 160 bit address converted to integer as an ID, or its hex string
-                secKey, _ = bls.genKeys(zlib.adler32(oid))
-                if secKey == "":
-                    raise DkgGenKeysError()            
-                self.members[node_id][oid] = {
-                    "id": secKey,
-                    "receivedShare": None,
-                    "vvec": None
-                }        
-        #Generate contributions, for all IDs of this node
-        to_send = []
-        consensusLog.info("Generating DKG shares for this node. Total number of DKG participants: %s, number of IDs owned by this node: %s.", len(self.dkg_group), len(self.own_ids))
-        for node_id, data_node_id in self.members.iteritems():        
-        
-            vVec, secretContribs = dkg.generateContribution(THRESHOLD, 
-                                                   [ member["id"] for _,member in data_node_id.iteritems() ] )
-            for contrib in secretContribs:
-                if contrib == "":
-                    consensusLog.error("Error in generating the secret contributions. Position with error: %s", secretContribs.index(contrib))
-                    raise DkgGenerateSecretKeyShareError()
-    
-            consensusLog.debug("Info from originating node ID: %s", node_id)            
-            consensusLog.debug("vVec lenght: %s", len(vVec))
-            consensusLog.debug("secret contribs are: %s", secretContribs)
-            
-            i = 0
-            for oid, member_data in data_node_id.iteritems():
-                if oid in self.own_ids:
-                    #Store shares for this node_id and the own_ids
-                    self.verify_dkg_contribution(Dkg_Share(node_id, oid, secretContribs[i], vVec))
-                else:
-                    to_send.append(Dkg_Share(node_id, oid, secretContribs[i], vVec))                                        
-                    #self.members[oid][node_id]["vvec"] = vVec
-                    #self.members[oid][node_id]["receivedShare"] = secretContribs[i]
-                i += 1                                               
+        for oid in original_ids:
+            #We have to convert the 160 bit ethereum address to a 32-bit integer because the DKG libarary IDs can 
+            #are 32-bit int maximum. However, this is NOT SECURE and a VULNERABILITY. Ideally we should be able 
+            # to use the FULL 160 bit address converted to integer as an ID, or its hex string
+            secKey, _ = bls.genKeys(zlib.adler32(oid))
+            if secKey == "":
+                raise DkgGenKeysError()            
+            self.members[oid] = {
+                "id": secKey,
+                "receivedShare": None,
+                "vvec": None
+            }        
+        #Generate contributions
+        vVec, secretContribs = dkg.generateContribution(THRESHOLD, 
+                                               [ member["id"] for _,member in self.members.iteritems() ] )
+        for contrib in secretContribs:
+            if contrib == "":
+                consensusLog.error("Error in generating the secret contributions. Position with error: %s", secretContribs.index(contrib))
+                raise DkgGenerateSecretKeyShareError()
+
+        consensusLog.debug("vVec lenght: %s", len(vVec))
+        consensusLog.debug("secret contribs are: %s", secretContribs)
+        to_send = []                
+        i = 0
+        for oid, member in self.members.iteritems():
+            if oid == my_id:
+                self.members[my_id]["vvec"] = vVec
+                self.members[my_id]["receivedShare"] = secretContribs[i]
+            else:
+                to_send.append(Dkg_Share(my_id,oid, secretContribs[i], vVec))
+#                to_send[oid] = {'secret_key_share_contrib': secretContribs[i], 'from': my_id, 'verif_vec': vVec}
+            i += 1                                               
                                                
         return to_send
         
-    def verify_dkg_contribution(self, dkg_contribution):
+    def verify_dkg_contribution(self, dkg_contribution, my_id):
         oid = dkg_contribution.source.encode("hex")
-        destination = dkg_contribution.to.encode("hex")         #It is one of the node IDs, verified in the upper layer
         contrib = dkg_contribution.secret_share_contrib
         vVec = dkg_contribution.vVec
-           
-        if dkg.verifyContributionShare(self.members[destination][destination]["id"], contrib, vVec):
-            self.members[destination][oid]["receivedShare"] = contrib
-            self.members[destination][oid]["vvec"] = vVec
+
+        if dkg.verifyContributionShare(self.members[my_id]["id"], contrib, vVec):
+            self.members[oid]["receivedShare"] = contrib
+            self.members[oid]["vvec"] = vVec
             consensusLog.info("Received valid share from member %s" % oid)
         else:
             consensusLog.warning("Received invalid share from member %s, ignoring..." % oid)
     
-        if self.allSharesReceived(destination):
+        if self.allSharesReceived():
             #global sk, groupPk
-            self.secretKeys[destination] = dkg.addContributionShares( [ member["receivedShare"] for _,member in self.members[destination].iteritems() ])
-            if self.secretKeys[destination] == "":
+            self.secretKey = dkg.addContributionShares( [ member["receivedShare"] for _,member in self.members.iteritems() ])
+            if self.secretKey == "":
                 raise DkgAddContributionSharesError()
-            groupsvVec = dkg.addVerificationVectors( [ member["vvec"] for _,member in self.members[destination].iteritems() ])
-            #It does not matter if we rewrite it because it is the same for all members in a particular round
+            groupsvVec = dkg.addVerificationVectors( [ member["vvec"] for _,member in self.members.iteritems() ])
             self.group_key = groupsvVec[0]
             if self.group_key == "":
                 raise DkgAddVerificationVectorsError()
-            consensusLog.info("DKG setup completed for node ID %s", destination)
+            consensusLog.info("DKG setup completed")
             consensusLog.info("Resulting group public key is " + self.group_key + "\n")
-            
+            return True
+        else:
+            return False
         
-    def allSharesReceived(self, current_id):
-        for _,member in self.members[current_id].iteritems():
+    def allSharesReceived(self):
+        for _,member in self.members.iteritems():
             if not member["receivedShare"]:
                 return False
+   
         return True    
-        
-    def all_node_dkgs_finished(self):
-        for oid in self.own_ids:
-            if not self.allSharesReceived(oid):
-                return False
-        return True
                 
     # Returns the IP Address in a readable format
     def formalize_IP(self, IP_bit_list):
@@ -268,14 +241,4 @@ class Consensus():
              return self.formalize_IP(self.consensus_for_IPv4(random_no_in_bits))
         else:
              return self.formalize_IP(self.consensus_for_IPv6(random_no_in_bits))    
-    
-    def print_share_array(self, array):
-        for share in array:
-            print "shares.Share('" + share.source.encode('hex') + "','" + share.signature + "')"
-            
-    def print_dkg_share_array(self, array):
-        for share in array:
-            print "shares.Dkg_Share('" + share.source.encode('hex') + "','" + share.to.encode('hex') + "','" + \
-                share.secret_share_contrib + "'," + str(share.vVec) + ")"
-
-            
+        
