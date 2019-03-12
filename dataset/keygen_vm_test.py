@@ -28,7 +28,7 @@ except Exception as e:
 
 
 
-for i in range(250):
+for i in range(53):
 
     k = Keystore.new('TFG1234', None, 0, None)
 #k.path = '/jordi/Desktop/spyder-workspace/blockchaincba/Tests/keystore2/' + k.address.encode("HEX")
