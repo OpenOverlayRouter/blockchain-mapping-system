@@ -2,9 +2,7 @@
 import sys
 import math
 import radix
-import netaddr
-
-TX_DIST = 60
+import time
 
 def write_tx(afi, category, metadata, dest, orig, value, fd):
     
@@ -32,24 +30,44 @@ def tx_left_in_buffer(pending_buf):
     return node_list
         
         
+#Script structure
+#---> Input Data:
+#        - All prefixes owned by all nodes, in v4 and v6 (from previous step)
+#        - All node addresses
+#        - RIR delegation files for v4 and v6
+#        -
+#*** Internal structures:
+#        - prefixes: array storing all v4 prefixes from RIR delegations. v6 prefixes are read directly from the file.
+#        - rtree: radix trie with all v4 prefixes owned by all the nodes 
+#        - rtree6: same as before for v6
+#        - from_buffer: one array PER EACH node with the last TX_DIST addresses already used, to avoid repetition before a new block is created
+#        - pending4_tx: one dictionary PER EACH node that stores transactions that cannot be yet written because TX_DIST is nor respected. The keys in a node's dictionary are the prefixes
+#        - pending6_tx: same as before for v6
+#<--- Output Data:
+#        - File with skipped v4 prefixes because they are larger than /16
+#        - File with v6 prefixes found in RIR files but NOT in prefixes owned by nodes
+#        - Transaction file for each node
+#        - File with v4 prefixes that could not be written due to TX_DIST
+#        - Same as before for v6
+
 
 #File for v6 prefixes not found
 try:    
-    v6_not_found = open('v6-not-found-prefixes.txt', 'w')
+    v6_not_found = open('intermediate_files/third_level_debug_files/v6-not-found-prefixes.txt', 'w')
 except Exception as e: 
     print e
     sys.exit(1)
 
 #File with v4 skipped prefixes
 try:    
-    skip4 = open('v4-skipped-prefixes.txt', 'w')
+    skip4 = open('intermediate_files/third_level_debug_files/v4-skipped-prefixes.txt', 'w')
 except Exception as e: 
     print e
     sys.exit(1)
 
 #Load prefixes from RIR files
 try:    
-    rir_data = open('rir-files/ipv4.txt', 'r')
+    rir_data = open('rir-files/ipv4', 'r')
 except Exception as e: 
     print e
     sys.exit(1)
@@ -76,7 +94,7 @@ total4 = count
 
 #Load prefixes from RIR files v6
 try:    
-    rir_data6 = open('rir-files/ipv6.txt.txt', 'r')
+    rir_data6 = open('rir-files/ipv6', 'r')
 except Exception as e: 
     print e
     sys.exit(1)
@@ -173,21 +191,26 @@ for node in nodes:
 #Generate transactions
 print "Generating transactions..."
 
+#Distance between the same two addresses
+TX_DIST = 60
 #Total number of nodes   
 NUM_NODES = 10
 #Number of blockchain addresses of each node
 ADDRS_PER_NODE = 250
 
+global_count = 0
+pos = -1
+
 missed4 = 0
 count4 = 0
-pos4 = -1
 
 missed6 = 0
 count6 = 0
-pos6 = -1
+last_time = time.time()
 
-offset6 = 128
-total6 = 82220
+#Number of lines in ipv6.txt
+total6 = 239187
+
 
 
 for pref in prefixes:
@@ -206,14 +229,15 @@ for pref in prefixes:
                 from_buffer[rnode.data['node']].pop(0)
                 from_buffer[rnode.data['node']].append(rnode.data['owner'])
             #Normal operation    
-            if (count4 % NUM_NODES) == 0:
-                pos4 = pos4 + 1
-            des = node_dest_addr[nodes[count4 % NUM_NODES]][pos4 % ADDRS_PER_NODE]
+            if (global_count % NUM_NODES) == 0:
+                pos = pos + 1
+            des = node_dest_addr[nodes[global_count % NUM_NODES]][pos % ADDRS_PER_NODE]
             #print 'Prefix',pref, 'found in', rnode
             #print 'Owner', rnode.data['owner'], 'node', rnode.data['node']
             #print "Will be written to", outputs[rnode.data['node']]
             write_tx(1, 0, None, des, rnode.data['owner'], pref, outputs[rnode.data['node']])
             count4 = count4 + 1
+            global_count = global_count + 1
     else:
         missed4 = missed4 + 1
     #try to write pending v4 tx
@@ -227,11 +251,12 @@ for pref in prefixes:
                 from_buffer[node].append(owner)
                 to_remove.append(pref)
                 #Normal operation                    
-                if (count4 % NUM_NODES) == 0:
-                    pos4 = pos4 + 1
-                des = node_dest_addr[nodes[count4 % NUM_NODES]][pos4 % ADDRS_PER_NODE]
+                if (global_count % NUM_NODES) == 0:
+                    pos = pos + 1
+                des = node_dest_addr[nodes[global_count % NUM_NODES]][pos % ADDRS_PER_NODE]
                 write_tx(1, 0, None, des, owner, pref, outputs[node])
                 count4 = count4 + 1
+                global_count = global_count + 1
          #Remove tx from the v6 queue                
         for pref in to_remove:
             del pending4_tx[node][pref]
@@ -255,11 +280,12 @@ for pref in prefixes:
                     from_buffer[rnode.data['node']].append(rnode.data['owner'])
                 
                 #Normal operation
-                if count6 % 8 == 0:
-                    pos6 = pos6 + 1
-                des = node_dest_addr[nodes[count6 % NUM_NODES]][(pos6 % 32) + offset6]
+                if global_count % NUM_NODES == 0:
+                    pos = pos + 1
+                des = node_dest_addr[nodes[global_count % NUM_NODES]][pos % ADDRS_PER_NODE]
                 write_tx(2, 0, None, des, rnode.data['owner'], addr + '/' + pref, outputs[rnode.data['node']])
                 count6 = count6 + 1
+                global_count = global_count + 1
                 #check if we can remove some tx from the queue of this node in particular
                 to_remove = []
                 for pref, owner in pending6_tx[rnode.data['node']].iteritems():
@@ -269,11 +295,12 @@ for pref in prefixes:
                         from_buffer[rnode.data['node']].append(owner)
                         to_remove.append(pref)
                         #Normal operation                    
-                        if count6 % 8 == 0:
-                            pos6 = pos6 + 1
-                        des = node_dest_addr[nodes[count6 % NUM_NODES]][(pos6 % 32) + offset6]
+                        if global_count % NUM_NODES == 0:
+                            pos = pos + 1
+                        des = node_dest_addr[nodes[global_count % NUM_NODES]][pos % ADDRS_PER_NODE]
                         write_tx(2, 0, None, des, owner, pref, outputs[rnode.data['node']])
                         count6 = count6 + 1
+                        global_count = global_count + 1
                  #Remove tx from the v6 queue                
                 for pref in to_remove:
                     del pending6_tx[rnode.data['node']][pref]
@@ -292,17 +319,20 @@ for pref in prefixes:
                     from_buffer[node].append(owner)
                     to_remove.append(pref)
                     #Normal operation                    
-                    if count6 % NUM_NODES == 0:
-                        pos6 = pos6 + 1
-                    des = node_dest_addr[nodes[count6 % NUM_NODES]][(pos6 % 32) + offset6]
+                    if global_count % NUM_NODES == 0:
+                        pos = pos + 1
+                    des = node_dest_addr[nodes[global_count % NUM_NODES]][pos % ADDRS_PER_NODE]
                     write_tx(2, 0, None, des, owner, pref, outputs[node])
                     count6 = count6 + 1
+                    global_count = global_count + 1
              #Remove tx from the v6 queue                
             for pref in to_remove:
                 del pending6_tx[node][pref]
             
-    if (count4 + count6) % 10000 == 0:
+    #if (count4 + count6) % 10000 == 0:
+    if time.time() - last_time > 300:
         print "Processed", str(count4+count6), "prefixes, total:",  str(total6 + total4)
+        last_time = time.time()
 
 for node in nodes:
     if len(pending4_tx[node]) != 0:
@@ -320,11 +350,12 @@ for node in nodes:
             from_buffer[node].append(owner)
             to_remove.append(pref)
             #Normal operation                    
-            if (count4 % NUM_NODES) == 0:
-                pos4 = pos4 + 1
-            des = node_dest_addr[nodes[count4 % NUM_NODES]][pos4 % ADDRS_PER_NODE]
+            if (global_count % NUM_NODES) == 0:
+                pos = pos + 1
+            des = node_dest_addr[nodes[global_count % NUM_NODES]][pos % ADDRS_PER_NODE]
             write_tx(1, 0, None, des, owner, pref, outputs[node])
             count4 = count4 + 1
+            global_count = global_count + 1
      #Remove tx from the v4 queue                
     for pref in to_remove:
         del pending4_tx[node][pref] 
@@ -336,12 +367,13 @@ for node in nodes:
             from_buffer[node].append(owner)
             to_remove.append(pref)
             #Normal operation                    
-            if count6 % NUM_NODES == 0:
-                pos6 = pos6 + 1
-            des = node_dest_addr[nodes[count6 % NUM_NODES]][(pos6 % 32) + offset6]
+            if global_count % NUM_NODES == 0:
+                pos = pos + 1
+            des = node_dest_addr[nodes[global_count % NUM_NODES]][pos % ADDRS_PER_NODE]
             write_tx(2, 0, None, des, owner, pref, outputs[node])
             count6 = count6 + 1
-     #Remove tx from the v6 queue                
+            global_count = global_count + 1
+     #Remove tx from the v6 queue                 
     for pref in to_remove:
         del pending6_tx[node][pref]
         
@@ -388,5 +420,4 @@ for node in nodes:
 rir_data6.close()
 v6_not_found.close()
     
-print "Done"    
-    
+print "Done"
