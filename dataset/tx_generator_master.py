@@ -35,7 +35,24 @@ for node in nodes:
         count = count + 1
     node_addr.close()
     
-print "Total loaded addresses:", count
+print "Total loaded v4 addresses:", count
+
+count = 0
+node_dest_addr6 = {}
+for node in nodes:    
+    print "Loading node address dictionaries ", node
+    node_dest_addr6[node] = []
+    try:    
+        node_addr = open('node_addresses/' + node + '-addresses6.txt', 'r')
+    except Exception as e: 
+        print e
+        sys.exit(1)
+    for line in node_addr:
+        node_dest_addr6[node].append(line)
+        count = count + 1
+    node_addr.close()
+    
+print "Total loaded v6 addresses:", count
 
 #Open output files
 outputs4 = {}
@@ -88,12 +105,14 @@ except Exception as e:
 NUM_NODES = 10
 #Number of blockchain addresses of each node
 ADDRS_PER_NODE = 250
+ADDRS_PER_NODE_V6 = 150
 total6 = 41
 count6 = 0
 processv6 = True
 global_count = 0
 count4 = 0
 pos = -1
+pos6 = -1
 
 
 prefix = '/13'
@@ -108,16 +127,16 @@ sub_subprefixes = [0x00, 0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38]
 
 for sub_sub in sub_subprefixes:
     for i in range(256*4):
-        if global_count % NUM_NODES == 0:
+        if count4 % NUM_NODES == 0:
             pos = pos + 1
 
         
         value = str(i>>2) + '.' + str(subprefixes[i % 4] + sub_sub) + '.0.0' + prefix
         orig = fromv4[i]
-        des = node_dest_addr[nodes[global_count % NUM_NODES]][pos % ADDRS_PER_NODE]
+        des = node_dest_addr[nodes[count4 % NUM_NODES]][pos % ADDRS_PER_NODE]
         
         write_tx(1, 0, None, des, orig, value, out)
-        outputs4[nodes[global_count % NUM_NODES]].write(value + ' ' + des)
+        outputs4[nodes[count4 % NUM_NODES]].write(value + ' ' + des)
         count4 = count4 + 1
         global_count = global_count + 1
         
@@ -127,15 +146,15 @@ for sub_sub in sub_subprefixes:
             if content == '\n':
                 processv6 = False
             else:
-                if global_count % NUM_NODES == 0:
-                    pos = pos + 1
+                if count6 % NUM_NODES == 0:
+                    pos6 = pos6 + 1
                 content = content.split(' ')            
                 value = content[0]
                 orig = content[1]
-                des = node_dest_addr[nodes[global_count % NUM_NODES]][pos % ADDRS_PER_NODE] 
+                des = node_dest_addr6[nodes[count6 % NUM_NODES]][pos6 % ADDRS_PER_NODE_V6] 
                 
                 write_tx(2, 0, None, des, orig, value, out)
-                outputs6[nodes[global_count % NUM_NODES]].write(value + ' ' + des)
+                outputs6[nodes[count6 % NUM_NODES]].write(value + ' ' + des)
                 count6 = count6 + 1
                 global_count = global_count + 1
         else:

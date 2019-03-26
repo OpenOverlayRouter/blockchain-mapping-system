@@ -13,7 +13,7 @@ node = sys.argv[1]
 print ("Generating keys for %s", node)
 
 try:    
-    addresses = open(node + '-addresses.txt', 'w')
+    addresses = open('node_addresses/' + node + '-addresses6.txt', 'w')
 except Exception as e: 
     print e
     sys.exit(1)
@@ -28,7 +28,7 @@ except Exception as e:
 
 
 
-for i in range(53):
+for i in range(150):
 
     k = Keystore.new('TFG1234', None, 0, None)
 #k.path = '/jordi/Desktop/spyder-workspace/blockchaincba/Tests/keystore2/' + k.address.encode("HEX")

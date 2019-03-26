@@ -89,7 +89,7 @@ count = 0
 
 
 for one_node in nodes:    
-    print "Loading node destionations dictionaries ", one_node
+    print "Loading v4 node destionations dictionaries for", one_node
     node_dest_addr[one_node] = []
     try:    
         node_addr = open('node_addresses/' + one_node + '-addresses.txt', 'r')
@@ -101,7 +101,26 @@ for one_node in nodes:
         count = count + 1
     node_addr.close()
     
-print "Total loaded destinantions:", count
+print "Total loaded v4 destinantions:", count
+
+
+dest_addr6 = {}
+count = 0
+for one_node in nodes:    
+    print "Loading v6 node destionations dictionaries for", one_node
+    dest_addr6[one_node] = []
+    try:    
+        node_addr = open('node_addresses/' + one_node + '-addresses6.txt', 'r')
+    except Exception as e: 
+        print e
+        sys.exit(1)
+    for line in node_addr:
+        dest_addr6[one_node].append(line)
+        count = count + 1
+    node_addr.close()
+
+print "Total loaded v6 destinantions:", count
+
 
 #Load current node prefixes and save into memory
 try:    
@@ -169,6 +188,7 @@ print pref6
 NUM_NODES = 9
 #Number of blockchain addresses of each node
 ADDRS_PER_NODE = 250
+ADDRS_PER_NODE_V6 = 150
 
 count4 = 0
 count6 = 0
@@ -177,22 +197,18 @@ pos = -1
 
 
 pos6 = -1
-if node == 'tokyo':
-    V6SPACING = 15
-else:
-    V6SPACING = 28
+pos_des6 = -1
 
 
-
-
-
+spacings6= {'ncalifornia' : 21, 'canada': 32, 'nvirginia' : 25, 'saopaulo' : 29, 'ireland' : 20, 'frankfurt' : 24, 'mumbai' : 20, 'singapore' : 1000, 'sydney' : 11, 'tokyo' : 25}
+V6SPACING = spacings6[node]
 
 #Here we are expanding from /13 to /16, it is 3 bits, we do 8 passes along the input file
 expanded = [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07]
 for exp in expanded:
     for line in input4:
-        if (global_count % NUM_NODES) == 0:
-                pos = pos + 1
+        if (count4 % NUM_NODES) == 0:
+            pos = pos + 1
                 
         content = line.split(' ')
         address = content[0].split('.')
@@ -201,12 +217,12 @@ for exp in expanded:
         owner = content[1]
         
         value = first_byte + '.' + str(int(second_byte) + exp) + '.0.0/16'
-        des = node_dest_addr[nodes[global_count % NUM_NODES]][pos % ADDRS_PER_NODE]
+        des = node_dest_addr[nodes[count4 % NUM_NODES]][pos % ADDRS_PER_NODE]
         
         
         
         write_tx(1, 0, None, des, owner, value, out)
-        record_delegation(value, des, outputs4[nodes[global_count % NUM_NODES]])    
+        record_delegation(value, des, outputs4[nodes[count4 % NUM_NODES]])    
         count4 = count4 + 1
         global_count = global_count + 1
     
@@ -215,20 +231,24 @@ for exp in expanded:
         #Still tx to generate
             if count4 % V6SPACING == 0:
                 #We leave some space between v6 tx
+                #We have a pointer to the next v6 prefix to use
                 pos6 = (pos6 + 1) % len(pref6)           
                 data = pref6[pos6] 
                 while data["num_tx"] == 0:
                 #Jump to next pending tx 
                     pos6 = (pos6 + 1) % len(pref6)
                     data = pref6[pos6]
-                if global_count % NUM_NODES == 0:
-                    pos = pos + 1
+                #Update destination pointer                
+                if count6 % NUM_NODES == 0:
+                    pos_des6 = pos_des6 + 1
                    
                 value = generate_v6_prefix(data["old_pref"], data["new_pref"], data["address"], data["num_tx"])     
                 orig = data["owner"]
-                des = node_dest_addr[nodes[global_count % NUM_NODES]][(pos % ADDRS_PER_NODE)]
+                des = dest_addr6[nodes[count6 % NUM_NODES]][(pos_des6 % ADDRS_PER_NODE_V6)]
+                
+                
                 write_tx(2, 0, None, des, orig, value, out)
-                record_delegation(value, des, outputs6[nodes[global_count % NUM_NODES]])
+                record_delegation(value, des, outputs6[nodes[count6 % NUM_NODES]])
                 count6 = count6 + 1
                 global_count = global_count + 1
                 data["num_tx"] = data["num_tx"] - 1
