@@ -66,8 +66,8 @@ for one_node in nodes:
     except Exception as e: 
         print e
         sys.exit(1)  
-print "Created output files:"
-print outputs4
+#print "Created output files:"
+#print outputs4
 
 
 outputs6 = {}    
@@ -77,8 +77,8 @@ for one_node in nodes:
     except Exception as e: 
         print e
         sys.exit(1)
-print "Created output files:"
-print outputs6
+#print "Created output files:"
+#print outputs6
 
 
 #Load addresses from other nodes to be used as destinations
@@ -89,7 +89,7 @@ count = 0
 
 
 for one_node in nodes:    
-    print "Loading v4 node destionations dictionaries for", one_node
+    #print "Loading v4 node destionations dictionaries for", one_node
     node_dest_addr[one_node] = []
     try:    
         node_addr = open('node_addresses/' + one_node + '-addresses.txt', 'r')
@@ -107,7 +107,7 @@ print "Total loaded v4 destinantions:", count
 dest_addr6 = {}
 count = 0
 for one_node in nodes:    
-    print "Loading v6 node destionations dictionaries for", one_node
+    #print "Loading v6 node destionations dictionaries for", one_node
     dest_addr6[one_node] = []
     try:    
         node_addr = open('node_addresses/' + one_node + '-addresses6.txt', 'r')
@@ -135,7 +135,7 @@ except Exception as e:
 
 #Load allowed expansions for v6
 try:    
-    allowed6 = open('v6_allowed_intermediate_expansion.csv', 'r')
+    allowed6 = open('v6_l2_max_expansion_limited.csv', 'r')
 except Exception as e: 
     print e
     sys.exit(1)
@@ -177,6 +177,7 @@ for line in input6:
         data["new_pref"] = max_exp[addres_only[0]][0]
         pref6.append(data)
     except KeyError:
+        print "--------------------------------->WARNING<-----------------------------------"        
         print addres_only[0], "This prefix has not yet been delegated in all v6 files. Skipping"
     
 input6.close()
@@ -200,8 +201,9 @@ pos6 = -1
 pos_des6 = -1
 
 
-spacings6= {'ncalifornia' : 21, 'canada': 32, 'nvirginia' : 25, 'saopaulo' : 29, 'ireland' : 20, 'frankfurt' : 24, 'mumbai' : 20, 'singapore' : 1000, 'sydney' : 11, 'tokyo' : 25}
-V6SPACING = spacings6[node]
+#spacings6= {'ncalifornia' : 21, 'canada': 0, 'nvirginia' : 0, 'saopaulo' : 0, 'ireland' : 0, 'frankfurt' : 0, 'mumbai' : 20, 'singapore' : 1000, 'sydney' : 0, 'tokyo' : 0}
+V6SPACING = 60
+write6 = True
 
 #Here we are expanding from /13 to /16, it is 3 bits, we do 8 passes along the input file
 expanded = [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07]
@@ -226,36 +228,66 @@ for exp in expanded:
         count4 = count4 + 1
         global_count = global_count + 1
     
-        #v6 transactions
-        if v6_left_to_write(pref6):
-        #Still tx to generate
-            if count4 % V6SPACING == 0:
+        #v6 transactions  
+        if count4 % V6SPACING == 0 and v6_left_to_write(pref6):
+            for pref in pref6:
+                if pref['num_tx'] != 0:
+                    #Update destination pointer                
+                    if count6 % NUM_NODES == 0:
+                        pos_des6 = pos_des6 + 1
+                   
+                    value = generate_v6_prefix(pref["old_pref"], pref["new_pref"], pref["address"], pref["num_tx"])     
+                    orig = pref["owner"]
+                    des = dest_addr6[nodes[count6 % NUM_NODES]][(pos_des6 % ADDRS_PER_NODE_V6)]
+                    
+                    write_tx(2, 0, None, des, orig, value, out)
+                    record_delegation(value, des, outputs6[nodes[count6 % NUM_NODES]])
+                    count6 = count6 + 1
+                    global_count = global_count + 1
+                    pref["num_tx"] = pref["num_tx"] - 1    
+        
+        
+        
                 #We leave some space between v6 tx
                 #We have a pointer to the next v6 prefix to use
-                pos6 = (pos6 + 1) % len(pref6)           
-                data = pref6[pos6] 
-                while data["num_tx"] == 0:
-                #Jump to next pending tx 
-                    pos6 = (pos6 + 1) % len(pref6)
-                    data = pref6[pos6]
-                #Update destination pointer                
-                if count6 % NUM_NODES == 0:
-                    pos_des6 = pos_des6 + 1
-                   
-                value = generate_v6_prefix(data["old_pref"], data["new_pref"], data["address"], data["num_tx"])     
-                orig = data["owner"]
-                des = dest_addr6[nodes[count6 % NUM_NODES]][(pos_des6 % ADDRS_PER_NODE_V6)]
+#                pos6 = (pos6 + 1) % len(pref6)           
+#                data = pref6[pos6] 
+#                while data["num_tx"] == 0:
+#                #Jump to next pending tx 
+#                    pos6 = (pos6 + 1) % len(pref6)
+#                    data = pref6[pos6]
                 
-                
-                write_tx(2, 0, None, des, orig, value, out)
-                record_delegation(value, des, outputs6[nodes[count6 % NUM_NODES]])
-                count6 = count6 + 1
-                global_count = global_count + 1
-                data["num_tx"] = data["num_tx"] - 1
                    
     #Go back to the beginning of the file     
     input4.seek(0)
-    
+#TODO: refine if needed. Try if all tx are generated, probably yes because max 64 per address and we have 108 slots
+#OLD: DOES NOT WORK    
+#if v6_left_to_write(pref6):
+#    print "Pending v6 tx left. Writing"    
+#    #We leave some space between v6 tx
+#    #We have a pointer to the next v6 prefix to use
+#    pos6 = (pos6 + 1) % len(pref6)           
+#    data = pref6[pos6] 
+#    while data["num_tx"] == 0:
+#    #Jump to next pending tx 
+#        pos6 = (pos6 + 1) % len(pref6)
+#        data = pref6[pos6]
+#    #Update destination pointer                
+#    if count6 % NUM_NODES == 0:
+#        pos_des6 = pos_des6 + 1
+#       
+#    value = generate_v6_prefix(data["old_pref"], data["new_pref"], data["address"], data["num_tx"])     
+#    orig = data["owner"]
+#    des = dest_addr6[nodes[count6 % NUM_NODES]][(pos_des6 % ADDRS_PER_NODE_V6)]
+#    
+#    
+#    write_tx(2, 0, None, des, orig, value, out)
+#    record_delegation(value, des, outputs6[nodes[count6 % NUM_NODES]])
+#    count6 = count6 + 1
+#    global_count = global_count + 1
+#    data["num_tx"] = data["num_tx"] - 1
+#OLD: DOES NOT WORK
+
     
 for data in pref6:
     if data["num_tx"] != 0:

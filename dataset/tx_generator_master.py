@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
 
-
 def write_tx(afi, category, metadata, dest, orig, value, fd):
     
     
@@ -23,7 +22,7 @@ node_dest_addr = {}
 count = 0
 
 for node in nodes:    
-    print "Loading node address dictionaries ", node
+    #print "Loading node address dictionaries ", node
     node_dest_addr[node] = []
     try:    
         node_addr = open('node_addresses/' + node + '-addresses.txt', 'r')
@@ -40,7 +39,7 @@ print "Total loaded v4 addresses:", count
 count = 0
 node_dest_addr6 = {}
 for node in nodes:    
-    print "Loading node address dictionaries ", node
+    #print "Loading node address dictionaries ", node
     node_dest_addr6[node] = []
     try:    
         node_addr = open('node_addresses/' + node + '-addresses6.txt', 'r')
@@ -62,8 +61,8 @@ for node in nodes:
     except Exception as e: 
         print e
         sys.exit(1)
-print "Created output files:"
-print outputs4
+#print "Created output files:"
+#print outputs4
 
 outputs6 = {}
 for node in nodes:
@@ -72,8 +71,8 @@ for node in nodes:
     except Exception as e: 
         print e
         sys.exit(1)
-print "Created output files:"
-print outputs6
+#print "Created output files:"
+#print outputs6
 
 
 
@@ -96,7 +95,7 @@ for line in origins4:
 origins4.close()
 
 try:    
-    iana6 = open('rir-files/v6-prefixes-to-delegate', 'r')
+    iana6 = open('rir-files/v6-prefixes-to-delegate2.txt', 'r')
 except Exception as e: 
     print e
     sys.exit(1)
@@ -106,17 +105,21 @@ NUM_NODES = 10
 #Number of blockchain addresses of each node
 ADDRS_PER_NODE = 250
 ADDRS_PER_NODE_V6 = 150
-total6 = 41
+
+TX_DIST = 60
+total6 = 5548
+
 count6 = 0
-processv6 = True
+
 global_count = 0
 count4 = 0
+
 pos = -1
 pos6 = -1
 
 
 prefix = '/13'
-
+processv6 = True
 
 #Expanding /10 to /13
 #/10s
@@ -144,6 +147,7 @@ for sub_sub in sub_subprefixes:
             #Delegate to nodes prefixes specified by input file
             content = iana6.readline()
             if content == '\n':
+                #Used to leave a 60 v4 tx distance between v6 tx
                 processv6 = False
             else:
                 if count6 % NUM_NODES == 0:
@@ -158,7 +162,7 @@ for sub_sub in sub_subprefixes:
                 count6 = count6 + 1
                 global_count = global_count + 1
         else:
-            if (count4 % 60) == 0:
+            if (count4 % TX_DIST) == 0:
                 processv6 = True
 
 print "Total tx generated:", global_count
