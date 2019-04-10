@@ -229,7 +229,7 @@ count6 = 0
 last_time = time.time()
 
 #Number of lines in ipv6.txt
-total6 = 239130
+total6 = 237496
 
 
 

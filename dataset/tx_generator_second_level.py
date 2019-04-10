@@ -153,7 +153,15 @@ allowed6.close()
 print "Number of loaded max. expansions:", len(max_exp)
 print max_exp
 
-
+try:    
+    not_delegated = open('rir-files/not_delegated.txt', 'r')
+except Exception as e: 
+    print e
+    sys.exit(1)
+ignore_list = []
+for line in not_delegated:
+    ignore_list.append(line.split('/')[0])
+not_delegated.close()    
 
 
 try:    
@@ -177,8 +185,9 @@ for line in input6:
         data["new_pref"] = max_exp[addres_only[0]][0]
         pref6.append(data)
     except KeyError:
-        print "--------------------------------->WARNING<-----------------------------------"        
-        print addres_only[0], "This prefix has not yet been delegated in all v6 files. Skipping"
+        if addres_only[0] not in ignore_list:
+            print "--------------------------------->WARNING<-----------------------------------"        
+            print addres_only[0], "This prefix has not yet been delegated in all v6 files. Skipping"
     
 input6.close()
 
