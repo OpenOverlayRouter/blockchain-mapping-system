@@ -99,7 +99,7 @@ def run():
     config_data = ConfigParser.RawConfigParser()
     config_data.read('chain_config.cfg')   
     EXT_TX_PER_LOOP = config_data.getint('Transaction generation and processing','ext_tx_per_loop')
-    USER_TX_PER_LOOP = config_data.getint('Transaction generation and processing','user_tx_per_loop')
+    USER_TX_PER_LOOP = config_data.int('Transaction generation and processing','user_tx_per_loop')
     START_TIME = config_data.getint('Transaction generation and processing','start_time')
     DKG_RENEWAL_INTERVAL = config_data.getint('Consensus','dkg_renewal_interval')
     BLOCK_TIME = config_data.getint('General','block_time')
@@ -151,6 +151,8 @@ def run():
     end = 0
     count = 0
     dkg_on = False
+    processed_user = 0
+    toogle = True
     
     current_random_no = chain.get_head_block().header.random_number
     current_group_key = chain.get_current_group_key()
@@ -179,6 +181,7 @@ def run():
     mainLog.info("Bootstrap finished. Elapsed time: %s", elapsed)
     
     while(not end):
+        
         #Process new blocks. DOES NOT support bootstrap
         try:
             block = p2p.get_block()
@@ -321,49 +324,54 @@ def run():
             sys.exit(0)
 
         # Process transactions from the user
-        processed = 0
+        
         if (time.time() - start_time) > START_TIME:
-            try:
-                tx_int = user.get_tx()
-                while tx_int is not None:
-                    before = time.time()
-                    processed = processed + 1                    
-                    try:
+            if toogle:            
+                try:
+                    tx_int = user.get_tx()
+                    while tx_int is not None:
+                        before = time.time()
+                        processed_user = processed_user + 1                    
+                        toogle = False
                         try:
-                            key_pos = addresses.index(tx_int["from"])
-                            #mainLog.debug("Found key in %s", key_pos)
-                        except:
-                            raise Exception("Key indicated in from field is not in present in the keystore")
-                        key = keys[key_pos]
-                        tx = chain.parse_transaction(tx_int)
-                        tx.sign(key.privkey)
-                        mainLog.info("Processing user transaction, from: %s --  to: %s -- hash %s -- value %s", \
-                        tx_int["from"].encode("HEX"), tx_int["to"].encode("HEX"), tx.hash.encode("HEX"), tx_int["value"])
-                        #mainLog.debug("TX signed. Info: v %s -- r %s -- s %s -- NONCE %s", tx.v, \
-                        #tx.r, str(tx.s), tx.nonce)
-                        # correct tx
-                        try:
-                            chain.add_pending_transaction(tx)
+                            try:
+                                key_pos = addresses.index(tx_int["from"])
+                                #mainLog.debug("Found key in %s", key_pos)
+                            except:
+                                raise Exception("Key indicated in from field is not in present in the keystore")
+                            key = keys[key_pos]
+                            tx = chain.parse_transaction(tx_int)
+                            tx.sign(key.privkey)
+                            mainLog.info("Processing user transaction, from: %s --  to: %s -- hash %s -- value %s", \
+                            tx_int["from"].encode("HEX"), tx_int["to"].encode("HEX"), tx.hash.encode("HEX"), tx_int["value"])
+                            #mainLog.debug("TX signed. Info: v %s -- r %s -- s %s -- NONCE %s", tx.v, \
+                            #tx.r, str(tx.s), tx.nonce)
+                            # correct tx
+                            try:
+                                chain.add_pending_transaction(tx)
+                            except Exception as e:
+                                raise e
+                            p2p.broadcast_tx(tx)
+                            after = time.time()
+                            delay = after - before
+                            delays_txs.write(str(tx.hash.encode("HEX")) + ',' + str(delay) + '\n' )
+                            #mainLog.info("Sent transaction to the network, from: %s --  to: %s --  value: %s", \
+                            #tx_int["from"].encode("HEX"), tx.to.encode("HEX"), tx.ip_network)
+    #                        seen_tx.append(tx.hash)
                         except Exception as e:
-                            raise e
-                        p2p.broadcast_tx(tx)
-                        after = time.time()
-                        delay = after - before
-                        delays_txs.write(str(tx.hash.encode("HEX")) + ',' + str(delay) + '\n' )
-                        #mainLog.info("Sent transaction to the network, from: %s --  to: %s --  value: %s", \
-                        #tx_int["from"].encode("HEX"), tx.to.encode("HEX"), tx.ip_network)
-#                        seen_tx.append(tx.hash)
-                    except Exception as e:
-                        mainLog.error("Error when creating user transaction, ignoring transaction.")
-                        mainLog.exception(e.message)
-                    if processed < USER_TX_PER_LOOP:
-                        tx_int = user.get_tx()
-                    else:
+                            mainLog.error("Error when creating user transaction, ignoring transaction.")
+                            mainLog.exception(e.message)
+#                        if processed < USER_TX_PER_LOOP:
+#                            tx_int = user.get_tx()
+#                        else:
+#                            tx_int = None
                         tx_int = None
-            except Exception as e:
-                mainLog.exception(e)
-                p2p.stop()
-                sys.exit(0)
+                except Exception as e:
+                    mainLog.exception(e)
+                    p2p.stop()
+                    sys.exit(0)
+            else:
+                toogle = True
 
         #answer queries from OOR
         try:
@@ -429,7 +437,6 @@ def run():
         try:
             if (block_num % DKG_RENEWAL_INTERVAL == 0) and not dkg_on:
                 dkg_on = True
-                #TODO: define members
                 dkg_group = chain.get_current_dkg_group()
                 in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
                 if in_dkg_group:        
@@ -447,16 +454,25 @@ def run():
         
         #Collect DKG shares for the new DKG                
         try:        
-            if dkg_on and in_dkg_group:
-                dkg_share = p2p.get_dkg_shares() 
-                while dkg_share is not None:
-                    if dkg_share.to.encode('hex') in my_dkgIDs:
-                        if consensus.verify_dkg_contribution(dkg_share):
-                            dkg_on = False
-                        elif (time.time() - timestamp) >= DKG_TIMEOUT:
-                            mainLog.critical("Fatal Error. DKG renewal timeout expired. Stopping...")
-                            raise e
+            #During DKG, the prototype only works on DKG
+            if in_dkg_group:            
+                while dkg_on:
+                #TODO: DO WE STAY HERE FOR THE WHOLE DKG OR CONTINUE DOING STUFF MEANWHILE?
                     dkg_share = p2p.get_dkg_shares() 
+                    while dkg_share is not None:
+                        mainLog.info("Received new DKG share")
+                        if dkg_share.to.encode('hex') in my_dkgIDs:
+                            if consensus.verify_dkg_contribution(dkg_share):
+                                dkg_on = False
+                            elif (time.time() - timestamp) >= DKG_TIMEOUT:
+                                mainLog.critical("Fatal Error. DKG renewal timeout expired. Stopping...")
+                                raise e
+                    dkg_share = p2p.get_dkg_shares() 
+            else:
+                dkg_on = False
+                mainLog.info("This node is not participating in the DKG. Will sleep for 1 min and wait for new bocsosdojajlfdsjkn")
+                time.sleep(60) 
+                # IT WOULD BE BETTER IF IT DOES NOTHING HERE BECAUSE OTHERWISE OTHER TIMEOUTS COULD BE TRIGGERED... TO THINK
         except Exception as e:
             mainLog.critical("Exception while processing received DKG shares")
             mainLog.exception(e)
@@ -473,7 +489,7 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs):
             
             res = False
             try: 
-                signer = consensus.get_next_signer(block.count) 
+                signer = consensus.calculate_next_signer(block.number)
                 #TODO: in theory we should get the random no. from the previous block to calculate the next signer
                 mainLog.debug("Verifying new block signature, signer should be %s", signer)
                 mainLog.debug("Owner of the previous IP is address %s", chain.get_addr_from_ip(signer).encode("HEX"))
