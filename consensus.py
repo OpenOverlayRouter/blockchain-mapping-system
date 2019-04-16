@@ -64,6 +64,9 @@ class Consensus():
         
     def get_current_group_key(self):
         return self.group_key
+    
+    def set_current_group_key(self, group_key):
+        self.group_key = group_key
         
     #BLS stuff
     def create_shares(self, block_num, count=0):

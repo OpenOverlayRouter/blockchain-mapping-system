@@ -1,6 +1,7 @@
 import os, re, sys, subprocess
 
-EXE='utils/bls.exe'
+#EXE='utils/bls.exe'
+EXE='Consensus/utils/bls.exe'
 
 def genKeys(id=None):
     cmd = [EXE, "init"]

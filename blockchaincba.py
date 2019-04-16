@@ -99,7 +99,7 @@ def run():
     config_data = ConfigParser.RawConfigParser()
     config_data.read('chain_config.cfg')   
     EXT_TX_PER_LOOP = config_data.getint('Transaction generation and processing','ext_tx_per_loop')
-    USER_TX_PER_LOOP = config_data.int('Transaction generation and processing','user_tx_per_loop')
+    USER_TX_PER_LOOP = config_data.getint('Transaction generation and processing','user_tx_per_loop')
     START_TIME = config_data.getint('Transaction generation and processing','start_time')
     DKG_RENEWAL_INTERVAL = config_data.getint('Consensus','dkg_renewal_interval')
     BLOCK_TIME = config_data.getint('General','block_time')
@@ -151,6 +151,7 @@ def run():
     end = 0
     count = 0
     dkg_on = False
+    exit_from_dkg = False
     processed_user = 0
     toogle = True
     
@@ -185,12 +186,22 @@ def run():
         #Process new blocks. DOES NOT support bootstrap
         try:
             block = p2p.get_block()
-            while block is not None:
+            while block is not None or dkg_on:
                 mainLog.info("Received new block no. %s", block.number)
                 
                 res = False
                 try: 
                     signer = consensus.get_next_signer(block.count) 
+                    if in_dkg_group and exit_from_dkg:
+                        exit_from_dkg = False
+                        if block.header.group_pubkey.encode("HEX") != consensus.get_current_group_key():
+                            mainLog.error("FATAL ERROR. A node in the DKG group received a block with a Group Public Key not matching the generated from the DKG.")
+                            raise e
+                        signer = chain.get_delegated_ips(signing_address)[0]
+                    elif dkg_on:
+                        signer = chain.get_delegated_ips(signing_address)[0]
+                        consensus.set_current_group_key(block.header.group_pubkey.encode("HEX"))
+                        dkg_on = False
                     mainLog.debug("Verifying new block signature, signer should be %s", signer)
                     mainLog.debug("Owner of the previous IP is address %s", chain.get_addr_from_ip(signer).encode("HEX"))
                     mainLog.debug("Coinbase in the block is: %s", block.header.coinbase.encode("HEX"))
@@ -281,13 +292,16 @@ def run():
 #                    p2p.broadcast_share(new_share)
 #                    mainLog.info("Timeout expired. Recalculated random no and sent a new share to the network")
                     mainLog.info("Timeout expired. Recalculated random no.")
-                if consensus.shares_ready() or timeout_expired:
-                    signer = consensus.get_next_signer(count) 
-                    signing_addr = chain.get_addr_from_ip(signer)
+                if consensus.shares_ready() or timeout_expired or exit_from_dkg:
+                    if not exit_from_dkg:
+                        signer = consensus.get_next_signer(count) 
+                        signing_addr = chain.get_addr_from_ip(signer)
+                    else:
+                        exit_from_dkg = False
                     if signing_addr in addresses:
                         mainLog.info("This node has to sign a block, selected IP: %s", signer)
                         mainLog.info("Associated address: %s", signing_addr.encode("HEX"))
-                        new_block = chain.create_block(signing_addr, consensus.get_current_random_no(), current_group_key, count)
+                        new_block = chain.create_block(signing_addr, consensus.get_current_random_no(), consensus.get_current_group_key(), count)
                         try:
                             key_pos = addresses.index(signing_addr)
                         except:
@@ -324,8 +338,7 @@ def run():
             sys.exit(0)
 
         # Process transactions from the user
-        
-        if (time.time() - start_time) > START_TIME:
+        if (time.time() - start_time) > START_TIME and not dkg_on:
             if toogle:            
                 try:
                     tx_int = user.get_tx()
@@ -445,6 +458,10 @@ def run():
                         p2p.send_dkg(member, data['verif_vector'], data['secret_key_share_contrib'])
                 else:
                     consensus.store_ids(dkg_group)                    
+                #Define new signer that has to be in the dkg_group. Selected randomly from the people in the group
+                random_no = chain.get_block_by_number(block_num).header.random_number
+                random_pos = random_no % len(dkg_group)
+                signing_addr = dkg_group[random_pos]
         except Exception as e:
             mainLog.critical("Exception while creating DKG shares")
             mainLog.exception(e)
@@ -457,22 +474,27 @@ def run():
             #During DKG, the prototype only works on DKG
             if in_dkg_group:            
                 while dkg_on:
-                #TODO: DO WE STAY HERE FOR THE WHOLE DKG OR CONTINUE DOING STUFF MEANWHILE?
+                #WE STAY HERE FOR THE WHOLE DKG OR CONTINUE DOING STUFF MEANWHILE?
                     dkg_share = p2p.get_dkg_shares() 
                     while dkg_share is not None:
                         mainLog.info("Received new DKG share")
                         if dkg_share.to.encode('hex') in my_dkgIDs:
-                            if consensus.verify_dkg_contribution(dkg_share):
+                            consensus.verify_dkg_contribution(dkg_share)
+                            if consensus.allSharesReceived():
                                 dkg_on = False
+                                exit_from_dkg = True
                             elif (time.time() - timestamp) >= DKG_TIMEOUT:
                                 mainLog.critical("Fatal Error. DKG renewal timeout expired. Stopping...")
                                 raise e
-                    dkg_share = p2p.get_dkg_shares() 
+                        else:
+                            #TODO: resend DKG shares to other members!
+                        dkg_share = p2p.get_dkg_shares() 
             else:
-                dkg_on = False
-                mainLog.info("This node is not participating in the DKG. Will sleep for 1 min and wait for new bocsosdojajlfdsjkn")
-                time.sleep(60) 
-                # IT WOULD BE BETTER IF IT DOES NOTHING HERE BECAUSE OTHERWISE OTHER TIMEOUTS COULD BE TRIGGERED... TO THINK
+                mainLog.info("This node is not participating in the DKG. Will sleep for 3 min and wait for a block with the new public key")
+                time.sleep(180) 
+                if (time.time() - timestamp) >= DKG_TIMEOUT:
+                    mainLog.critical("Fatal Error. DKG renewal timeout expired. Stopping...")
+                    raise e
         except Exception as e:
             mainLog.critical("Exception while processing received DKG shares")
             mainLog.exception(e)
