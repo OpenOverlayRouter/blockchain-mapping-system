@@ -1,17 +1,5 @@
 # -*- coding: utf-8 -*-
 
-
-
-
-
-#from netaddr import IPNetwork
-
-#from transactions import Transaction
-#from block import Block
-#import chain
-#from netaddr import IPNetwork
-#from ipaddr import IPv4Network
-#import rlp
 import sys
 import ConfigParser
 import time, os, glob
@@ -29,6 +17,7 @@ import logger
 from user import Parser
 from utils import normalize_address
 from oor import Oor
+from share_cache import Share_Cache
 from own_exceptions import InvalidBlockSigner, UnsignedBlock, InvalidBlsGroupSignature
 
 
@@ -108,7 +97,7 @@ def run():
 
     #Telemetry initialization
     start_time = time.time()
-    #seen_tx = []
+    
     init_logger()
 
     delays_blocks = open_log_block_process_delay()
@@ -169,14 +158,14 @@ def run():
     
     mainLog.info("Initializing Consensus")
     consensus = Consensus(dkg_group, my_dkgIDs, current_random_no, current_group_key)
-    
+    cache = Share_Cache()
     
     
     block_num = chain.get_head_block().header.number
     timestamp = chain.get_head_block().header.timestamp
     
     before = time.time()
-    perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs)
+    perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENEWAL_INTERVAL ,current_random_no)
     after = time.time()
     elapsed = after - before
     mainLog.info("Bootstrap finished. Elapsed time: %s", elapsed)
@@ -197,9 +186,9 @@ def run():
                         if block.header.group_pubkey.encode("HEX") != consensus.get_current_group_key():
                             mainLog.error("FATAL ERROR. A node in the DKG group received a block with a Group Public Key not matching the generated from the DKG.")
                             raise e
-                        signer = chain.get_delegated_ips(signing_address)[0]
+                        signer = chain.extract_first_ip_from_address(signing_addr)
                     elif dkg_on:
-                        signer = chain.get_delegated_ips(signing_address)[0]
+                        signer = chain.extract_first_ip_from_address(signing_addr)
                         consensus.set_current_group_key(block.header.group_pubkey.encode("HEX"))
                         dkg_on = False
                     mainLog.debug("Verifying new block signature, signer should be %s", signer)
@@ -228,12 +217,14 @@ def run():
                     delays_txs.write("Added new block no." + str(block.number) + '\n')
                     timestamp = chain.get_head_block().header.timestamp
                     block_num = chain.get_head_block().header.number                                        
-                    #after a correct block, create and broadcast new share                                         
+                    #after a correct block: reset BLS and create and broadcast new shares
+                    consensus.reset_bls()
                     if in_dkg_group:
                         count = 0
                         new_shares = consensus.create_shares(current_random_no, block_num, my_dkgIDs, count)
                         for share in new_shares:
                             p2p.broadcast_share(share)
+                            cache.store_bls(share)
                             mainLog.info("Sent a new share to the network")
                 else:
                     mainLog.error("Received an erroneous block. Ignoring block...")
@@ -283,16 +274,18 @@ def run():
                 #Time to create a new block
                 if (time.time() - timestamp) >= TIMEOUT:
                 #The expected signer didn't create a block. Trigger a recalculation of the random number to select a new signer
-                    #TODO: does NOT work because it will enter all the time when the timeout expires
-                    count = count + 1
-                    timeout_expired =  True
-                    if count == 0:
-                        consensus.reset_bls()
+                #TODO: does NOT work because it will enter all the time when the timeout expires
+#                    count = count + 1
+#                    timeout_expired =  True
+#                    if count == 0:
+#                        consensus.reset_bls()
 #                    consensus.create_share(count)
 #                    p2p.broadcast_share(new_share)
 #                    mainLog.info("Timeout expired. Recalculated random no and sent a new share to the network")
-                    mainLog.info("Timeout expired. Recalculated random no.")
-                if consensus.shares_ready() or timeout_expired or exit_from_dkg:
+                    mainLog.info("Contextual information: Current time: %s --Last block timestamp: %s --Last random number: %s --Last block number: %s", \
+                                 time.time(), timestamp, consensus.get_current_random_no(), block_num)
+                    raise Exception("FATAL ERROR, Block tiemout expired. The feature to re-calculte the random number after a block timeout exprity is not implemented. Stopping...")
+                if consensus.shares_ready() or exit_from_dkg:
                     if not exit_from_dkg:
                         signer = consensus.get_next_signer(count) 
                         signing_addr = chain.get_addr_from_ip(signer)
@@ -324,11 +317,14 @@ def run():
                         p2p.broadcast_block(new_block)
                         #after a correct block, create and broadcast new share    
                         count = 0
-                        timeout_expired = False
+                        #timeout_expired = False
+                        consensus.reset_bls()
                         if in_dkg_group:
+                            count = 0
                             new_shares = consensus.create_shares(current_random_no, new_block.number, my_dkgIDs, count)
                             for share in new_shares:
                                 p2p.broadcast_share(share)
+                                cache.store_bls(share)
                                 mainLog.info("Sent a new share to the network")                        
 
         except Exception as e:
@@ -374,6 +370,7 @@ def run():
                         except Exception as e:
                             mainLog.error("Error when creating user transaction, ignoring transaction.")
                             mainLog.exception(e.message)
+#                        Temporarily diabled because we want 1 tx per 2 loops
 #                        if processed < USER_TX_PER_LOOP:
 #                            tx_int = user.get_tx()
 #                        else:
@@ -433,10 +430,14 @@ def run():
         try:
             share = p2p.get_share()
             while share is not None:
-                msg = str(current_random_no) + str(block_num) + str(count)
-                res = consensus.store_share(share, msg)                
-                if res:
-                    current_random_no = consensus.get_current_random_no()
+                if not cache.in_bls_cache(share):
+                    msg = str(current_random_no) + str(block_num) + str(count)
+                    res = consensus.store_share(share, msg)
+                    if res:
+                        current_random_no = consensus.get_current_random_no()
+                    cache.store_bls(share)
+                    p2p.broadcast_share(share)
+                share = p2p.get_share()
         except Exception as e:
             mainLog.critical("Exception while processing received shares")
             mainLog.exception(e)
@@ -454,8 +455,9 @@ def run():
                 in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
                 if in_dkg_group:        
                     to_send = consensus.new_dkg()
-                    for member, data in to_send.iteritems():
-                        p2p.send_dkg(member, data['verif_vector'], data['secret_key_share_contrib'])
+                    for dkg_share in to_send:
+                        cache.store_dkg(dkg_share.secret_key_share_contrib.encode("HEX"))
+                        p2p.send_dkg_share(dkg_share)
                 else:
                     consensus.store_ids(dkg_group)                    
                 #Define new signer that has to be in the dkg_group. Selected randomly from the people in the group
@@ -475,11 +477,12 @@ def run():
             if in_dkg_group:            
                 while dkg_on:
                 #WE STAY HERE FOR THE WHOLE DKG OR CONTINUE DOING STUFF MEANWHILE?
-                    dkg_share = p2p.get_dkg_shares() 
+                    dkg_share = p2p.get_dkg_share() 
                     while dkg_share is not None:
                         mainLog.info("Received new DKG share")
-                        if dkg_share.to.encode('hex') in my_dkgIDs:
+                        if dkg_share.to.encode('hex') in my_dkgIDs and not cache.in_dkg_cache(dkg_share.secret_share_contrib.encode("HEX")):
                             consensus.verify_dkg_contribution(dkg_share)
+                            cache.store_dkg(dkg_share.secret_share_contrib.encode("HEX"))
                             if consensus.allSharesReceived():
                                 dkg_on = False
                                 exit_from_dkg = True
@@ -487,8 +490,8 @@ def run():
                                 mainLog.critical("Fatal Error. DKG renewal timeout expired. Stopping...")
                                 raise e
                         else:
-                            #TODO: resend DKG shares to other members!
-                        dkg_share = p2p.get_dkg_shares() 
+                            p2p.send_dkg_share(dkg_share)
+                        dkg_share = p2p.get_dkg_share() 
             else:
                 mainLog.info("This node is not participating in the DKG. Will sleep for 3 min and wait for a block with the new public key")
                 time.sleep(180) 
@@ -502,8 +505,9 @@ def run():
             p2p.stop()
             sys.exit(0)
                 
-def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs):
+def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENEWAL_INTERVAL, last_random_no):
     #Code here is exaclty equal to the 'Process new blocks' part in the main, but without generating shares after adding the block.
+    #And during initialization, consenus is ready to calculte new signers (random number is stored)
     try:
         block = p2p.get_block()
         while block is not None:
@@ -511,8 +515,15 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs):
             
             res = False
             try: 
-                signer = consensus.calculate_next_signer(block.number)
-                #TODO: in theory we should get the random no. from the previous block to calculate the next signer
+                if not (block.number % DKG_RENEWAL_INTERVAL == 0):
+                    signer = consensus.calculate_next_signer(block.number)
+                else:
+                    # Next signer changes when new DKG
+                    dkg_group = chain.get_current_dkg_group()
+                    random_pos = last_random_no % len(dkg_group)
+                    signing_addr = dkg_group[random_pos]
+                    signer = chain.extract_first_ip_from_address(signing_addr)
+                    consensus.set_current_group_key(block.header.group_pubkey.encode("HEX"))
                 mainLog.debug("Verifying new block signature, signer should be %s", signer)
                 mainLog.debug("Owner of the previous IP is address %s", chain.get_addr_from_ip(signer).encode("HEX"))
                 mainLog.debug("Coinbase in the block is: %s", block.header.coinbase.encode("HEX"))
@@ -537,6 +548,10 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs):
                 delay = after - before
                 delays_blocks.write(str(block.number) + ',' + str(delay) + '\n' )
                 delays_txs.write("Added new block no." + str(block.number) + '\n')
+                #Get the random no. from the previous block to calculate the next signer
+                last_random_no = block.header.random_number
+                #Manually force the random number because we cannot calculat it during bootstrap (BLS already done)
+                consensus.bootstrap_only_set_random_no_manual(last_random_no)
             else:
                 mainLog.error("Received an erroneous block. Ignoring block...")
                 
@@ -562,6 +577,3 @@ def find_me_in_dkg_group(current_group, node_addresses):
 
 if __name__ == "__main__":
     run()
-
-
-

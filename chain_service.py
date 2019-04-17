@@ -274,5 +274,11 @@ class ChainService():
             random_no = hashlib.sha256(random_no).hexdigest()
         
         return dkg_group
+    
+    def extract_first_ip_from_address(self, address):
+        ipset = self.get_delegated_ips(address)[address]
+        for ip in ipset:
+            return ip
+        
         
         

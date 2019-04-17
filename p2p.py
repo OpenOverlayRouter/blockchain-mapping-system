@@ -147,8 +147,9 @@ class P2P():
         except:
             p2pLog.error("P2P get_share error")
         
-    def send_dkg_share(self, node, dkg_share):
-        #ToDo: needs node ID???
+    def send_dkg_share(self, dkg_share):
+        #Needs node ID??? No, because P2P does not know the mapping of dkg_id <> p2p node
+        #A future improvement would send the shares directy to the destination node, without broadcasting
         try:
             self.sock.send(messages.set_dkg_share(dkg_share))
         except:

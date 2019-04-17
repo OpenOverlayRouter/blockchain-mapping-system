@@ -72,3 +72,8 @@ To compile the BLS, in the main directory (/blockchain):
 sudo apt install libgmp-dev libssl-dev
 ./Consensus/getDependencies.sh
 ```
+
+## Known vulnerabilities (to be fixed)
+- DKG and BLS shares are not signed when transmitted to peers
+- Conversion of blockcahin addresses to DKG and BLS ids may produce collisions
+- Non-DKG members cannot authenticate the new DKG group key
