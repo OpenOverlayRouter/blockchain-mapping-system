@@ -84,7 +84,10 @@ def mk_genesis_data(env):
             "parentHash": d["parentHash"],
             "coinbase": d["coinbase"],
             "timestamp": d["timestamp"],
-            "alloc": d["alloc"]
+            "alloc": d["alloc"],
+            "random_number": d["random_number"],
+            "group_key": d["group_key"],
+            "count": d["count"]
         }
     return genesis_data
 
