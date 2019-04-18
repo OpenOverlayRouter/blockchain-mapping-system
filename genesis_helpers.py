@@ -11,7 +11,12 @@ from utils import int_to_big_endian
 
 
 def block_from_genesis_declaration(genesis_data, env):
-    h = BlockHeader(timestamp=parse_as_int(genesis_data["timestamp"]), coinbase=parse_as_bin(genesis_data["coinbase"]), prevhash=parse_as_bin(genesis_data["parentHash"]))
+    h = BlockHeader(timestamp = parse_as_int(genesis_data["timestamp"]), 
+                     coinbase = parse_as_bin(genesis_data["coinbase"]), 
+                     prevhash = parse_as_bin(genesis_data["parentHash"]), 
+                random_number = parse_as_bin(genesis_data["random_number"]), 
+                 group_pubkey = parse_as_bin(genesis_data["group_key"]),
+                        count = parse_as_int(genesis_data["count"]))
     return Block(h, [])
 
 

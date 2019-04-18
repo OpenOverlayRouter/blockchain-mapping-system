@@ -2,7 +2,7 @@
 
 import sys
 import ConfigParser
-import time, os, glob
+import time, os, glob, errno
 from netaddr import IPSet
 
 from config import Env
@@ -160,6 +160,7 @@ def run():
     consensus = Consensus(dkg_group, my_dkgIDs, current_random_no, current_group_key)
     cache = Share_Cache()
     
+    isMaster = load_master_private_keys(consensus)
     
     block_num = chain.get_head_block().header.number
     timestamp = chain.get_head_block().header.timestamp
@@ -176,18 +177,21 @@ def run():
         try:
             block = p2p.get_block()
             while block is not None or dkg_on:
+                # Only nodes that do NOT belong to the DKG get stuck here until they receive the block with the new group key
                 mainLog.info("Received new block no. %s", block.number)
                 
                 res = False
                 try: 
                     signer = consensus.get_next_signer(block.count) 
                     if in_dkg_group and exit_from_dkg:
+                        # We ONLY enter here if the node belongs to the DGK group and just finished a new DKG
                         exit_from_dkg = False
                         if block.header.group_pubkey.encode("HEX") != consensus.get_current_group_key():
                             mainLog.error("FATAL ERROR. A node in the DKG group received a block with a Group Public Key not matching the generated from the DKG.")
                             raise e
                         signer = chain.extract_first_ip_from_address(signing_addr)
                     elif dkg_on:
+                        # We ONLY enter here if the nodes DOES NOT belong to the DKG group and is waiting for a current DKG to finish
                         signer = chain.extract_first_ip_from_address(signing_addr)
                         consensus.set_current_group_key(block.header.group_pubkey.encode("HEX"))
                         dkg_on = False
@@ -217,7 +221,7 @@ def run():
                     delays_txs.write("Added new block no." + str(block.number) + '\n')
                     timestamp = chain.get_head_block().header.timestamp
                     block_num = chain.get_head_block().header.number                                        
-                    #after a correct block: reset BLS and create and broadcast new shares
+                    #after a correct block: reset BLS and create and broadcast new shares (like receiving a new block)
                     consensus.reset_bls()
                     if in_dkg_group:
                         count = 0
@@ -287,9 +291,11 @@ def run():
                     raise Exception("FATAL ERROR, Block tiemout expired. The feature to re-calculte the random number after a block timeout exprity is not implemented. Stopping...")
                 if consensus.shares_ready() or exit_from_dkg:
                     if not exit_from_dkg:
+                        #Normal operation
                         signer = consensus.get_next_signer(count) 
                         signing_addr = chain.get_addr_from_ip(signer)
                     else:
+                        #When we exit a new DKG round, the variable signing_addr stores the next signer (we are temporarily overriding the BLS RN generation)
                         exit_from_dkg = False
                     if signing_addr in addresses:
                         mainLog.info("This node has to sign a block, selected IP: %s", signer)
@@ -334,7 +340,7 @@ def run():
             sys.exit(0)
 
         # Process transactions from the user
-        if (time.time() - start_time) > START_TIME and not dkg_on:
+        if ((time.time() - start_time) > START_TIME or isMaster) and not dkg_on:
             if toogle:            
                 try:
                     tx_int = user.get_tx()
@@ -454,15 +460,17 @@ def run():
                 dkg_group = chain.get_current_dkg_group()
                 in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
                 if in_dkg_group:        
-                    to_send = consensus.new_dkg()
+                    to_send = consensus.new_dkg(dkg_group, my_dkgIDs)
                     for dkg_share in to_send:
                         cache.store_dkg(dkg_share.secret_key_share_contrib.encode("HEX"))
                         p2p.send_dkg_share(dkg_share)
                 else:
+                    # Configure nodes that do not participate in the DKG so they can verfiy BLS shares later
                     consensus.store_ids(dkg_group)                    
-                #Define new signer that has to be in the dkg_group. Selected randomly from the people in the group
+                #Define new signer that has to be in the dkg_group. Selected randomly from the people in the group (temporal override of the BLS RN generation)
                 random_no = chain.get_block_by_number(block_num).header.random_number
                 random_pos = random_no % len(dkg_group)
+                # signing_addr will be used in block RX and block creation code in the beginning of the loop
                 signing_addr = dkg_group[random_pos]
         except Exception as e:
             mainLog.critical("Exception while creating DKG shares")
@@ -476,7 +484,7 @@ def run():
             #During DKG, the prototype only works on DKG
             if in_dkg_group:            
                 while dkg_on:
-                #WE STAY HERE FOR THE WHOLE DKG OR CONTINUE DOING STUFF MEANWHILE?
+                #WE STAY HERE FOR THE WHOLE DKG
                     dkg_share = p2p.get_dkg_share() 
                     while dkg_share is not None:
                         mainLog.info("Received new DKG share")
@@ -518,7 +526,7 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
                 if not (block.number % DKG_RENEWAL_INTERVAL == 0):
                     signer = consensus.calculate_next_signer(block.number)
                 else:
-                    # Next signer changes when new DKG
+                    # Next signer changes when new DKG, replicate what we do when we trigger a new DKG and we are not in the DKG group
                     dkg_group = chain.get_current_dkg_group()
                     random_pos = last_random_no % len(dkg_group)
                     signing_addr = dkg_group[random_pos]
@@ -572,7 +580,27 @@ def find_me_in_dkg_group(current_group, node_addresses):
             my_dkg_ids.append(address)
             
     return in_dkg_group, my_dkg_ids
-        
+
+def load_master_private_keys(consensus):
+    try:    
+        priv_keys = open('master-private-dkg-keys.txt', 'r')
+    except IOError as e:
+        if e.errno == errno.ENOENT:            
+            #File does not exist, means it is not the master node
+            return False
+        else:
+            raise e
+    except Exception as e: 
+        print e
+        sys.exit(1)
+    
+    sec_keys = {}
+    for line in priv_keys:
+        content = line.split(' ')
+        sec_keys[content[0]] = content[1].rstrip('\n')        
+    priv_keys.close()
+    consensus.bootstrap_master_add_secret_keys_manual(sec_keys)
+    return True
         
 
 if __name__ == "__main__":
