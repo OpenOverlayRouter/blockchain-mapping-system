@@ -11,7 +11,7 @@ import trie
 import state
 import rlp
 from apply import apply_transaction
-from utils import normalize_address
+from utils import normalize_address, compress_random_no_to_int
 from own_exceptions import UnsignedTransaction, DkgBlockRequiresGroupKey
 #from state import State
 from map_reply import Response, LocatorRecord, MapReplyRecord, MapServers
@@ -260,7 +260,7 @@ class ChainService():
         #Recover random no. from block previous trigger new DKG
         last_block_no = self.get_head_block().header.number
         last_old_dkg_block = last_block_no - (last_block_no % DKG_RENEWAL_INTERVAL)
-        random_no = self.get_block_by_number(last_old_dkg_block).header.random_number
+        random_no = compress_random_no_to_int(self.get_block_by_number(last_old_dkg_block).header.random_number)
         
         #List all addresses at the moment in the chain
         all_addresses = self.chain.get_all_current_addresses()
@@ -271,8 +271,7 @@ class ChainService():
         for i in range(DKG_NUMBER_PARTICIPANTS):
             random_pos = random_no % len(all_addresses)
             dkg_group.append(all_addresses.pop(random_pos))            
-            random_no = hashlib.sha256(random_no).hexdigest()
-        
+            random_no = compress_random_no_to_int(hashlib.sha256(str(random_no)).hexdigest(), 16)      
         return dkg_group
     
     def extract_first_ip_from_address(self, address):

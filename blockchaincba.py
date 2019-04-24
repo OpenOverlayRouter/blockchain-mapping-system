@@ -15,7 +15,7 @@ import logging
 import logging.config
 import logger
 from user import Parser
-from utils import normalize_address
+from utils import normalize_address, compress_random_no_to_int
 from oor import Oor
 from share_cache import Share_Cache
 from own_exceptions import InvalidBlockSigner, UnsignedBlock, InvalidBlsGroupSignature
@@ -469,7 +469,7 @@ def run():
                     consensus.store_ids(dkg_group)                    
                 #Define new signer that has to be in the dkg_group. Selected randomly from the people in the group (temporal override of the BLS RN generation)
                 random_no = chain.get_block_by_number(block_num).header.random_number
-                random_pos = random_no % len(dkg_group)
+                random_pos = compress_random_no_to_int(random_no, 16) % len(dkg_group)
                 # signing_addr will be used in block RX and block creation code in the beginning of the loop
                 signing_addr = dkg_group[random_pos]
         except Exception as e:
@@ -528,7 +528,7 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
                 else:
                     # Next signer changes when new DKG, replicate what we do when we trigger a new DKG and we are not in the DKG group
                     dkg_group = chain.get_current_dkg_group()
-                    random_pos = last_random_no % len(dkg_group)
+                    random_pos = compress_random_no_to_int(last_random_no, 16) % len(dkg_group)
                     signing_addr = dkg_group[random_pos]
                     signer = chain.extract_first_ip_from_address(signing_addr)
                     consensus.set_current_group_key(block.header.group_pubkey.encode("HEX"))

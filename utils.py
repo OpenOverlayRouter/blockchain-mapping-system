@@ -161,6 +161,17 @@ def ipaddr_to_netaddr(afi,ipaddr):
     elif afi == 2:
         ip = IPv6Address(Bytes(ipaddr))
     return IPNetwork(str(ip))
+    
+def compress_random_no_to_int(input_string, output_int_lenght):
+    input_str = remove_0x_head(input_string)
+    ngroups = len(input_str) / output_int_lenght
+    
+    number = 0x0
+    for i in range(ngroups):       
+        number = number ^ int(input_str[i*output_int_lenght : (i + 1)*output_int_lenght],output_int_lenght)
+    return number
+    
+    
 
 
 address = Binary.fixed_length(20, allow_empty=True)

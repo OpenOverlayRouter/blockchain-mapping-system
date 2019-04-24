@@ -10,11 +10,12 @@ Created on Thu Apr 18 14:30:49 2019
 import sys
 import hashlib
 import consensus
+import utils
 
 DKG_NUMBER_PARTICIPANTS = 100
 
 #Make the random selection
-random_no = '0xabff75259697c051af1299ce30dc74a108ff5d6bbcc24bb2c8c5dfa8864fa41f'
+random_no = utils.compress_random_no_to_int('0xabff75259697c051af1299ce30dc74a108ff5d6bbcc24bb2c8c5dfa8864fa41f', 16)
 
 #Load master addresses        
 #List all addresses at the moment in the chain
@@ -35,7 +36,7 @@ dkg_group = []
 for i in range(DKG_NUMBER_PARTICIPANTS):
     random_pos = random_no % len(all_addresses)
     dkg_group.append(all_addresses.pop(random_pos))            
-    random_no = hashlib.sha256(random_no).hexdigest()
+    random_no = utils.compress_random_no_to_int(hashlib.sha256(str(random_no)).hexdigest(), 16)
 
 print "Selected the following addresses for the DKG:"
 for elem in dkg_group:
