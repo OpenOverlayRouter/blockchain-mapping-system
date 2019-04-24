@@ -11,17 +11,24 @@ import sys
 import hashlib
 import consensus
 
-DKG_NUMBER_PARTICIPANTS = 
-
-
-#Load master addresses
-#TODO
+DKG_NUMBER_PARTICIPANTS = 100
 
 #Make the random selection
 random_no = '0xabff75259697c051af1299ce30dc74a108ff5d6bbcc24bb2c8c5dfa8864fa41f'
-        
+
+#Load master addresses        
 #List all addresses at the moment in the chain
-all_addresses = self.chain.get_all_current_addresses()
+all_addresses = []
+try:    
+    all_addr = open('dataset/master-all-addrs-db-order.txt', 'r')
+except Exception as e: 
+    print e
+    sys.exit(1)
+    
+for line in all_addr:
+    all_addresses.append(line.rstrip('\n'))
+all_addr.close()
+
 
 #Randomly select participants from all the addresses
 dkg_group = []
@@ -60,8 +67,3 @@ for node in dkg_group:
     
 priv_keys.close()
 print "Done"
-    
-
-        
-        
-        
