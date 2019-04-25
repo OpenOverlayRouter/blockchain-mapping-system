@@ -146,6 +146,8 @@ def run():
     
     current_random_no = chain.get_head_block().header.random_number.encode('hex')
     current_group_key = chain.get_current_group_key()
+    block_num = chain.get_head_block().header.number
+    timestamp = chain.get_head_block().header.timestamp
     my_dkgIDs = []
     
     myIPs = IPSet()
@@ -157,14 +159,11 @@ def run():
     in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
     
     mainLog.info("Initializing Consensus")
-    consensus = Consensus(dkg_group, my_dkgIDs, current_random_no, current_group_key)
+    consensus = Consensus(dkg_group, my_dkgIDs, current_random_no, current_group_key, block_num)
     cache = Share_Cache()
     
     isMaster = load_master_private_keys(consensus)
-    
-    block_num = chain.get_head_block().header.number
-    timestamp = chain.get_head_block().header.timestamp
-    
+        
     before = time.time()
     perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENEWAL_INTERVAL ,current_random_no)
     after = time.time()

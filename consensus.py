@@ -40,7 +40,7 @@ consensusLog = logging.getLogger('Consensus')
 
 class Consensus():
     
-    def __init__(self, dkg_group, node_ids, randno, group_key):
+    def __init__(self, dkg_group, node_ids, randno, group_key, block_no):
 #TODO: initizlize members correctly                
         self.dkg_group = dkg_group
         self.own_ids = node_ids
@@ -52,7 +52,7 @@ class Consensus():
         self.shares_ids = []        #These IDs have to be the DKG IDs, not the original blockchain addresses
         self.msg = ''
         self.verified = False
-        self.next_signer = None
+        self.next_signer = self.calculate_next_signer(block_no)
         
                 
        
@@ -286,5 +286,6 @@ class Consensus():
 
     def bootstrap_master_add_secret_keys_manual(self, manual_keys):
         self.store_ids(self.dkg_group)        
+        self.verified = True
         for oid, key in manual_keys.iteritems():
             self.secretKeys[oid] = key

@@ -76,7 +76,7 @@ class ChainService():
             if ((group_key is None) or (group_key == '')):
 	            raise DkgBlockRequiresGroupKey()
         else:
-            group_key = ''
+            group_key = 0x00
         block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, \
             number=prevnumber + 1, coinbase=coinbase, random_number=random_no,  group_pubkey=group_key, count=count))
         snapshot = self.chain.state.to_snapshot()
