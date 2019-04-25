@@ -260,7 +260,7 @@ class ChainService():
         #Recover random no. from block previous trigger new DKG
         last_block_no = self.get_head_block().header.number
         last_old_dkg_block = last_block_no - (last_block_no % DKG_RENEWAL_INTERVAL)
-        random_no = compress_random_no_to_int(self.get_block_by_number(last_old_dkg_block).header.random_number)
+        random_no = compress_random_no_to_int(self.get_block_by_number(last_old_dkg_block).header.random_number.encode("hex"), 16)
         
         #List all addresses at the moment in the chain
         all_addresses = self.chain.get_all_current_addresses()

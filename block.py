@@ -21,7 +21,7 @@ class BlockHeader(rlp.Serializable):
         ('number', big_endian_int),
         ('coinbase', address),
         ('random_number', hash32),   #256 bit hash
-        ('group_pubkey', group_pubkey),  #Zero in all blocks except number % DKG_RENEWAL_INTERVAL == 0
+        ('group_pubkey', binary),  #Zero in all blocks except number % DKG_RENEWAL_INTERVAL == 0
         ('count', big_endian_int)
         
     ]

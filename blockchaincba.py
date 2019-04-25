@@ -18,7 +18,7 @@ from user import Parser
 from utils import normalize_address, compress_random_no_to_int
 from oor import Oor
 from share_cache import Share_Cache
-from own_exceptions import InvalidBlockSigner, UnsignedBlock, InvalidBlsGroupSignature
+from own_exceptions import InvalidBlockSigner, UnsignedBlock
 
 
 mainLog = logging.getLogger('Main')
@@ -125,7 +125,7 @@ def run():
     mainLog.info("Initializing Parser")
     user = init_user()
     try:
-        user.read_transactions()
+        user.read_transactions("./transactions.txt")
     except Exception as e:
         mainLog.critical("Exception while reading user transactions")
         mainLog.exception(e)
@@ -144,7 +144,7 @@ def run():
     processed_user = 0
     toogle = True
     
-    current_random_no = chain.get_head_block().header.random_number
+    current_random_no = chain.get_head_block().header.random_number.encode('hex')
     current_group_key = chain.get_current_group_key()
     my_dkgIDs = []
     
@@ -455,7 +455,7 @@ def run():
        
         #Trigger new DKG               
         try:
-            if (block_num % DKG_RENEWAL_INTERVAL == 0) and not dkg_on:
+            if ((block_num + 1) % DKG_RENEWAL_INTERVAL == 0) and not dkg_on:
                 dkg_on = True
                 dkg_group = chain.get_current_dkg_group()
                 in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
@@ -557,7 +557,7 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
                 delays_blocks.write(str(block.number) + ',' + str(delay) + '\n' )
                 delays_txs.write("Added new block no." + str(block.number) + '\n')
                 #Get the random no. from the previous block to calculate the next signer
-                last_random_no = block.header.random_number
+                last_random_no = block.header.random_number.encode("hex")
                 #Manually force the random number because we cannot calculat it during bootstrap (BLS already done)
                 consensus.bootstrap_only_set_random_no_manual(last_random_no)
             else:
@@ -594,6 +594,7 @@ def load_master_private_keys(consensus):
         print e
         sys.exit(1)
     
+    mainLog.info("Detected master private key file. Perfoming manual setup of DKG private keys.")
     sec_keys = {}
     for line in priv_keys:
         content = line.split(' ')
