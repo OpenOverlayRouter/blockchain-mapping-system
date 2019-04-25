@@ -19,7 +19,7 @@ from transactions import Transaction
 from block import Block, BlockHeader
 import rlp
 import ConfigParser
-from dkg import Share, Dkg_Share
+from shares import Share, Dkg_Share
 
 #Load config
 config = ConfigParser.RawConfigParser()

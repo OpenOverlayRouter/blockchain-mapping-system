@@ -6,7 +6,7 @@ import messages
 import rlp
 from transactions import Transaction
 from block import Block, BlockHeader
-from dkg import Share, Dkg_Share
+from shares import Share, Dkg_Share
 import logging.config
 
 import time

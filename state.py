@@ -337,7 +337,7 @@ class State():
     def list_all_addresses(self):
         all_addresses = []
         for addr in self.trie.to_dict().keys():
-            all_addresses.append(encode_hex(addr))
+            all_addresses.append(addr)
         return all_addresses    
             
                     
