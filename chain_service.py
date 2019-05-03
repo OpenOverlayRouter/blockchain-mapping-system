@@ -1,6 +1,6 @@
 from block import Block, BlockHeader
 from transactions import Transaction
-from utils import null_address
+from utils import null_address, parse_as_bin
 import chain
 from config import Env
 import time
@@ -72,13 +72,14 @@ class ChainService():
         prevhash = self.chain.head_hash
         prevnumber = self.chain.state.block_number
         coinbase = normalize_address(coinbase)
+        assert isinstance(random_no, (str,unicode))
         if (prevnumber + 1) % DKG_RENEWAL_INTERVAL == 0: 
             if ((group_key is None) or (group_key == '')):
 	            raise DkgBlockRequiresGroupKey()
         else:
-            group_key = 0x00
+            group_key = "0x00"
         block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, \
-            number=prevnumber + 1, coinbase=coinbase, random_number=random_no,  group_pubkey=group_key, count=count))
+            number=prevnumber + 1, coinbase=coinbase, random_number=parse_as_bin(random_no),  group_pubkey=group_key, count=count))
         snapshot = self.chain.state.to_snapshot()
         s = state.State().from_snapshot(snapshot, Env(_EphemDB()))
         databaseLog.info("Creating block with block number %s", str(prevnumber+1))
@@ -274,6 +275,7 @@ class ChainService():
             random_pos = random_no % len(all_addresses)
             dkg_group.append(all_addresses.pop(random_pos))            
             random_no = compress_random_no_to_int(hashlib.sha256(str(random_no)).hexdigest(), 16)      
+        databaseLog.debug("Selected addresses for this group: %s", dkg_group)
         return dkg_group
     
     def extract_first_ip_from_address(self, address):

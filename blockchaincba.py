@@ -9,7 +9,7 @@ from config import Env
 from db import LevelDB
 from chain_service import ChainService
 from keystore import Keystore
-from consensus import Consensus
+import consensus as cons
 from p2p import P2P
 import logging
 import logging.config
@@ -159,7 +159,7 @@ def run():
     in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
     
     mainLog.info("Initializing Consensus")
-    consensus = Consensus(dkg_group, my_dkgIDs, current_random_no, current_group_key, block_num)
+    consensus = cons.Consensus(dkg_group, my_dkgIDs, current_random_no, current_group_key, block_num)
     cache = Share_Cache()
     
     isMaster = load_master_private_keys(consensus)
@@ -224,7 +224,7 @@ def run():
                     consensus.reset_bls()
                     if in_dkg_group:
                         count = 0
-                        new_shares = consensus.create_shares(current_random_no, block_num, my_dkgIDs, count)
+                        new_shares = consensus.create_shares(block_num, count)
                         for share in new_shares:
                             p2p.broadcast_share(share)
                             cache.store_bls(share)
@@ -326,7 +326,7 @@ def run():
                         consensus.reset_bls()
                         if in_dkg_group:
                             count = 0
-                            new_shares = consensus.create_shares(current_random_no, new_block.number, my_dkgIDs, count)
+                            new_shares = consensus.create_shares(new_block.number, count)
                             for share in new_shares:
                                 p2p.broadcast_share(share)
                                 cache.store_bls(share)
@@ -577,7 +577,10 @@ def find_me_in_dkg_group(current_group, node_addresses):
         if address in current_group:
             in_dkg_group = True
             my_dkg_ids.append(address)
-            
+    if in_dkg_group:
+        mainLog.debug("Group selection process. This node is in the DKG group, with the following blockchain addresses: %s", my_dkg_ids)
+    else:
+        mainLog.debug("Group selection process. This node is NOT in the DKG group.")
     return in_dkg_group, my_dkg_ids
 
 def load_master_private_keys(consensus):
@@ -597,7 +600,7 @@ def load_master_private_keys(consensus):
     sec_keys = {}
     for line in priv_keys:
         content = line.split(' ')
-        sec_keys[content[0]] = content[1].rstrip('\n')        
+        sec_keys[normalize_address(content[0])] = content[1].rstrip('\n')        
     priv_keys.close()
     consensus.bootstrap_master_add_secret_keys_manual(sec_keys)
     return True

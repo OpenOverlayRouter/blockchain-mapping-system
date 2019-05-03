@@ -53,6 +53,8 @@ class Consensus():
         self.msg = ''
         self.verified = False
         self.next_signer = self.calculate_next_signer(block_no)
+        consensusLog.debug("Consensus init, group members: %s", self.dkg_group)
+        consensusLog.debug("Consensus init, node ids: %s", self.own_ids)
         
                 
        
@@ -75,7 +77,7 @@ class Consensus():
     def create_shares(self, block_num, count=0):
         self.msg = str(self.current_random_no) + str(block_num) + str(count)
         digest = hashlib.sha256(self.msg).hexdigest()
-        consensusLog.info("Creating a new share with message %s, message hash: %s", self.msg, digest)
+        consensusLog.info("Creating new shares with message %s, message hash: %s", self.msg, digest)
         new_shares =  []
         #Create one share for each of the node IDs        
         for oid in self.own_ids:
@@ -83,6 +85,8 @@ class Consensus():
             if sig == "":
                 raise BlsSignError()
             new_shares.append(Share(oid, sig))
+            consensusLog.info("Share content: %s", sig)
+        consensusLog.info("Created %s new shares.", len(new_shares))
         #Directly store these shares internally
         for share in new_shares:
             self.store_share(share, self.msg, block_num)
@@ -286,6 +290,7 @@ class Consensus():
 
     def bootstrap_master_add_secret_keys_manual(self, manual_keys):
         self.store_ids(self.dkg_group)        
+        self.own_ids = self.dkg_group
         self.verified = True
         for oid, key in manual_keys.iteritems():
             self.secretKeys[oid] = key
