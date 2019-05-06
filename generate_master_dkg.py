@@ -35,12 +35,12 @@ all_addr.close()
 dkg_group = []
 for i in range(DKG_NUMBER_PARTICIPANTS):
     random_pos = random_no % len(all_addresses)
-    dkg_group.append(all_addresses.pop(random_pos))            
+    dkg_group.append(utils.normalize_address(all_addresses.pop(random_pos)))
     random_no = utils.compress_random_no_to_int(hashlib.sha256(str(random_no)).hexdigest(), 16)
 
 print "Selected the following addresses for the DKG:"
 for elem in dkg_group:
-    print elem
+    print elem.encode('hex')
 
 #Generate DKG shares
 cons = consensus.Consensus(dkg_group, dkg_group, random_no, 0x00)
@@ -64,7 +64,7 @@ except Exception as e:
 for node in dkg_group:
     oid = node
     secretkey = cons.secretKeys[oid]
-    priv_keys.write(oid + ' ' + secretkey + '\n')
+    priv_keys.write(oid.encode('hex') + ' ' + secretkey + '\n')
     
 priv_keys.close()
 print "Done"
