@@ -4,7 +4,7 @@ Created on Tue Jan  8 11:50:44 2019
 
 @author: jordi
 """
-import logger
+#import logger
 import logging
 import hashlib
 import zlib
@@ -27,7 +27,7 @@ config_data = ConfigParser.RawConfigParser()
 config_data.read('chain_config.cfg')   
 THRESHOLD = config_data.getint('Consensus','dkg_threshold')
 
-logger.setup_custom_logger('Consensus')
+#logger.setup_custom_logger('Consensus')
 consensusLog = logging.getLogger('Consensus')
 
 #Important: original ids (blockchain addresses expressed in hex) are converted 
@@ -94,7 +94,7 @@ class Consensus():
             
     def store_share(self, share, expected_message, block_no):
         #To obtain the dkg_id we take the first dictionary because the ids are the same for all nodes     
-        dkg_id = self.members[self.members.keys()[0]][share.source.encode("hex")]['id']
+        dkg_id = self.members[self.members.keys()[0]][share.source]['id']
         #Sanity checks: avoid adding already seen shares, do not recompute if enough shares received
         if dkg_id not in self.shares_ids and not self.verified:
             self.shares_ids.append(dkg_id)
