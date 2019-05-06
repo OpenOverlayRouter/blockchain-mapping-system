@@ -26,6 +26,7 @@ echo "Installing all dependencies"
 sudo apt-get -y install python
 sudo apt-get -y install python-scrypt
 sudo apt-get -y install python-pip
+sudo apt-get -y install libgmp-dev libssl-dev
 sudo pip install --upgrade pip
 sudo pip install py_ecc==1.1.3
 sudo pip install rlp==0.6.0
