@@ -522,7 +522,7 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
             res = False
             try: 
                 if not (block.number % DKG_RENEWAL_INTERVAL == 0):
-                    signer = consensus.calculate_next_signer(block.number)
+                    signer = consensus.calculate_next_signer(block.number - 1)
                 else:
                     # Next signer changes when new DKG, replicate what we do when we trigger a new DKG and we are not in the DKG group
                     dkg_group = chain.get_current_dkg_group()
