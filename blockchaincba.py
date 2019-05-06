@@ -118,8 +118,7 @@ def run():
     keys, addresses = init_keystore()
     mainLog.info("Loaded %s keys", len(keys))
     mainLog.info("----------------LOADED ADDRESSES---------------------")
-    for add in addresses:
-        mainLog.info(add.encode("HEX"))
+    mainLog.info([add.encode("HEX") for add in addresses])
     mainLog.info("----------------END ADDRESS LIST---------------------")
     
     mainLog.info("Initializing Parser")
@@ -578,7 +577,7 @@ def find_me_in_dkg_group(current_group, node_addresses):
             in_dkg_group = True
             my_dkg_ids.append(address)
     if in_dkg_group:
-        mainLog.debug("Group selection process. This node is in the DKG group, with the following blockchain addresses: %s", my_dkg_ids)
+        mainLog.debug("Group selection process. This node is in the DKG group, with the following blockchain addresses: %s", [addr.encode('hex') for addr in my_dkg_ids])
     else:
         mainLog.debug("Group selection process. This node is NOT in the DKG group.")
     return in_dkg_group, my_dkg_ids

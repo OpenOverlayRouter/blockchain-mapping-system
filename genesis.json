@@ -2,7 +2,7 @@
   "coinbase": "0x0000000000000000000000000000000000000000",
   "timestamp": "0x5CC1D324",
   "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-  "group_key" : "1 0x1bc8c6b0ff553b0354bece458cc50664e191d4335312e7b6fb69aa43f4561957 0x498e847bbcafc5c4c3e52e644a62ee7719709cbe47d78e092b128422f1c1e86 0x155810c72e8d83c6b2ee7ae4f7b99ba6cd33daaf019aed8b19f3582bd9a7cb9d 0x72019ba08ff7a35fe1f92111e48bc4838a2cb28acc584229ce5bdf7bd534d55",
+  "group_key" : "1 0x1449b385fbaed403e317430c8eced0d3b1f364ebfdd1ac9b1143e9a36def7651 0x181765270a148c0d455d20c1bbf78b6b2f9ed33f3ec8bbf96daff04bd4e88fde 0xf97fc07c06decd75f99a488d0731ef8117660b27a217df18a50c663b9b16b49 0x11c177b86813af3d9ea5bc38ba3107dc2cbc23675dc3c00c870b2eac4309181b",
   "_comment": "random number is the SHA-256 hash of 'CBA blockchain designed to store and allocate IP addresses with Proof of Stake. Developed at UPC-BarcelonaTech'",
   "random_number": "0xabff75259697c051af1299ce30dc74a108ff5d6bbcc24bb2c8c5dfa8864fa41f",
   "count": "0",

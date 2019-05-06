@@ -53,8 +53,8 @@ class Consensus():
         self.msg = ''
         self.verified = False
         self.next_signer = self.calculate_next_signer(block_no)
-        consensusLog.debug("Consensus init, group members: %s", self.dkg_group)
-        consensusLog.debug("Consensus init, node ids: %s", self.own_ids)
+        consensusLog.debug("Consensus init, group members: %s", [elem.encode('hex') for elem in self.dkg_group])
+        consensusLog.debug("Consensus init, node ids: %s", [elem.encode('hex') for elem in self.own_ids])
         
                 
        
@@ -188,7 +188,7 @@ class Consensus():
                     consensusLog.error("Error in generating the secret contributions. Position with error: %s", secretContribs.index(contrib))
                     raise DkgGenerateSecretKeyShareError()
     
-            consensusLog.debug("Info from originating node ID: %s", node_id)            
+            consensusLog.debug("Info from originating node ID: %s", node_id.encdoe('hex'))            
             consensusLog.debug("vVec lenght: %s", len(vVec))
             consensusLog.debug("secret contribs are: %s", secretContribs)
             
@@ -206,17 +206,17 @@ class Consensus():
         return to_send
         
     def verify_dkg_contribution(self, dkg_contribution):
-        oid = dkg_contribution.source.encode("hex")
-        destination = dkg_contribution.to.encode("hex")         #It is one of the node IDs, verified in the upper layer
+        oid = dkg_contribution.source
+        destination = dkg_contribution.to        #It is one of the node IDs, verified in the upper layer
         contrib = dkg_contribution.secret_share_contrib
         vVec = dkg_contribution.vVec
            
         if dkg.verifyContributionShare(self.members[destination][destination]["id"], contrib, vVec):
             self.members[destination][oid]["receivedShare"] = contrib
             self.members[destination][oid]["vvec"] = vVec
-            consensusLog.info("Received valid share from member %s" % oid)
+            consensusLog.info("Received valid share from member %s" % oid.encdoe('hex'))
         else:
-            consensusLog.warning("Received invalid share from member %s, ignoring..." % oid)
+            consensusLog.warning("Received invalid share from member %s, ignoring..." % oid.encdoe('hex'))
     
         if self.allSharesReceived(destination):
             #global sk, groupPk
@@ -228,7 +228,7 @@ class Consensus():
             self.group_key = groupsvVec[0]
             if self.group_key == "":
                 raise DkgAddVerificationVectorsError()
-            consensusLog.info("DKG setup completed for node ID %s", destination)
+            consensusLog.info("DKG setup completed for node ID %s", destination.encdoe('hex'))
             consensusLog.info("Resulting group public key is " + self.group_key + "\n")
             
         
