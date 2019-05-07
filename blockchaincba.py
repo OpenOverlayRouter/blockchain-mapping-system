@@ -517,7 +517,7 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
     try:
         block = p2p.get_block()
         while block is not None:
-            mainLog.info("Received new block no. %s", block.number)
+            mainLog.info("[BOOTSTRAP]: Received new block no. %s", block.number)
             
             res = False
             try: 
@@ -531,20 +531,20 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
                     signing_addr = dkg_group[random_pos]
                     signer = chain.extract_first_ip_from_address(signing_addr)
                     consensus.set_current_group_key(block.header.group_pubkey.encode("HEX"))
-                mainLog.debug("Verifying new block signature, signer should be %s", signer)
-                mainLog.debug("Owner of the previous IP is address %s", chain.get_addr_from_ip(signer).encode("HEX"))
-                mainLog.debug("Coinbase in the block is: %s", block.header.coinbase.encode("HEX"))
+                mainLog.debug("[BOOTSTRAP]: Verifying new block signature, signer should be %s", signer)
+                mainLog.debug("[BOOTSTRAP]: Owner of the previous IP is address %s", chain.get_addr_from_ip(signer).encode("HEX"))
+                mainLog.debug("[BOOTSTRAP]: Coinbase in the block is: %s", block.header.coinbase.encode("HEX"))
                 res = chain.verify_block_signature(block, signer)
             except UnsignedBlock as e:
                 mainLog.exception(e)
-                mainLog.error("Unsigned block. Skipping")
+                mainLog.error("[BOOTSTRAP]: Unsigned block. Skipping")
                 res = False
             except InvalidBlockSigner as e:
                 mainLog.exception(e)
-                mainLog.error("Block no. %s signautre is invalid! Ignoring.", block.number)
+                mainLog.error("[BOOTSTRAP]: Block no. %s signautre is invalid! Ignoring.", block.number)
                 res = False                        
             except Exception as e:
-                mainLog.error("Unrecoverable error when checking block signature. Exiting.", block.number)
+                mainLog.error("[BOOTSTRAP]: Unrecoverable error when checking block signature. Exiting.", block.number)
                 mainLog.exception(e)
                 raise e
             if res:
@@ -557,10 +557,11 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
                 delays_txs.write("Added new block no." + str(block.number) + '\n')
                 #Get the random no. from the previous block to calculate the next signer
                 last_random_no = block.header.random_number
+                mainLog.debug("[BOOTSTRAP]: Random number in block %s is %s",str(block.number), last_random_no.encode('hex'))
                 #Manually force the random number because we cannot calculat it during bootstrap (BLS already done)
                 consensus.bootstrap_only_set_random_no_manual(last_random_no)
             else:
-                mainLog.error("Received an erroneous block. Ignoring block...")
+                mainLog.error("[BOOTSTRAP]: Received an erroneous block. Ignoring block...")
                 
             block = p2p.get_block()
     except Exception as e:

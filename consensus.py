@@ -110,7 +110,7 @@ class Consensus():
                 if self.verified:                
                     self.current_random_no = hashlib.sha256(self.group_sig).digest()
                     self.next_signer = self.calculate_next_signer(block_no)
-                    consensusLog.info("Group signature verified correctly. New random number is: %s", self.current_random_no)
+                    consensusLog.info("Group signature verified correctly. New random number is: %s", self.current_random_no.encode('hex'))
                     return True
                 else:
                     raise BlsInvalidGroupSignature() 
