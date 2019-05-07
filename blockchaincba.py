@@ -143,7 +143,7 @@ def run():
     processed_user = 0
     toogle = True
     
-    current_random_no = chain.get_head_block().header.random_number
+    current_random_no = chain.get_head_block().header.random_number.encode('hex')
     current_group_key = chain.get_current_group_key()
     block_num = chain.get_head_block().header.number
     timestamp = chain.get_head_block().header.timestamp
@@ -435,7 +435,7 @@ def run():
             share = p2p.get_share()
             while share is not None:
                 if not cache.in_bls_cache(share):
-                    msg = str(current_random_no.encode('hex')) + str(block_num) + str(count)
+                    msg = str(current_random_no) + str(block_num) + str(count)
                     res = consensus.store_share(share, msg)
                     if res:
                         current_random_no = consensus.get_current_random_no()
@@ -556,8 +556,8 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
                 delays_blocks.write(str(block.number) + ',' + str(delay) + '\n' )
                 delays_txs.write("Added new block no." + str(block.number) + '\n')
                 #Get the random no. from the previous block to calculate the next signer
-                last_random_no = block.header.random_number
-                mainLog.debug("[BOOTSTRAP]: Random number in block %s is %s",str(block.number), last_random_no.encode('hex'))
+                last_random_no = block.header.random_number.encode('hex')
+                mainLog.debug("[BOOTSTRAP]: Random number in block %s is %s",str(block.number), last_random_no)
                 #Manually force the random number because we cannot calculat it during bootstrap (BLS already done)
                 consensus.bootstrap_only_set_random_no_manual(last_random_no)
             else:
