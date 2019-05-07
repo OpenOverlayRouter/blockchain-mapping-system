@@ -141,7 +141,7 @@ def run():
     dkg_on = False
     exit_from_dkg = False
     processed_user = 0
-    toogle = True
+    user_tx_count = 0
     
     current_random_no = chain.get_head_block().header.random_number
     current_group_key = chain.get_current_group_key()
@@ -339,13 +339,13 @@ def run():
 
         # Process transactions from the user
         if ((time.time() - start_time) > START_TIME or isMaster) and not dkg_on:
-            if toogle:            
+            if user_tx_count == 3:            
                 try:
                     tx_int = user.get_tx()
                     while tx_int is not None:
                         before = time.time()
                         processed_user = processed_user + 1                    
-                        toogle = False
+                        user_tx_count = 0
                         try:
                             try:
                                 key_pos = addresses.index(tx_int["from"])
@@ -385,7 +385,7 @@ def run():
                     p2p.stop()
                     sys.exit(0)
             else:
-                toogle = True
+                user_tx_count = user_tx_count + 1
 
         #answer queries from OOR
         try:
