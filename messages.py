@@ -161,6 +161,8 @@ def set_share(share):
     '''Send a share to the network
     share: A share to generate the random number'''
     rawshare = rlp.encode(share).encode('base64')
+    print "Encoded share OK"
+    print rawshare
     kwargs = {"share": rawshare}
     return make_envelope("set_share", **kwargs)
 
