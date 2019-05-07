@@ -14,7 +14,6 @@ from netaddr import IPAddress
 
 import Consensus.libs.bls_wrapper as bls
 import Consensus.dkg as dkg
-from utils import normalize_address
 from shares import Share, Dkg_Share
 from own_exceptions import DkgAddContributionSharesError, DkgAddVerificationVectorsError, DkgGenKeysError, DkgGenerateSecretKeyShareError
 from own_exceptions import BlsInvalidGroupSignature, BlsSignError, BlsRecoverError
@@ -45,7 +44,7 @@ class Consensus():
 #TODO: initizlize members correctly                
         self.dkg_group = dkg_group
         self.own_ids = node_ids
-        self.current_random_no = normalize_address(randno)
+        self.current_random_no = randno
         self.secretKeys = {}
         self.group_key = group_key
         self.group_sig =  None
@@ -72,11 +71,11 @@ class Consensus():
         self.group_key = group_key
         
     def bootstrap_only_set_random_no_manual(self, random_no):
-        self.current_random_no = normalize_address(random_no)
+        self.current_random_no = random_no
         
     #BLS stuff
     def create_shares(self, block_num, count=0):
-        self.msg = str(self.current_random_no.encode('hex')) + str(block_num) + str(count)
+        self.msg = str(self.current_random_no) + str(block_num) + str(count)
         digest = hashlib.sha256(self.msg).hexdigest()
         consensusLog.info("Creating new shares with message %s, message hash: %s", self.msg, digest)
         new_shares =  []
@@ -108,9 +107,9 @@ class Consensus():
                     raise BlsRecoverError()
                 self.verified = bls.verify(hashlib.sha256(expected_message).hexdigest(), self.group_sig, self.group_key)
                 if self.verified:                
-                    self.current_random_no = hashlib.sha256(self.group_sig).digest()
+                    self.current_random_no = hashlib.sha256(self.group_sig).hexdigest()
                     self.next_signer = self.calculate_next_signer(block_no)
-                    consensusLog.info("Group signature verified correctly. New random number is: %s", self.current_random_no.encode('hex'))
+                    consensusLog.info("Group signature verified correctly. New random number is: %s", self.current_random_no)
                     return True
                 else:
                     raise BlsInvalidGroupSignature() 
@@ -273,12 +272,13 @@ class Consensus():
         return address
 
     def calculate_next_signer(self, block_number):
-        #Consensus for v4 and v6 operate at bit level
+        #Consensus for v4 and v6 operate at bit level, transfrom from hex to bits
         #We assume random number is always encoded in bits (256bits)!!!
+        random_no_in_bits = bin(int(self.current_random_no,16))[2:].zfill(256)
         if block_number % 2 != 0: # block_number is the previous one, so if it is even, next should be IPv6
-             return self.formalize_IP(self.consensus_for_IPv4(self.current_random_no))
+             return self.formalize_IP(self.consensus_for_IPv4(random_no_in_bits))
         else:
-             return self.formalize_IP(self.consensus_for_IPv6(self.current_random_no))    
+             return self.formalize_IP(self.consensus_for_IPv6(random_no_in_bits))
     
     def print_share_array(self, array):
         for share in array:
