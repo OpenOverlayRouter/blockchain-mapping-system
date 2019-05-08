@@ -5,7 +5,7 @@ Created on Mon Dec  3 16:01:43 2018
 @author: jordi
 """
 import rlp
-from rlp.sedes import Binary
+from rlp.sedes import binary, CountableList
 from utils import address, normalize_address, sha3
 
 
@@ -14,7 +14,7 @@ class Share(rlp.Serializable):
 
     fields = [
     ('source', address),        
-    ('signature', Binary)
+    ('signature', binary)
 
 #Reserved in case we have to sign the shares
 #        ('v', big_endian_int),
@@ -38,8 +38,8 @@ class Dkg_Share(rlp.Serializable):
     fields = [
     ('source', address),
     ('to', address),
-    ('secret_share_contrib', Binary),
-    ('vVec', Binary)
+    ('secret_share_contrib', binary),
+    ('vVec', CountableList(binary))
 
 #Reserved in case we have to sign the shares
 #        ('v', big_endian_int),
