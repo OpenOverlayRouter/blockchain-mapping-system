@@ -118,6 +118,9 @@ class Consensus():
         else:
             return False
             
+    def bootsrap_verify_group_sig(self, expected_message, block_group_sig):
+        return bls.verify(hashlib.sha256(expected_message).hexdigest(), block_group_sig, self.group_key)
+            
         
         
         
@@ -188,7 +191,7 @@ class Consensus():
                     consensusLog.error("Error in generating the secret contributions. Position with error: %s", secretContribs.index(contrib))
                     raise DkgGenerateSecretKeyShareError()
     
-            consensusLog.debug("Info from originating node ID: %s", node_id.encdoe('hex'))            
+            consensusLog.debug("Info from originating node ID: %s", node_id.encode('hex'))            
             consensusLog.debug("vVec lenght: %s", len(vVec))
             consensusLog.debug("secret contribs are: %s", secretContribs)
             
@@ -214,9 +217,9 @@ class Consensus():
         if dkg.verifyContributionShare(self.members[destination][destination]["id"], contrib, vVec):
             self.members[destination][oid]["receivedShare"] = contrib
             self.members[destination][oid]["vvec"] = vVec
-            consensusLog.info("Received valid share from member %s" % oid.encdoe('hex'))
+            consensusLog.info("Received valid share from member %s" % oid.encode('hex'))
         else:
-            consensusLog.warning("Received invalid share from member %s, ignoring..." % oid.encdoe('hex'))
+            consensusLog.warning("Received invalid share from member %s, ignoring..." % oid.encode('hex'))
     
         if self.allSharesReceived(destination):
             #global sk, groupPk
@@ -228,7 +231,7 @@ class Consensus():
             self.group_key = groupsvVec[0]
             if self.group_key == "":
                 raise DkgAddVerificationVectorsError()
-            consensusLog.info("DKG setup completed for node ID %s", destination.encdoe('hex'))
+            consensusLog.info("DKG setup completed for node ID %s", destination.encode('hex'))
             consensusLog.info("Resulting group public key is " + self.group_key + "\n")
             
         
