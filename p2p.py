@@ -131,8 +131,10 @@ class P2P():
     def broadcast_share(self, share):
         try:
             self.sock.send(messages.set_share(share))
-        except:
+        except Exception as e:
             p2pLog.error("P2P broadcast_share error")        
+            p2pLog.exception(e)
+            raise e
         
     def get_share(self):
         try:
@@ -144,16 +146,20 @@ class P2P():
             else:
                 share = rlp.decode(data["share"].decode('base64'), Share)
                 return share
-        except:
+        except Exception as e:
             p2pLog.error("P2P get_share error")
+            p2pLog.exception(e)
+            raise e
         
     def send_dkg_share(self, dkg_share):
         #Needs node ID??? No, because P2P does not know the mapping of dkg_id <> p2p node
         #A future improvement would send the shares directy to the destination node, without broadcasting
         try:
             self.sock.send(messages.set_dkg_share(dkg_share))
-        except:
-            p2pLog.error("P2P set_dkg_share error")        
+        except Exception as e:
+            p2pLog.error("P2P set_dkg_share error")    
+            p2pLog.exception(e)
+            raise e
    
     def get_dkg_share(self):
         try:
@@ -165,9 +171,10 @@ class P2P():
             else:
                 share = rlp.decode(data["dkg_share"].decode('base64'), Dkg_Share)
                 return share
-        except:
+        except Exception as e:
             p2pLog.error("P2P get_dkg_share error")
-        
+            p2pLog.exception(e)
+            raise e        
 
 if __name__ == '__main__':
     pass
