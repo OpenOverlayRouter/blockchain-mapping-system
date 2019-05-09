@@ -16,7 +16,8 @@ default_config = dict(
     #                   (block.gas_used * 6 / 5) / 1024
     #SHA-256 hash of 'IPchain is a blockchain developed at the Broadband Communications Research Group, used to study the feasability of a Proof of Stake blockchain to store and exchange IP addresses'    
     GENESIS_RANDOM_NO = 'a37172904aa905e74d00879fced7b721444ebdd2a598a1a5daf4726b66698782',
-    GENESIS_GROUP_PUBLIC_KEY = '',
+    GENESIS_GROUP_PUBLIC_KEY = '1 0x1449b385fbaed403e317430c8eced0d3b1f364ebfdd1ac9b1143e9a36def7651 0x181765270a148c0d455d20c1bbf78b6b2f9ed33f3ec8bbf96daff04bd4e88fde 0xf97fc07c06decd75f99a488d0731ef8117660b27a217df18a50c663b9b16b49 0x11c177b86813af3d9ea5bc38ba3107dc2cbc23675dc3c00c870b2eac4309181b',
+    GENESIS_GROUP_SIGNATURE = '1 0xfd0d20db0a7f2f068fa57ad2ee40a3bb679fd3e24db0160eaf01e71b3358423 0x168a542a094ae73d8a1053abdde70bfa4b9969779bab2bab6548d1621ed33a6c',
     GASLIMIT_EMA_FACTOR=1024,
     GASLIMIT_ADJMAX_FACTOR=1024,
     BLOCK_GAS_LIMIT=4712388,

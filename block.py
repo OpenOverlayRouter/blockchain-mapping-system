@@ -37,6 +37,7 @@ class BlockHeader(rlp.Serializable):
                  extra_data='',
                  random_number=default_config['GENESIS_RANDOM_NO'], 
                  group_pubkey=default_config['GENESIS_GROUP_PUBLIC_KEY'],
+                 group_sig=default_config['GENESIS_GROUP_SIGNATURE'],
                  count = 0):
         self.prevhash = prevhash
         self.coinbase = coinbase
