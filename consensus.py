@@ -124,7 +124,7 @@ class Consensus():
         else:
             return False
             
-    def bootsrap_verify_group_sig(self, expected_message, block_group_sig):
+    def bootstrap_verify_group_sig(self, expected_message, block_group_sig):
         return bls.verify(hashlib.sha256(expected_message).hexdigest(), block_group_sig, self.group_key)
         
     def shares_ready(self):

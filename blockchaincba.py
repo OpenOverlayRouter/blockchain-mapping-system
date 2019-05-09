@@ -533,7 +533,7 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
                     consensus.set_current_group_key(block.header.group_pubkey)
                 #Verify group sig of the block to authenticate random number                
                 expected_message = str(last_random_no) + str(last_block_num) + str(count)
-                if consensus.bootstrap_verify_grup_sig(expected_message, block.header.group_sig):
+                if consensus.bootstrap_verify_group_sig(expected_message, block.header.group_sig):
                     last_random_no = block.header.random_number.encode('hex')                    
                     if last_random_no == hashlib.sha256(block.header.group_sig).hexdigest():
                         #Manually force the random number because we cannot calculat it during bootstrap (BLS already done)                        
