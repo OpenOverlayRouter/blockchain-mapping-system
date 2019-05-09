@@ -534,13 +534,9 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
                 #Verify group sig of the block to authenticate random number                
                 expected_message = str(last_random_no) + str(last_block_num) + str(count)
                 if consensus.bootstrap_verify_group_sig(expected_message, block.header.group_sig):
-                    last_random_no = block.header.random_number.encode('hex')                    
                     if last_random_no == hashlib.sha256(block.header.group_sig).hexdigest():
-                        #Manually force the random number because we cannot calculat it during bootstrap (BLS already done)                        
-                        consensus.bootstrap_only_set_random_no_manual(last_random_no)
-                        consensus.bootstrap_only_set_group_sig_manual(block.header.group_sig)
-                        signer = consensus.calculate_next_signer(block.number)
-                        mainLog.debug("[BOOTSTRAP]: Verify Group Signature OK, new random number is %s", last_random_no)
+                        signer = consensus.get_next_signer(count)
+                        mainLog.debug("[BOOTSTRAP]: Verify Group Signature OK")
                     else:                    
                         mainLog.critical("[BOOTSTRAP]: FATAL: random number in block does not match group signature hash")
                         raise Exception
@@ -570,7 +566,13 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
                 delay = after - before
                 delays_blocks.write(str(block.number) + ',' + str(delay) + '\n' )
                 delays_txs.write("Added new block no." + str(block.number) + '\n')
-                last_block_num = block.number                
+                #Manually force the random number because we cannot calculat it during bootstrap (BLS already done)
+                last_random_no = block.header.random_number.encode('hex')
+                last_block_num = block.number
+                consensus.bootstrap_only_set_random_no_manual(last_random_no)
+                consensus.bootstrap_only_set_group_sig_manual(block.header.group_sig)
+                signer = consensus.calculate_next_signer(last_block_num)
+                mainLog.debug("[BOOTSTRAP]: New random number is :%s", last_random_no)
             else:
                 mainLog.error("[BOOTSTRAP]: Received an erroneous block. Ignoring block...")
             block = p2p.get_block()
