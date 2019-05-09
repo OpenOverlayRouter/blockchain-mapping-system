@@ -187,14 +187,16 @@ class p2pProtocol(Protocol):
                             try:
                                 share = rlp.decode(data["share"].decode('base64'), Share)
                                 self.factory.shares.add(data["share"])
-                            except:
+                            except Exception as e:
                                 _print ("Wrong Share")
+                                _print (e)
                         elif data["msgtype"] == "set_dkg_share":
                             try:
                                 share = rlp.decode(data["share"].decode('base64'), Dkg_Share)
                                 self.factory.dkg_shares.add(data["share"])
-                            except:
+                            except Exception as e:
                                 _print ("Wrong DKG Share")
+                                _print (e)
                     except Exception as exception:
                         print "except", exception.__class__.__name__, exception
                         self.transport.loseConnection()

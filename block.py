@@ -1,7 +1,7 @@
 import rlp
 import trie
-from rlp.sedes import big_endian_int, Binary, binary, CountableList
-from utils import hash32, trie_root, address, sha3, group_pubkey
+from rlp.sedes import big_endian_int, binary, CountableList
+from utils import hash32, trie_root, address, sha3
 from rlp.utils import encode_hex
 from config import default_config
 from transactions import Transaction
@@ -22,6 +22,7 @@ class BlockHeader(rlp.Serializable):
         ('coinbase', address),
         ('random_number', hash32),   #256 bit hash
         ('group_pubkey', binary),  #Zero in all blocks except number % DKG_RENEWAL_INTERVAL == 0
+        ('group_sig', binary),
         ('count', big_endian_int)
         
     ]

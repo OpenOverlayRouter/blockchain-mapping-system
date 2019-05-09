@@ -40,14 +40,14 @@ consensusLog = logging.getLogger('Consensus')
 
 class Consensus():
     
-    def __init__(self, dkg_group, node_ids, randno, group_key, block_no):
+    def __init__(self, dkg_group, node_ids, randno, group_key, block_no, group_signature):
 #TODO: initizlize members correctly                
         self.dkg_group = dkg_group
         self.own_ids = node_ids
         self.current_random_no = randno
         self.secretKeys = {}
         self.group_key = group_key
-        self.group_sig =  None
+        self.group_sig =  group_signature
         self.shares = []
         self.shares_ids = []        #These IDs have to be the DKG IDs, not the original blockchain addresses
         self.msg = ''
@@ -66,12 +66,18 @@ class Consensus():
         
     def get_current_group_key(self):
         return self.group_key
+        
+    def get_current_group_sig(self):
+        return self.group_sig
     
     def set_current_group_key(self, group_key):
         self.group_key = group_key
         
     def bootstrap_only_set_random_no_manual(self, random_no):
         self.current_random_no = random_no
+        
+    def bootstrap_only_set_group_sig_manual(self, group_sig):
+        self.group_sig = group_sig
         
     #BLS stuff
     def create_shares(self, block_num, count=0):
@@ -120,9 +126,6 @@ class Consensus():
             
     def bootsrap_verify_group_sig(self, expected_message, block_group_sig):
         return bls.verify(hashlib.sha256(expected_message).hexdigest(), block_group_sig, self.group_key)
-            
-        
-        
         
     def shares_ready(self):
         return self.verified

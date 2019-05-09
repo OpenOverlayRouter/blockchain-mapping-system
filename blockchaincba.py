@@ -2,7 +2,7 @@
 
 import sys
 import ConfigParser
-import time, os, glob, errno
+import time, os, glob, errno, hashlib
 from netaddr import IPSet
 
 from config import Env
@@ -18,7 +18,7 @@ from user import Parser
 from utils import normalize_address, compress_random_no_to_int
 from oor import Oor
 from share_cache import Share_Cache
-from own_exceptions import InvalidBlockSigner, UnsignedBlock
+from own_exceptions import InvalidBlockSigner, UnsignedBlock, BlsInvalidGroupSignature
 
 
 mainLog = logging.getLogger('Main')
@@ -143,10 +143,12 @@ def run():
     processed_user = 0
     user_tx_count = 0
     
-    current_random_no = chain.get_head_block().header.random_number.encode('hex')
-    current_group_key = chain.get_current_group_key()
     block_num = chain.get_head_block().header.number
-    timestamp = chain.get_head_block().header.timestamp
+    timestamp = chain.get_head_block().header.timestamp    
+    current_random_no = chain.get_head_block().header.random_number.encode('hex')
+    current_group_sig = chain.get_head_block().header.group_sig
+    current_group_key = chain.get_current_group_key()
+    
     my_dkgIDs = []
     
     myIPs = IPSet()
@@ -158,13 +160,13 @@ def run():
     in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
     
     mainLog.info("Initializing Consensus")
-    consensus = cons.Consensus(dkg_group, my_dkgIDs, current_random_no, current_group_key, block_num)
+    consensus = cons.Consensus(dkg_group, my_dkgIDs, current_random_no, current_group_key, block_num, current_group_sig)
     cache = Share_Cache()
     
     isMaster = load_master_private_keys(consensus)
         
     before = time.time()
-    perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENEWAL_INTERVAL ,current_random_no, count)
+    perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENEWAL_INTERVAL ,current_random_no, block_num, count)
     after = time.time()
     elapsed = after - before
     mainLog.info("Bootstrap finished. Elapsed time: %s", elapsed)
@@ -184,14 +186,14 @@ def run():
                     if in_dkg_group and exit_from_dkg:
                         # We ONLY enter here if the node belongs to the DGK group and just finished a new DKG
                         exit_from_dkg = False
-                        if block.header.group_pubkey.encode("HEX") != consensus.get_current_group_key():
+                        if block.header.group_pubkey != consensus.get_current_group_key():
                             mainLog.error("FATAL ERROR. A node in the DKG group received a block with a Group Public Key not matching the generated from the DKG.")
                             raise e
                         signer = chain.extract_first_ip_from_address(signing_addr)
                     elif dkg_on:
                         # We ONLY enter here if the nodes DOES NOT belong to the DKG group and is waiting for a current DKG to finish
                         signer = chain.extract_first_ip_from_address(signing_addr)
-                        consensus.set_current_group_key(block.header.group_pubkey.encode("HEX"))
+                        consensus.set_current_group_key(block.header.group_pubkey)
                         dkg_on = False
                     mainLog.debug("Verifying new block signature, signer should be %s", signer)
                     mainLog.debug("Owner of the previous IP is address %s", chain.get_addr_from_ip(signer).encode("HEX"))
@@ -298,7 +300,8 @@ def run():
                     if signing_addr in addresses:
                         mainLog.info("This node has to sign a block, selected IP: %s", signer)
                         mainLog.info("Associated address: %s", signing_addr.encode("HEX"))
-                        new_block = chain.create_block(signing_addr, consensus.get_current_random_no(), consensus.get_current_group_key(), count)
+                        new_block = chain.create_block(signing_addr, consensus.get_current_random_no(), \
+                                    consensus.get_current_group_key(), consensus.get_current_group_sig(), count)
                         try:
                             key_pos = addresses.index(signing_addr)
                         except:
@@ -511,10 +514,9 @@ def run():
             p2p.stop()
             sys.exit(0)
                 
-def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENEWAL_INTERVAL, last_random_no, count):
+def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENEWAL_INTERVAL, last_random_no, last_block_num, count):
     #Code here is exaclty equal to the 'Process new blocks' part in the main, but without generating shares after adding the block.
     #And during initialization, consenus is ready to calculte new signers (random number is stored)
-    signer = consensus.get_next_signer(count)
     try:
         block = p2p.get_block()
         while block is not None:
@@ -528,7 +530,22 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
                     random_pos = compress_random_no_to_int(last_random_no, 16) % len(dkg_group)
                     signing_addr = dkg_group[random_pos]
                     signer = chain.extract_first_ip_from_address(signing_addr)
-                    consensus.set_current_group_key(block.header.group_pubkey.encode("HEX"))
+                    consensus.set_current_group_key(block.header.group_pubkey)
+                #Verify group sig of the block to authenticate random number                
+                expected_message = str(last_random_no) + str(last_block_num) + str(count)
+                if consensus.bootstrap_verify_grup_sig(expected_message, block.header.group_sig):
+                    last_random_no = block.header.random_number.encode('hex')                    
+                    if last_random_no == hashlib.sha256(block.header.group_sig).hexdigest():
+                        #Manually force the random number because we cannot calculat it during bootstrap (BLS already done)                        
+                        consensus.bootstrap_only_set_random_no_manual(last_random_no)
+                        consensus.bootstrap_only_set_group_sig_manual(block.header.group_sig)
+                        signer = consensus.calculate_next_signer(block.number)
+                        mainLog.debug("[BOOTSTRAP]: Verify Group Signature OK, new random number is %s", last_random_no)
+                    else:                    
+                        mainLog.critical("[BOOTSTRAP]: FATAL: random number in block does not match group signature hash")
+                        raise Exception
+                else: 
+                    raise BlsInvalidGroupSignature()                 
                 mainLog.debug("[BOOTSTRAP]: Verifying new block signature, signer should be %s", signer)
                 mainLog.debug("[BOOTSTRAP]: Owner of the previous IP is address %s", chain.get_addr_from_ip(signer).encode("HEX"))
                 mainLog.debug("[BOOTSTRAP]: Coinbase in the block is: %s", block.header.coinbase.encode("HEX"))
@@ -553,15 +570,9 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
                 delay = after - before
                 delays_blocks.write(str(block.number) + ',' + str(delay) + '\n' )
                 delays_txs.write("Added new block no." + str(block.number) + '\n')
-                #Get the random no. from the previous block to calculate the next signer
-                last_random_no = block.header.random_number.encode('hex')
-                mainLog.debug("[BOOTSTRAP]: Random number in block %s is %s",str(block.number), last_random_no)
-                #Manually force the random number because we cannot calculat it during bootstrap (BLS already done)
-                consensus.bootstrap_only_set_random_no_manual(last_random_no)
-                signer = consensus.calculate_next_signer(block.number)
+                last_block_num = block.number                
             else:
                 mainLog.error("[BOOTSTRAP]: Received an erroneous block. Ignoring block...")
-                
             block = p2p.get_block()
     except Exception as e:
         mainLog.critical("Exception in bootstrap process (block verification)")

@@ -66,7 +66,7 @@ class ChainService():
         
 
     # creates a block with the list of pending transactions, creates its tries and returns it
-    def create_block(self, coinbase, random_no, group_key, count):
+    def create_block(self, coinbase, random_no, group_key, group_sig, count):
         
         self.chain.process_time_queue()
         prevhash = self.chain.head_hash
@@ -78,8 +78,14 @@ class ChainService():
 	            raise DkgBlockRequiresGroupKey()
         else:
             group_key = "0x00"
-        block = Block(BlockHeader(timestamp=int(time.time()), prevhash=prevhash, \
-            number=prevnumber + 1, coinbase=coinbase, random_number=parse_as_bin(random_no),  group_pubkey=group_key, count=count))
+        block = Block(BlockHeader(timestamp = int(time.time()), 
+                                   prevhash = prevhash, 
+                                     number = prevnumber + 1, 
+                                   coinbase = coinbase, 
+                              random_number = parse_as_bin(random_no), 
+                               group_pubkey = group_key, 
+                                  group_sig = group_sig, 
+                                      count = count))
         snapshot = self.chain.state.to_snapshot()
         s = state.State().from_snapshot(snapshot, Env(_EphemDB()))
         databaseLog.info("Creating block with block number %s", str(prevnumber+1))

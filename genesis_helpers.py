@@ -15,6 +15,7 @@ def block_from_genesis_declaration(genesis_data, env):
                      coinbase = parse_as_bin(genesis_data["coinbase"]), 
                      prevhash = parse_as_bin(genesis_data["parentHash"]), 
                 random_number = parse_as_bin(genesis_data["random_number"]), 
+                    group_sig = genesis_data["group_sig"],
                  group_pubkey = genesis_data["group_key"],
                         count = parse_as_int(genesis_data["count"]))
     return Block(h, [])
@@ -87,6 +88,7 @@ def mk_genesis_data(env):
             "alloc": d["alloc"],
             "random_number": d["random_number"],
             "group_key": d["group_key"],
+            "group_sig": d["group_sig"],
             "count": d["count"]
         }
     return genesis_data
