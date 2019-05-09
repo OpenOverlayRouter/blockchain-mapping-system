@@ -48,6 +48,7 @@ class BlockHeader(rlp.Serializable):
         self.extra_data = extra_data
         self.random_number = random_number
         self.group_pubkey = group_pubkey
+        self.group_sig = group_sig
         self.count = count
 
     @property
