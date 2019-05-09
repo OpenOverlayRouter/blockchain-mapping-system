@@ -6,8 +6,7 @@ Created on Mon Dec  3 16:01:43 2018
 """
 import rlp
 from rlp.sedes import binary, CountableList
-from utils import address, normalize_address, sha3
-
+from utils import address, sha3
 
 
 class Share(rlp.Serializable):
@@ -23,11 +22,11 @@ class Share(rlp.Serializable):
     ]
     
 
-    def __init__ (self, source, share):
+    def __init__ (self, source, signature):
         
-        src = normalize_address(source, allow_blank=False)
+        self.source = source
+        self.signature = signature
 
-        super(Share, self).__init__(src, share)
             
     @property
     def hash(self):
@@ -49,11 +48,11 @@ class Dkg_Share(rlp.Serializable):
     
     def __init__ (self, source, to, share, verif_vector):
         
-        origin = normalize_address(source, allow_blank=False)
-        dest = normalize_address(to, allow_blank=False)
-
-        super(Dkg_Share, self).__init__(origin, dest, share, verif_vector)    
-    
+        self.source = source
+        self.to = to
+        self.secret_share_contrib = share
+        self.vVec = verif_vector
+        
     @property
     def hash(self):
         return sha3(rlp.encode(self))
