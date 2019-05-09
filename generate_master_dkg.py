@@ -44,7 +44,7 @@ for elem in dkg_group:
     print elem.encode('hex')
 
 #Generate DKG shares
-cons = consensus.Consensus(dkg_group, dkg_group, random_no_string, 0x00, 0)
+cons = consensus.Consensus(dkg_group, dkg_group, random_no_string, "0x00", 0, "0x00")
 to_send = cons.new_dkg(dkg_group, dkg_group)
 #Since we have given him all nodes, we can join the DKG shares directly
 
