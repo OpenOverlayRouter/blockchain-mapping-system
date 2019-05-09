@@ -15,8 +15,8 @@ import utils
 DKG_NUMBER_PARTICIPANTS = 100
 
 #Make the random selection
-random_no = utils.compress_random_no_to_int('0xabff75259697c051af1299ce30dc74a108ff5d6bbcc24bb2c8c5dfa8864fa41f', 16)
-random_no_string = '0xabff75259697c051af1299ce30dc74a108ff5d6bbcc24bb2c8c5dfa8864fa41f'
+random_no = utils.compress_random_no_to_int('0xfab206a4186845ff0f0192fd06be977971a7dedbf9c22173cc38d23625aac2a7', 16)
+random_no_string = '0xfab206a4186845ff0f0192fd06be977971a7dedbf9c22173cc38d23625aac2a7'
 
 #Load master addresses        
 #List all addresses at the moment in the chain
