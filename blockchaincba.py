@@ -161,15 +161,25 @@ def run():
     
     mainLog.info("Initializing Consensus")
     consensus = cons.Consensus(dkg_group, my_dkgIDs, current_random_no, current_group_key, block_num, current_group_sig)
+
+    isMaster = load_master_private_keys(consensus, block_num)
+    if not in_dkg_group:
+        consensus.store_ids(dkg_group)
+    else:
+        mainLog.warning("TODO: nodes that belong to the DKG group and connect after the DKG do not have private keys, so they shouldn't create shares. Needs to be disabled!")
+        if not isMaster:
+	    not_create_shares = True 
     cache = Share_Cache()
     
-    isMaster = load_master_private_keys(consensus, block_num)
         
     before = time.time()
-    perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENEWAL_INTERVAL ,current_random_no, block_num, count)
+    current_random_no, block_num, count = perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENEWAL_INTERVAL ,current_random_no, block_num, count)
     after = time.time()
     elapsed = after - before
     mainLog.info("Bootstrap finished. Elapsed time: %s", elapsed)
+    timestamp = chain.get_head_block().header.timestamp
+    current_group_sig = chain.get_head_block().header.group_sig
+    current_group_key = chain.get_current_group_key()
     
     while(not end):
         
@@ -439,7 +449,7 @@ def run():
             while share is not None:
                 if not cache.in_bls_cache(share):
                     msg = str(current_random_no) + str(block_num) + str(count)
-                    res = consensus.store_share(share, msg)
+                    res = consensus.store_share(share, msg, block_num)
                     if res:
                         current_random_no = consensus.get_current_random_no()
                     cache.store_bls(share)
@@ -501,7 +511,7 @@ def run():
                         else:
                             p2p.send_dkg_share(dkg_share)
                         dkg_share = p2p.get_dkg_share() 
-            else:
+            elif dkg_on:
                 mainLog.info("This node is not participating in the DKG. Will sleep for 3 min and wait for a block with the new public key")
                 time.sleep(180) 
                 if (time.time() - timestamp) >= DKG_TIMEOUT:
@@ -583,6 +593,8 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
         mainLog.exception(e)
         p2p.stop()
         sys.exit(0)
+
+    return last_random_no, last_block_num, count
 
 def find_me_in_dkg_group(current_group, node_addresses):
     
