@@ -177,6 +177,9 @@ def run():
     after = time.time()
     elapsed = after - before
     mainLog.info("Bootstrap finished. Elapsed time: %s", elapsed)
+    timestamp = chain.get_head_block().header.timestamp
+    current_group_sig = chain.get_head_block().header.group_sig
+    current_group_key = chain.get_current_group_key()
     
     while(not end):
         
@@ -591,7 +594,7 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
         p2p.stop()
         sys.exit(0)
 
-    return last_random_number, last_block_num, count
+    return last_random_no, last_block_num, count
 
 def find_me_in_dkg_group(current_group, node_addresses):
     
