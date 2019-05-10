@@ -28,6 +28,7 @@ config_data = ConfigParser.RawConfigParser()
 config_data.read('chain_config.cfg')   
 DKG_RENEWAL_INTERVAL = config_data.getint('Consensus','dkg_renewal_interval')
 DKG_NUMBER_PARTICIPANTS = config_data.getint('Consensus','dkg_participants')
+DKG_RANDOM_SEED = config_data.get('Consensus','dkg_previous_random_number')
 
 
 class ChainService():
@@ -267,7 +268,10 @@ class ChainService():
         #Recover random no. from block previous trigger new DKG
         last_block_no = self.get_head_block().header.number
         last_old_dkg_block = last_block_no - (last_block_no % DKG_RENEWAL_INTERVAL)
-        random_no = compress_random_no_to_int(self.get_block_by_number(last_old_dkg_block).header.random_number.encode("hex"), 16)
+        if last_old_dkg_block == 0:
+            random_no = compress_random_no_to_int(DKG_RANDOM_SEED, 16)
+        else:
+            random_no = compress_random_no_to_int(self.get_block_by_number(last_old_dkg_block).header.random_number.encode("hex"), 16)
         
         #List all addresses at the moment in the chain
         all_addresses = self.chain.get_all_current_addresses()

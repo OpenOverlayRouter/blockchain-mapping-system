@@ -4,8 +4,7 @@
   "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
   "group_key" : "1 0x23c92c20b257e234499a284ab95ccf3f035a8d6dee851271b9f09bae6b8eda39 0x5a4a42b1863bdfb1c737c5277b2411a7090a79def4fe16a117b5ae76550baf 0x17abd1270c3c3b55145b28acb0f11f3921a7ca87324e5dcc5090c850bad10cae 0x22997ee78c79f7b8ff208b2c66460eb4c0b195b2e51d23fd37e6d0b54965fbc",
   "_string": " 'CBA blockchain designed to store and allocate IP addresses with Proof of Stake. Developed at UPC-BarcelonaTech'",
-  "_comment": "random number is the SHA-256 hash of the group signature of the hash of _string + str(0) + str(0). NOTE: this sig was created with a different DKG, but does not affect the current setup",
-  "random_number": "0xfab206a4186845ff0f0192fd06be977971a7dedbf9c22173cc38d23625aac2a7",
+  "random_number": "0x8c8260f498ccee62d1a5e0bbc64c92e833f4afcd3cfd5ede1bb045d3951ad326",
   "group_sig": "1 0xf085e147c3fee9a46acffcdaf6294ce6ecd1f7bd541dda4df6235156a6c7b91 0x3332183ca148dcdbc654a5a7d32b38ef4d525167a949eecc5ee3d6823c13fcf",
   "count": "0",
   "alloc": [
