@@ -10,7 +10,10 @@ Created on Thu Apr 18 14:30:49 2019
 import sys
 import hashlib
 import consensus
-import utils
+import utils, logger
+
+logger.setup_custom_logger('Consensus')
+
 
 DKG_NUMBER_PARTICIPANTS = 100
 

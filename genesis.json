@@ -2,11 +2,11 @@
   "coinbase": "0x0000000000000000000000000000000000000000",
   "timestamp": "0x5CC1D324",
   "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-  "group_key" : "1 0x1449b385fbaed403e317430c8eced0d3b1f364ebfdd1ac9b1143e9a36def7651 0x181765270a148c0d455d20c1bbf78b6b2f9ed33f3ec8bbf96daff04bd4e88fde 0xf97fc07c06decd75f99a488d0731ef8117660b27a217df18a50c663b9b16b49 0x11c177b86813af3d9ea5bc38ba3107dc2cbc23675dc3c00c870b2eac4309181b",
+  "group_key" : "1 0x23c92c20b257e234499a284ab95ccf3f035a8d6dee851271b9f09bae6b8eda39 0x5a4a42b1863bdfb1c737c5277b2411a7090a79def4fe16a117b5ae76550baf 0x17abd1270c3c3b55145b28acb0f11f3921a7ca87324e5dcc5090c850bad10cae 0x22997ee78c79f7b8ff208b2c66460eb4c0b195b2e51d23fd37e6d0b54965fbc",
   "_string": " 'CBA blockchain designed to store and allocate IP addresses with Proof of Stake. Developed at UPC-BarcelonaTech'",
-  "_comment": "random number is the SHA-256 hash of the group signature of the hash of _string + str(0) + str(0)",
+  "_comment": "random number is the SHA-256 hash of the group signature of the hash of _string + str(0) + str(0). NOTE: this sig was created with a different DKG, but does not affect the current setup",
   "random_number": "0xfab206a4186845ff0f0192fd06be977971a7dedbf9c22173cc38d23625aac2a7",
-  "group_sig": "1 0xfd0d20db0a7f2f068fa57ad2ee40a3bb679fd3e24db0160eaf01e71b3358423 0x168a542a094ae73d8a1053abdde70bfa4b9969779bab2bab6548d1621ed33a6c",
+  "group_sig": "",
   "count": "0",
   "alloc": [
   {"6a953e330561c582d7803cd2f8e0465339207eec":{
