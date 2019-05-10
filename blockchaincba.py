@@ -163,7 +163,7 @@ def run():
     consensus = cons.Consensus(dkg_group, my_dkgIDs, current_random_no, current_group_key, block_num, current_group_sig)
     cache = Share_Cache()
     
-    isMaster = load_master_private_keys(consensus)
+    isMaster = load_master_private_keys(consensus, block_num)
         
     before = time.time()
     perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENEWAL_INTERVAL ,current_random_no, block_num, count)
@@ -533,10 +533,18 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
                     consensus.set_current_group_key(block.header.group_pubkey)
                 #Verify group sig of the block to authenticate random number                
                 expected_message = str(last_random_no) + str(last_block_num) + str(count)
+                
                 if consensus.bootstrap_verify_group_sig(expected_message, block.header.group_sig):
-                    if last_random_no == hashlib.sha256(block.header.group_sig).hexdigest():
-                        signer = consensus.get_next_signer(count)
+                    mainLog.debug("[BOOTSTRAP]: previous random no: %s", last_random_no)    
+                    mainLog.debug("[BOOTSTRAP]: hash of group signature: %s", hashlib.sha256(block.header.group_sig).hexdigest())
+                    if block.header.random_number.encode('hex') == hashlib.sha256(block.header.group_sig).hexdigest():
+                        #Manually force the random number because we cannot calculat it during bootstrap (BLS already done)                                        
+                        last_random_no = block.header.random_number.encode('hex')                        
+                        consensus.bootstrap_only_set_random_no_manual(last_random_no)
+                        consensus.bootstrap_only_set_group_sig_manual(block.header.group_sig)
+                        signer = consensus.calculate_next_signer(last_block_num)
                         mainLog.debug("[BOOTSTRAP]: Verify Group Signature OK")
+                        mainLog.debug("[BOOTSTRAP]: New random number is :%s", last_random_no)
                     else:                    
                         mainLog.critical("[BOOTSTRAP]: FATAL: random number in block does not match group signature hash")
                         raise Exception
@@ -565,14 +573,8 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
                 after = time.time()
                 delay = after - before
                 delays_blocks.write(str(block.number) + ',' + str(delay) + '\n' )
-                delays_txs.write("Added new block no." + str(block.number) + '\n')
-                #Manually force the random number because we cannot calculat it during bootstrap (BLS already done)
-                last_random_no = block.header.random_number.encode('hex')
+                delays_txs.write("Added new block no." + str(block.number) + '\n')                
                 last_block_num = block.number
-                consensus.bootstrap_only_set_random_no_manual(last_random_no)
-                consensus.bootstrap_only_set_group_sig_manual(block.header.group_sig)
-                signer = consensus.calculate_next_signer(last_block_num)
-                mainLog.debug("[BOOTSTRAP]: New random number is :%s", last_random_no)
             else:
                 mainLog.error("[BOOTSTRAP]: Received an erroneous block. Ignoring block...")
             block = p2p.get_block()
@@ -596,7 +598,7 @@ def find_me_in_dkg_group(current_group, node_addresses):
         mainLog.debug("Group selection process. This node is NOT in the DKG group.")
     return in_dkg_group, my_dkg_ids
 
-def load_master_private_keys(consensus):
+def load_master_private_keys(consensus, block_num):
     try:    
         priv_keys = open('master-private-dkg-keys.txt', 'r')
     except IOError as e:
@@ -609,13 +611,14 @@ def load_master_private_keys(consensus):
         print e
         sys.exit(1)
     
-    mainLog.info("Detected master private key file. Perfoming manual setup of DKG private keys.")
+    mainLog.info("Detected master private key file. Perfoming manual setup of DKG private keys and initial BLS.")
     sec_keys = {}
     for line in priv_keys:
         content = line.split(' ')
         sec_keys[normalize_address(content[0])] = content[1].rstrip('\n')        
     priv_keys.close()
     consensus.bootstrap_master_add_secret_keys_manual(sec_keys)
+    consensus.create_shares(block_num)
     return True
         
 
