@@ -67,4 +67,4 @@ except Exception as e:
     
 print "Try to verify this sig"
 expected_message = str(current_random_no) + str(0) + str(0) 
-print consensus.bootsrap_verify_group_sig(expected_message, consensus.group_sig)
+print consensus.bootstrap_verify_group_sig(expected_message, consensus.group_sig)
