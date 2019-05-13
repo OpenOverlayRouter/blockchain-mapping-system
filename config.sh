@@ -42,7 +42,9 @@ sudo pip install pytricia
 sudo pip install bitstring
 sudo pip install py-radix
 sudo pip install -I kademlia==0.6 rpcudp==2.0
-python libs/ipgetter-master/setup.py install
+cd libs/ipgetter-master/
+sudo python setup.py install
+cd ../..
 
 #Compile BLS.exe
 ./Consensus/getDependencies.sh
