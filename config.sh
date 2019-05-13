@@ -15,11 +15,12 @@ sudo dpkg-reconfigure locales
 sudo apt-get -y install ntp
 sudo ntpq -p
 
-#echo "Creating blockchain repo"
-#mkdir blockchain-repo
-#cd blockchain-repo
-#git init
-#git clone https://github.com/CodeEaterX/blockchain
+echo "Creating blockchain repo"
+mkdir blockchain-repo
+cd blockchain-repo
+git init
+git clone https://github.com/CodeEaterX/blockchain
+git checkout dht-tests
 
 
 echo "Installing all dependencies"
@@ -42,12 +43,15 @@ sudo pip install bitstring
 sudo pip install py-radix
 sudo pip install -I kademlia==0.6 rpcudp==2.0
 
+#Compile BLS.exe
+./Consensus/getDependencies.sh
+
 #Give execution permission to the BLS executable
 chmod 744 Consensus/utils/bls.exe
 echo "Adjusting keystore and transactions for location" $location
 rm -r keystore
-mv data_generation/keystore-$location keystore
-mv data_generation/$location-transactions.txt Tests/transactions.txt
+mv dataset/keystore-$location keystore
+mv dataset/transactions/$location-transactions.txt transactions.txt
 
 
 echo "Done :)"
