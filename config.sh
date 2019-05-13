@@ -15,12 +15,12 @@ sudo dpkg-reconfigure locales
 sudo apt-get -y install ntp
 sudo ntpq -p
 
-echo "Creating blockchain repo"
-mkdir blockchain-repo
-cd blockchain-repo
-git init
-git clone https://github.com/CodeEaterX/blockchain
-git checkout dht-tests
+#echo "Creating blockchain repo"
+#mkdir blockchain-repo
+#cd blockchain-repo
+#git init
+#git clone https://github.com/CodeEaterX/blockchain
+#git checkout dht-tests
 
 
 echo "Installing all dependencies"
