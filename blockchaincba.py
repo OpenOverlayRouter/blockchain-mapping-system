@@ -179,6 +179,7 @@ def run():
     current_group_sig = chain.get_head_block().header.group_sig
     current_group_key = chain.get_current_group_key()
     current_random_no = chain.get_head_block().header.random_number.encode('hex')
+    init = True
     
     while(not end):
         
@@ -192,7 +193,7 @@ def run():
                 res = False
                 try: 
                     signer = consensus.get_next_signer(block.count) 
-                    if block.header.random_number.encode('hex') != current_random_no:
+                    if block.header.random_number.encode('hex') != current_random_no and not init:
                         raise UnexcpectedBlockRandomNumber
                     if in_dkg_group and exit_from_dkg:
                         # We ONLY enter here if the node belongs to the DGK group and just finished a new DKG
@@ -458,6 +459,7 @@ def run():
                     res = consensus.store_share(share, msg, block_num)
                     if res:
                         current_random_no = consensus.get_current_random_no()
+                        init = False
                     cache.store_bls(share)
                     p2p.broadcast_share(share)
                 share = p2p.get_share()
