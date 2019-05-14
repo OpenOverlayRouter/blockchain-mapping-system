@@ -52,7 +52,9 @@ class Consensus():
         self.shares_ids = []        #These IDs have to be the DKG IDs, not the original blockchain addresses
         self.msg = ''
         self.verified = True
-        self.next_signer = self.calculate_next_signer(block_no)
+        self.next_signer = None
+        self.calculate_next_signer(block_no)
+        consensusLog.debug("Next signer: %s", self.next_signer)
         consensusLog.debug("Consensus init, group members: %s", [elem.encode('hex') for elem in self.dkg_group])
         consensusLog.debug("Consensus init, node ids: %s", [elem.encode('hex') for elem in self.own_ids])
         
