@@ -18,7 +18,7 @@ from user import Parser
 from utils import normalize_address, compress_random_no_to_int
 from oor import Oor
 from share_cache import Share_Cache
-from own_exceptions import InvalidBlockSigner, UnsignedBlock, BlsInvalidGroupSignature, UnexcpectedBlockRandomNumber
+from own_exceptions import InvalidBlockSigner, UnsignedBlock, BlsInvalidGroupSignature
 
 
 mainLog = logging.getLogger('Main')
@@ -143,7 +143,7 @@ def run():
     
     block_num = chain.get_head_block().header.number
     timestamp = chain.get_head_block().header.timestamp    
-    current_random_no = chain.get_head_block().header.random_number.encode('hex')
+    last_random_no = chain.get_head_block().header.random_number.encode('hex')
     current_group_sig = chain.get_head_block().header.group_sig
     current_group_key = chain.get_current_group_key()
     
@@ -158,7 +158,7 @@ def run():
     in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
     
     mainLog.info("Initializing Consensus")
-    consensus = cons.Consensus(dkg_group, my_dkgIDs, current_random_no, current_group_key, block_num, current_group_sig)
+    consensus = cons.Consensus(dkg_group, my_dkgIDs, last_random_no, current_group_key, block_num, current_group_sig)
 
     isMaster = load_master_private_keys(consensus, block_num)
     if not in_dkg_group:
@@ -171,15 +171,15 @@ def run():
     
         
     before = time.time()
-    block_num, count = perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENEWAL_INTERVAL ,current_random_no, block_num, count)
+    last_random_no, block_num, count = perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENEWAL_INTERVAL ,last_random_no, block_num, count)
     after = time.time()
     elapsed = after - before
     mainLog.info("Bootstrap finished. Elapsed time: %s", elapsed)
     timestamp = chain.get_head_block().header.timestamp
     current_group_sig = chain.get_head_block().header.group_sig
     current_group_key = chain.get_current_group_key()
-    current_random_no = chain.get_head_block().header.random_number.encode('hex')
-    init = True
+    last_random_no = chain.get_head_block().header.random_number.encode('hex')
+    #TOREMOVE init = True
     
     while(not end):
         
@@ -189,12 +189,14 @@ def run():
             while block is not None or dkg_on:
                 # Only nodes that do NOT belong to the DKG get stuck here until they receive the block with the new group key
                 mainLog.info("Received new block no. %s", block.number)
-                
                 res = False
                 try: 
-                    signer = consensus.get_next_signer(block.count) 
-                    if block.header.random_number.encode('hex') != current_random_no and not init:
-                        raise UnexcpectedBlockRandomNumber
+                    signer = consensus.get_next_signer(block.count)
+                    expected_message = str(last_random_no) + str(block_num) + str(count) 
+                    if consensus.verify_group_sig(expected_message, block.header.group_sig):
+                        mainLog.debug("Verify Group Signature OK")
+                    else:
+                        raise BlsInvalidGroupSignature()                 
                     if in_dkg_group and exit_from_dkg:
                         # We ONLY enter here if the node belongs to the DGK group and just finished a new DKG
                         exit_from_dkg = False
@@ -219,9 +221,9 @@ def run():
                     mainLog.exception(e)
                     mainLog.error("Block no. %s signautre is invalid! Ignoring.", block.number)
                     res = False       
-                except UnexcpectedBlockRandomNumber as e:
+                except BlsInvalidGroupSignature as e:
                     mainLog.exception(e)       
-                    mainLog.error("Block no. %s random number does not match expected random number! Ignoring.", block.number)
+                    mainLog.error("Block no. %s: invalid unexpected or invalid BLS group signature! Ignoring.", block.number)
                     res = False
                 except Exception as e:
                     mainLog.error("Unrecoverable error when checking block signature. Exiting.", block.number)
@@ -236,13 +238,14 @@ def run():
                     delays_blocks.write(str(block.number) + ',' + str(delay) + '\n' )
                     delays_txs.write("Added new block no." + str(block.number) + '\n')
                     timestamp = chain.get_head_block().header.timestamp
-                    block_num = chain.get_head_block().header.number    
-                    current_random_no = block.header.random_number.encode('hex')                          
+                    block_num = chain.get_head_block().header.number
+                    last_random_no = block.header.random_number.encode('hex')
                     #after a correct block: reset BLS and create and broadcast new shares (like receiving a new block)
+                    consensus.calculate_next_signer(block_num)
                     consensus.reset_bls()
                     if in_dkg_group:
                         count = 0
-                        new_shares = consensus.create_shares(block_num, count)
+                        new_shares = consensus.create_shares(last_random_no, block_num, count)
                         for share in new_shares:
                             p2p.broadcast_share(share)
                             cache.store_bls(share)
@@ -342,10 +345,13 @@ def run():
                         #after a correct block, create and broadcast new share    
                         count = 0
                         #timeout_expired = False
+                        block_num = new_block.number
+                        consensus.calculate_next_signer(block_num)
+                        last_random_no = consensus.get_current_random_no()
                         consensus.reset_bls()
                         if in_dkg_group:
                             count = 0
-                            new_shares = consensus.create_shares(new_block.number, count)
+                            new_shares = consensus.create_shares(last_random_no, block_num, count)
                             for share in new_shares:
                                 p2p.broadcast_share(share)
                                 cache.store_bls(share)
@@ -455,11 +461,10 @@ def run():
             share = p2p.get_share()
             while share is not None:
                 if not cache.in_bls_cache(share):
-                    msg = str(current_random_no) + str(block_num) + str(count)
+                    msg = str(last_random_no) + str(block_num) + str(count)
                     res = consensus.store_share(share, msg, block_num)
-                    if res:
-                        current_random_no = consensus.get_current_random_no()
-                        init = False
+#TOREMOVE           if res:
+#TOREMOVE               current_random_no = consensus.get_current_random_no()
                     cache.store_bls(share)
                     p2p.broadcast_share(share)
                 share = p2p.get_share()
@@ -539,7 +544,7 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
         block = p2p.get_block()
         while block is not None:
             mainLog.info("[BOOTSTRAP]: Received new block no. %s", block.number)
-            
+            signer = consensus.get_next_signer(count)
             res = False
             try: 
                 if (block.number % DKG_RENEWAL_INTERVAL == 0):
@@ -551,18 +556,11 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
                     consensus.set_current_group_key(block.header.group_pubkey)
                 #Verify group sig of the block to authenticate random number                
                 expected_message = str(last_random_no) + str(last_block_num) + str(count)
-                
-                if consensus.bootstrap_verify_group_sig(expected_message, block.header.group_sig):
+                if consensus.verify_group_sig(expected_message, block.header.group_sig):
                     mainLog.debug("[BOOTSTRAP]: previous random no: %s", last_random_no)    
                     mainLog.debug("[BOOTSTRAP]: hash of group signature: %s", hashlib.sha256(block.header.group_sig).hexdigest())
                     if block.header.random_number.encode('hex') == hashlib.sha256(block.header.group_sig).hexdigest():
-                        #Manually force the random number because we cannot calculat it during bootstrap (BLS already done)                                        
-                        last_random_no = block.header.random_number.encode('hex')                        
-                        consensus.bootstrap_only_set_random_no_manual(last_random_no)
-                        consensus.bootstrap_only_set_group_sig_manual(block.header.group_sig)
-                        signer = consensus.calculate_next_signer(last_block_num)
                         mainLog.debug("[BOOTSTRAP]: Verify Group Signature OK")
-                        mainLog.debug("[BOOTSTRAP]: New random number is :%s", last_random_no)
                     else:                    
                         mainLog.critical("[BOOTSTRAP]: FATAL: random number in block does not match group signature hash")
                         raise Exception
@@ -591,8 +589,14 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
                 after = time.time()
                 delay = after - before
                 delays_blocks.write(str(block.number) + ',' + str(delay) + '\n' )
-                delays_txs.write("Added new block no." + str(block.number) + '\n')                
+                delays_txs.write("Added new block no." + str(block.number) + '\n')               
+                #Manually force the random number because we cannot calculate it during bootstrap (BLS already done)
+                last_random_no = block.header.random_number.encode('hex')
                 last_block_num = block.number
+                mainLog.debug("[BOOTSTRAP]: New random number is :%s", last_random_no)
+                consensus.bootstrap_only_set_random_no_manual(last_random_no)
+                consensus.bootstrap_only_set_group_sig_manual(block.header.group_sig)
+                consensus.calculate_next_signer(last_block_num)
             else:
                 mainLog.error("[BOOTSTRAP]: Received an erroneous block. Ignoring block...")
             block = p2p.get_block()
@@ -602,7 +606,7 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
         p2p.stop()
         sys.exit(0)
 
-    return last_block_num, count
+    return last_random_no, last_block_num, count
 
 def find_me_in_dkg_group(current_group, node_addresses):
     
