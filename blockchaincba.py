@@ -160,7 +160,7 @@ def run():
     mainLog.info("Initializing Consensus")
     consensus = cons.Consensus(dkg_group, my_dkgIDs, last_random_no, current_group_key, block_num, current_group_sig)
 
-    isMaster = load_master_private_keys(consensus, block_num)
+    isMaster = load_master_private_keys(consensus, last_random_no, block_num)
     if not in_dkg_group:
         consensus.store_ids(dkg_group)
     else:
@@ -622,7 +622,7 @@ def find_me_in_dkg_group(current_group, node_addresses):
         mainLog.debug("Group selection process. This node is NOT in the DKG group.")
     return in_dkg_group, my_dkg_ids
 
-def load_master_private_keys(consensus, block_num):
+def load_master_private_keys(consensus, last_random_no, block_num):
     try:    
         priv_keys = open('master-private-dkg-keys.txt', 'r')
     except IOError as e:
@@ -642,7 +642,7 @@ def load_master_private_keys(consensus, block_num):
         sec_keys[normalize_address(content[0])] = content[1].rstrip('\n')        
     priv_keys.close()
     consensus.bootstrap_master_add_secret_keys_manual(sec_keys)
-    consensus.create_shares(block_num)
+    consensus.create_shares(last_random_no, block_num)
     return True
         
 
