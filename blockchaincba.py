@@ -106,20 +106,18 @@ def run():
     #Modules initialization
     mainLog.info("Initializing Chain")
     chain = init_chain()
-
     last_block = chain.get_head_block().header.number
     mainLog.debug("Last block: %s", last_block)
-    mainLog.info("Initializing P2P")
-    p2p = init_p2p(chain.get_head_block().header.number)
     
-    
-
     mainLog.info("Initializing Keystore")
     keys, addresses = init_keystore()
     mainLog.info("Loaded %s keys", len(keys))
     mainLog.info("----------------LOADED ADDRESSES---------------------")
     mainLog.info([add.encode("HEX") for add in addresses])
     mainLog.info("----------------END ADDRESS LIST---------------------")
+    
+    mainLog.info("Initializing P2P")
+    p2p = init_p2p(chain.get_head_block().header.number)    
     
     mainLog.info("Initializing Parser")
     user = init_user()
@@ -173,13 +171,14 @@ def run():
     
         
     before = time.time()
-    current_random_no, block_num, count = perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENEWAL_INTERVAL ,current_random_no, block_num, count)
+    block_num, count = perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENEWAL_INTERVAL ,current_random_no, block_num, count)
     after = time.time()
     elapsed = after - before
     mainLog.info("Bootstrap finished. Elapsed time: %s", elapsed)
     timestamp = chain.get_head_block().header.timestamp
     current_group_sig = chain.get_head_block().header.group_sig
     current_group_key = chain.get_current_group_key()
+    current_random_no = chain.get_head_block().header.random_number.encode('hex')
     
     while(not end):
         
@@ -594,7 +593,7 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
         p2p.stop()
         sys.exit(0)
 
-    return last_random_no, last_block_num, count
+    return last_block_num, count
 
 def find_me_in_dkg_group(current_group, node_addresses):
     

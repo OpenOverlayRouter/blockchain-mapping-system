@@ -36,6 +36,7 @@ MY_IP = ipgetter.myip()
 BOOTSTRAP_NODE = config.get('P2P','bootstrap_node')
 
 PING_TIME = 300 # 5min
+#PING_TIME = 600 # 10min
 BLOCK_CHUNK = 10
 
 #log.startLogging(sys.stdout)
@@ -398,10 +399,13 @@ class myFactory(Factory):
     
     def ask_dht(self, result):
         # _print(b)
-        result = int(result)
-        if result > self.num_block:
-            for i in range(self.num_block+1, result+1):
-                self.sendMsgRandomPeer(messages.get_block_num(i))
+        if result is not None:        
+            result = int(result)
+            if result > self.num_block:
+                for i in range(self.num_block+1, result+1):
+                    self.sendMsgRandomPeer(messages.get_block_num(i))
+        else:
+            _print("No response from DHT last block number query...")
     
     def check_dht(self):
         b = self.dht.get("last_block").addCallback(self.ask_dht)
