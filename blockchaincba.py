@@ -18,7 +18,7 @@ from user import Parser
 from utils import normalize_address, compress_random_no_to_int
 from oor import Oor
 from share_cache import Share_Cache
-from own_exceptions import InvalidBlockSigner, UnsignedBlock, BlsInvalidGroupSignature
+from own_exceptions import InvalidBlockSigner, UnsignedBlock, BlsInvalidGroupSignature, UnexcpectedBlockRandomNumber
 
 
 mainLog = logging.getLogger('Main')
@@ -192,6 +192,8 @@ def run():
                 res = False
                 try: 
                     signer = consensus.get_next_signer(block.count) 
+                    if block.header.random_number.encode('hex') != current_random_no:
+                        raise UnexcpectedBlockRandomNumber
                     if in_dkg_group and exit_from_dkg:
                         # We ONLY enter here if the node belongs to the DGK group and just finished a new DKG
                         exit_from_dkg = False
@@ -215,7 +217,11 @@ def run():
                 except InvalidBlockSigner as e:
                     mainLog.exception(e)
                     mainLog.error("Block no. %s signautre is invalid! Ignoring.", block.number)
-                    res = False                        
+                    res = False       
+                except UnexcpectedBlockRandomNumber as e:
+                    mainLog.exception(e)       
+                    mainLog.error("Block no. %s random number does not match expected random number! Ignoring.", block.number)
+                    res = False
                 except Exception as e:
                     mainLog.error("Unrecoverable error when checking block signature. Exiting.", block.number)
                     mainLog.exception(e)
@@ -229,7 +235,8 @@ def run():
                     delays_blocks.write(str(block.number) + ',' + str(delay) + '\n' )
                     delays_txs.write("Added new block no." + str(block.number) + '\n')
                     timestamp = chain.get_head_block().header.timestamp
-                    block_num = chain.get_head_block().header.number                                        
+                    block_num = chain.get_head_block().header.number    
+                    current_random_no = block.header.random_number.encode('hex')                          
                     #after a correct block: reset BLS and create and broadcast new shares (like receiving a new block)
                     consensus.reset_bls()
                     if in_dkg_group:

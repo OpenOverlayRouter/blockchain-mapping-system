@@ -35,6 +35,9 @@ class InvalidBlockSigner(InvalidBlock):
 class DkgBlockRequiresGroupKey(Exception):
     pass
 
+class UnexcpectedBlockRandomNumber(Exception):
+    pass
+
 #For DKG and BLS
 #DKG errors
 class DkgAddContributionSharesError(Exception):
