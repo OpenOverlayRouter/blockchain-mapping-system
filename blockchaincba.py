@@ -181,7 +181,8 @@ def run():
     current_group_sig = chain.get_head_block().header.group_sig
     current_group_key = chain.get_current_group_key()
     last_random_no = chain.get_head_block().header.random_number.encode('hex')
-    #TOREMOVE init = True
+
+    from_bootstrap = True
     
     while(not end):
         
@@ -244,6 +245,10 @@ def run():
                     timestamp = chain.get_head_block().header.timestamp
                     block_num = chain.get_head_block().header.number
                     last_random_no = block.header.random_number.encode('hex')
+                    if from_bootstrap:
+                        from_bootstrap = False
+                        consensus.bootstrap_only_set_random_no_manual(last_random_no)
+                        consensus.bootstrap_only_set_group_sig_manual(block.header.group_sig)
                     #after a correct block: reset BLS and create and broadcast new shares (like receiving a new block)
                     consensus.calculate_next_signer(block_num)
                     consensus.reset_bls()
@@ -599,7 +604,7 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
                 #Manually force the random number because we cannot calculate it during bootstrap (BLS already done)
                 last_random_no = block.header.random_number.encode('hex')
                 last_block_num = block.number
-                mainLog.debug("[BOOTSTRAP]: New random number is :%s", last_random_no)
+                mainLog.debug("[BOOTSTRAP]: New random number is: %s", last_random_no)
                 consensus.bootstrap_only_set_random_no_manual(last_random_no)
                 consensus.bootstrap_only_set_group_sig_manual(block.header.group_sig)
                 consensus.calculate_next_signer(last_block_num)
