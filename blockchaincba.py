@@ -168,7 +168,7 @@ def run():
         if not isMaster:
             not_create_shares = True 
     if isMaster:
-        _ = consensus.create_shares(last_random_no, block_num, count)
+        consensus.create_shares(last_random_no, block_num, count)
     cache = Share_Cache()
     
         

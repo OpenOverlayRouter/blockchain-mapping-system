@@ -301,5 +301,6 @@ class Consensus():
     def bootstrap_master_add_secret_keys_manual(self, manual_keys):
         self.store_ids(self.dkg_group)        
         self.own_ids = self.dkg_group
+        self.verified = False
         for oid, key in manual_keys.iteritems():
             self.secretKeys[oid] = key
