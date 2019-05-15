@@ -168,7 +168,7 @@ def run():
         if not isMaster:
             not_create_shares = True 
     if isMaster:
-        consensus.create_shares(last_random_no, block_num)
+        consensus.create_shares(last_random_no, block_num, count)
     cache = Share_Cache()
     
         
@@ -191,6 +191,8 @@ def run():
             while block is not None or dkg_on:
                 # Only nodes that do NOT belong to the DKG get stuck here until they receive the block with the new group key
                 mainLog.info("Received new block no. %s", block.number)
+                mainLog.info("Block Data: Group Signature: %s --Random number: %s --Group Key: %s", block.header.group_sig, \
+                             block.header.random_number.encode('hex'),  block.header.group_pubkey)
                 res = False
                 try: 
                     signer = consensus.get_next_signer(block.count)
@@ -334,7 +336,7 @@ def run():
                             new_block.header.number, new_block.header.timestamp, new_block.header.coinbase.encode("HEX"))
                         mainLog.info("New block signature data: v %s -- r %s -- s %s", new_block.v, new_block.r, new_block.s)
                         mainLog.info("Block Group Signature: %s --Random number: %s --Group Key: %s", new_block.header.group_sig, \
-                             new_block.header.random_number,  new_block.header.group_pubkey)
+                             new_block.header.random_number.encode('hex'),  new_block.header.group_pubkey)
                         mainLog.info("This block contains %s transactions", new_block.transaction_count)
                         mainLog.info("Sleeping 2s to give way to clock drift...")
                         time.sleep(2)                                
