@@ -333,6 +333,8 @@ def run():
                         mainLog.info("Created new block no. %s, timestamp %s, coinbase %s", \
                             new_block.header.number, new_block.header.timestamp, new_block.header.coinbase.encode("HEX"))
                         mainLog.info("New block signature data: v %s -- r %s -- s %s", new_block.v, new_block.r, new_block.s)
+                        mainLog.info("Block Group Signature: %s --Random number: %s --Group Key: %s", new_block.header.group_sig, \
+                             new_block.header.random_number,  new_block.header.group_pubkey)
                         mainLog.info("This block contains %s transactions", new_block.transaction_count)
                         mainLog.info("Sleeping 2s to give way to clock drift...")
                         time.sleep(2)                                
