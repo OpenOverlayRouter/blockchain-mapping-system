@@ -524,17 +524,18 @@ def run():
                     dkg_share = p2p.get_dkg_share() 
                     while dkg_share is not None:
                         mainLog.info("Received new DKG share from P2P")
-                        if dkg_share.to.encode('hex') in my_dkgIDs and not cache.in_dkg_cache(dkg_share):
-                            consensus.verify_dkg_contribution(dkg_share)
-                            cache.store_dkg(dkg_share)
-                            if consensus.allSharesReceived():
-                                dkg_on = False
-                                exit_from_dkg = True
-                            elif (time.time() - timestamp) >= DKG_TIMEOUT:
-                                mainLog.critical("Fatal Error. DKG renewal timeout expired. Stopping...")
-                                raise e
-                        else:
+                        if not cache.in_dkg_cache(dkg_share):
+                            if dkg_share.to in my_dkgIDs:
+                                consensus.verify_dkg_contribution(dkg_share)
+                                if consensus.allSharesReceived():
+                                    dkg_on = False
+                                    exit_from_dkg = True
+                                elif (time.time() - timestamp) >= DKG_TIMEOUT:
+                                    mainLog.critical("Fatal Error. DKG renewal timeout expired. Stopping...")
+                                    raise e
+                            # Either if it's for me or others, send to the rest
                             p2p.send_dkg_share(dkg_share)
+                            cache.store_dkg(dkg_share)
                         dkg_share = p2p.get_dkg_share() 
             elif dkg_on:
                 mainLog.info("This node is not participating in the DKG. Will sleep for 3 min and wait for a block with the new public key")
