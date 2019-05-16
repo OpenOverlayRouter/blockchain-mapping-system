@@ -218,7 +218,7 @@ class Consensus():
         oid = dkg_contribution.source
         destination = dkg_contribution.to        #It is one of the node IDs, verified in the upper layer
         contrib = dkg_contribution.secret_share_contrib
-        vVec = dkg_contribution.vVec
+        vVec = dkg_contribution.verif_vector
            
         if dkg.verifyContributionShare(self.members[destination][destination]["id"], contrib, vVec):
             self.members[destination][oid]["receivedShare"] = contrib
@@ -296,7 +296,7 @@ class Consensus():
     def print_dkg_share_array(self, array):
         for share in array:
             print "shares.Dkg_Share('" + share.source.encode('hex') + "','" + share.to.encode('hex') + "','" + \
-                share.secret_share_contrib + "'," + str(share.vVec) + ")"
+                share.secret_share_contrib + "'," + str(share.verif_vector) + ")"
 
     def bootstrap_master_add_secret_keys_manual(self, manual_keys):
         self.store_ids(self.dkg_group)        
