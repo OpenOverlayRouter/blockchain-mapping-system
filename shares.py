@@ -38,7 +38,7 @@ class Dkg_Share(rlp.Serializable):
     ('source', address),
     ('to', address),
     ('secret_share_contrib', binary),
-    ('vVec', CountableList(binary))
+    ('verif_vector', CountableList(binary))
 
 #Reserved in case we have to sign the shares
 #        ('v', big_endian_int),
@@ -46,12 +46,12 @@ class Dkg_Share(rlp.Serializable):
 #        ('s', big_endian_int),
     ]
     
-    def __init__ (self, source, to, share, verif_vector):
+    def __init__ (self, source, to, secret_share_contrib, verif_vector):
         
         self.source = source
         self.to = to
-        self.secret_share_contrib = share
-        self.vVec = verif_vector
+        self.secret_share_contrib = secret_share_contrib
+        self.verif_vector = verif_vector
         
     @property
     def hash(self):
