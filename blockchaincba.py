@@ -257,7 +257,7 @@ def run():
                         new_shares = consensus.create_shares(last_random_no, block_num, count)
                         for share in new_shares:
                             p2p.broadcast_share(share)
-                            cache.store_bls(share)
+                            cache.store_bls(share.signature)
                             mainLog.info("Sent a new share to the network")
                 else:
                     mainLog.error("Received an erroneous block. Ignoring block...")
@@ -365,7 +365,7 @@ def run():
                             new_shares = consensus.create_shares(last_random_no, block_num, count)
                             for share in new_shares:
                                 p2p.broadcast_share(share)
-                                cache.store_bls(share)
+                                cache.store_bls(share.signature)
                                 mainLog.info("Sent a new share to the network")                        
 
         except Exception as e:
@@ -471,12 +471,12 @@ def run():
         try:
             share = p2p.get_share()
             while share is not None:
-                if not cache.in_bls_cache(share):
+                if not cache.in_bls_cache(share.signature):
                     msg = str(last_random_no) + str(block_num) + str(count)
                     res = consensus.store_share(share, msg, block_num)
 #TOREMOVE           if res:
 #TOREMOVE               current_random_no = consensus.get_current_random_no()
-                    cache.store_bls(share)
+                    cache.store_bls(share.signature)
                     p2p.broadcast_share(share)
                 share = p2p.get_share()
         except Exception as e:
@@ -497,7 +497,7 @@ def run():
                 if in_dkg_group:        
                     to_send = consensus.new_dkg(dkg_group, my_dkgIDs)
                     for dkg_share in to_send:
-                        cache.store_dkg(dkg_share.secret_key_share_contrib.encode("HEX"))
+                        cache.store_dkg(dkg_share.secret_share_contrib)
                         p2p.send_dkg_share(dkg_share)
                 else:
                     # Configure nodes that do not participate in the DKG so they can verfiy BLS shares later
@@ -523,9 +523,9 @@ def run():
                     dkg_share = p2p.get_dkg_share() 
                     while dkg_share is not None:
                         mainLog.info("Received new DKG share")
-                        if dkg_share.to.encode('hex') in my_dkgIDs and not cache.in_dkg_cache(dkg_share.secret_share_contrib.encode("HEX")):
+                        if dkg_share.to.encode('hex') in my_dkgIDs and not cache.in_dkg_cache(dkg_share.secret_share_contrib):
                             consensus.verify_dkg_contribution(dkg_share)
-                            cache.store_dkg(dkg_share.secret_share_contrib.encode("HEX"))
+                            cache.store_dkg(dkg_share.secret_share_contrib)
                             if consensus.allSharesReceived():
                                 dkg_on = False
                                 exit_from_dkg = True
