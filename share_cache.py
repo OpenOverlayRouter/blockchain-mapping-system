@@ -31,12 +31,12 @@ class Share_Cache():
     def in_bls_cache(self, share):
         return share.signature in self.bls_share_cache
     
-    def store_dkg(self, secret_share_contrib):
+    def store_dkg(self, share):
         if time.time() > (self.last_time_clear + self.clearing_interval):
             self.bls_share_cache = []
             self.dkg_share_cache = []
             self.last_time_clear = time.time()
-        self.dkg_share_cache.append(secret_share_contrib)
+        self.dkg_share_cache.append(share.secret_share_contrib)
         
     def store_bls(self, share):
         if time.time() > (self.last_time_clear + self.clearing_interval):
