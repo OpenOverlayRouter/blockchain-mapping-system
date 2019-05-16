@@ -527,7 +527,7 @@ def run():
                         if not cache.in_dkg_cache(dkg_share):
                             if dkg_share.to in my_dkgIDs:
                                 consensus.verify_dkg_contribution(dkg_share)
-                                if consensus.allSharesReceived():
+                                if consensus.all_node_dkgs_finished():
                                     dkg_on = False
                                     exit_from_dkg = True
                                 elif (time.time() - timestamp) >= DKG_TIMEOUT:
