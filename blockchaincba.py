@@ -203,7 +203,7 @@ def run():
                     else:
                         raise BlsInvalidGroupSignature()                 
                     if in_dkg_group and exit_from_dkg:
-                        # We ONLY enter here if the node belongs to the DGK group and just finished a new DKG
+                        # We ONLY enter here if the node belongs to the DKG group and just finished a new DKG
                         exit_from_dkg = False
                         if block.header.group_pubkey != consensus.get_current_group_key():
                             mainLog.error("FATAL ERROR. A node in the DKG group received a block with a Group Public Key not matching the generated from the DKG.")
@@ -491,6 +491,7 @@ def run():
         #Trigger new DKG               
         try:
             if ((block_num + 1) % DKG_RENEWAL_INTERVAL == 0) and not dkg_on:
+                mainLog.info("Next block needs new Group Key. Triggerin DKG renewal.")
                 dkg_on = True
                 dkg_group = chain.get_current_dkg_group()
                 in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
@@ -503,7 +504,7 @@ def run():
                     # Configure nodes that do not participate in the DKG so they can verfiy BLS shares later
                     consensus.store_ids(dkg_group)                    
                 #Define new signer that has to be in the dkg_group. Selected randomly from the people in the group (temporal override of the BLS RN generation)
-                random_no = chain.get_block_by_number(block_num).header.random_number
+                random_no = chain.get_block_by_number(block_num).header.random_number.encode('hex')
                 random_pos = compress_random_no_to_int(random_no, 16) % len(dkg_group)
                 # signing_addr will be used in block RX and block creation code in the beginning of the loop
                 signing_addr = dkg_group[random_pos]
@@ -522,7 +523,7 @@ def run():
                 #WE STAY HERE FOR THE WHOLE DKG
                     dkg_share = p2p.get_dkg_share() 
                     while dkg_share is not None:
-                        mainLog.info("Received new DKG share")
+                        mainLog.info("Received new DKG share from P2P")
                         if dkg_share.to.encode('hex') in my_dkgIDs and not cache.in_dkg_cache(dkg_share):
                             consensus.verify_dkg_contribution(dkg_share)
                             cache.store_dkg(dkg_share)
