@@ -84,11 +84,11 @@ def init_logger():
 
 def run():
     #Check old processes are not running
-    for p in psutil.process_iter(attrs=['name', 'cmdline']):
-        if p.info['name'] == 'python' and len(p.info['cmdline']) > 1:
-            if p.info['cmdline'][1] in ['blockchaincba.py', 'network.py']:
-                print "blockchaincba.py or network.py still running, exiting"    
-                sys.exit(0)               
+#    for p in psutil.process_iter(attrs=['name', 'cmdline']):
+#        if p.info['name'] == 'python' and len(p.info['cmdline']) > 1:
+#            if p.info['cmdline'][1] in ['blockchaincba.py', 'network.py']:
+#                print "blockchaincba.py or network.py still running, exiting"    
+#                sys.exit(0)               
     
     #Load config    
     config_data = ConfigParser.RawConfigParser()
