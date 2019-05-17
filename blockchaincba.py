@@ -525,24 +525,27 @@ def run():
         try:        
             #During DKG, the prototype only works on DKG
             if in_dkg_group:            
-                while dkg_on:
                 #WE STAY HERE FOR THE WHOLE DKG
-                    dkg_share = p2p.get_dkg_share() 
-                    while dkg_share is not None:
-                        mainLog.info("Received new DKG share from P2P")
-                        if not cache.in_dkg_cache(dkg_share):
-                            if dkg_share.to in my_dkgIDs:
-                                consensus.verify_dkg_contribution(dkg_share)
-                                if consensus.all_node_dkgs_finished():
-                                    dkg_on = False
-                                    exit_from_dkg = True
-                                elif (time.time() - timestamp) >= DKG_TIMEOUT:
-                                    mainLog.critical("Fatal Error. DKG renewal timeout expired. Stopping...")
-                                    raise Exception
-                            # Either if it's for me or others, send to the rest
+                dkg_share = p2p.get_dkg_share() 
+                while dkg_on and dkg_share is not None:
+                    mainLog.info("Received new DKG share from P2P")
+                    if not cache.in_dkg_cache(dkg_share):
+                        if dkg_share.to in my_dkgIDs:
+                        #Next fix if current fix does not work
+                        #if dkg_share.to in my_dkgIDs and consensus.allSharesReceived(dkg_sahre.to):
+                            consensus.verify_dkg_contribution(dkg_share)
+                            if consensus.all_node_dkgs_finished():
+                                dkg_on = False
+                                exit_from_dkg = True
+                                mainLog.info("DKG Finished sucessfully for all node IDs. Exiting loop and resuming normal operation.")
+                            elif (time.time() - timestamp) >= DKG_TIMEOUT:
+                                mainLog.critical("Fatal Error. DKG renewal timeout expired. Stopping...")
+                                raise Exception
+                        # Send shares that are NOT for me
+                        else: 
                             p2p.send_dkg_share(dkg_share)
-                            cache.store_dkg(dkg_share)
-                        dkg_share = p2p.get_dkg_share() 
+                        cache.store_dkg(dkg_share)
+                    dkg_share = p2p.get_dkg_share() 
             elif dkg_on:
                 mainLog.info("This node is not participating in the DKG. Will sleep for 3 min and wait for a block with the new public key")
                 time.sleep(180) 

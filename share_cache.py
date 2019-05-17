@@ -23,7 +23,8 @@ class Share_Cache():
         config_data = ConfigParser.RawConfigParser()
         config_data.read('chain_config.cfg')   
         self.last_time_clear = time.time()
-        self.clearing_interval = NUM_BLOCKS_CLEAR * BLOCK_TIME
+        self.clearing_interval = 100000
+        #self.clearing_interval = NUM_BLOCKS_CLEAR * BLOCK_TIME
         
     def in_dkg_cache(self, share):
         return share.secret_share_contrib in self.dkg_share_cache
