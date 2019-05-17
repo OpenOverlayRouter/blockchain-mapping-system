@@ -532,7 +532,7 @@ def run():
                                     exit_from_dkg = True
                                 elif (time.time() - timestamp) >= DKG_TIMEOUT:
                                     mainLog.critical("Fatal Error. DKG renewal timeout expired. Stopping...")
-                                    raise e
+                                    raise Exception
                             # Either if it's for me or others, send to the rest
                             p2p.send_dkg_share(dkg_share)
                             cache.store_dkg(dkg_share)
@@ -542,7 +542,7 @@ def run():
                 time.sleep(180) 
                 if (time.time() - timestamp) >= DKG_TIMEOUT:
                     mainLog.critical("Fatal Error. DKG renewal timeout expired. Stopping...")
-                    raise e
+                    raise Exception
         except Exception as e:
             mainLog.critical("Exception while processing received DKG shares")
             mainLog.exception(e)
