@@ -195,7 +195,7 @@ def run():
         #Process new blocks. DOES NOT support bootstrap
         try:
             block = p2p.get_block()
-            while block is not None or dkg_on:
+            while block is not None:
                 # Only nodes that do NOT belong to the DKG get stuck here until they receive the block with the new group key
                 mainLog.info("Received new block no. %s", block.number)
                 mainLog.info("Block Data: Group Signature: %s --Random number: %s --Group Key: %s", block.header.group_sig, \
@@ -329,10 +329,9 @@ def run():
                         #Normal operation
                         signer = consensus.get_next_signer(count) 
                         signing_addr = chain.get_addr_from_ip(signer)
-                    else:
-                        #When we exit a new DKG round, the variable signing_addr stores the next signer (we are temporarily overriding the BLS RN generation)
-                        exit_from_dkg = False
+                        #When we exit a new DKG round, the variable signing_addr stores the next signer (we are temporarily overriding the BLS RN generation)                    
                     if signing_addr in addresses:
+                        exit_from_dkg = False
                         mainLog.info("This node has to sign a block, selected IP: %s", signer)
                         mainLog.info("Associated address: %s", signing_addr.encode("HEX"))
                         new_block = chain.create_block(signing_addr, consensus.get_current_random_no(), \
