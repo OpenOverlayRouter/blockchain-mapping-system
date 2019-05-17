@@ -54,6 +54,7 @@ class Consensus():
         self.verified = True
         self.next_signer = None
         self.calculate_next_signer(block_no)
+        self.previous_group_key = None
         consensusLog.debug("Next signer: %s", self.next_signer)
         consensusLog.debug("Consensus init, group members: %s", [elem.encode('hex') for elem in self.dkg_group])
         consensusLog.debug("Consensus init, node ids: %s", [elem.encode('hex') for elem in self.own_ids])
@@ -127,8 +128,11 @@ class Consensus():
         else:
             return False
             
-    def verify_group_sig(self, expected_message, block_group_sig):
-        return bls.verify(hashlib.sha256(expected_message).hexdigest(), block_group_sig, self.group_key)
+    def verify_group_sig(self, expected_message, block_group_sig, usePrevGroupKey):
+        if usePrevGroupKey:
+            return bls.verify(hashlib.sha256(expected_message).hexdigest(), block_group_sig, self.previous_group_key)
+        else:
+            return bls.verify(hashlib.sha256(expected_message).hexdigest(), block_group_sig, self.group_key)
         
     def shares_ready(self):
         return self.verified
@@ -142,6 +146,7 @@ class Consensus():
     #Only when the node DOES NOT PARTICIPATE IN THE DKG-BLS, but wants 
     #to have all the ids available to verify the BLS signatures
     def store_ids(self, new_dkg_group):
+        self.previous_group_key = self.group_key
         self.dkg_group = new_dkg_group
         self.own_ids = []        
         self.members = {}       
@@ -167,6 +172,7 @@ class Consensus():
     #        new_node_ids: id that is calling the function
     #Needs to be called once for each different IDs of the node!!!!
     def new_dkg(self, new_dkg_group, new_node_ids):
+        self.previous_group_key = self.group_key
         self.members = {}
         self.dkg_group = new_dkg_group
         self.own_ids = new_node_ids

@@ -196,7 +196,7 @@ def run():
         try:
             block = p2p.get_block()
             while block is not None:
-                # Only nodes that do NOT belong to the DKG get stuck here until they receive the block with the new group key
+                #FALSE: Only nodes that do NOT belong to the DKG get stuck here until they receive the block with the new group key
                 mainLog.info("Received new block no. %s", block.number)
                 mainLog.info("Block Data: Group Signature: %s --Random number: %s --Group Key: %s", block.header.group_sig, \
                              block.header.random_number.encode('hex'),  block.header.group_pubkey)
@@ -204,7 +204,12 @@ def run():
                 try: 
                     signer = consensus.get_next_signer(block.count)
                     expected_message = str(last_random_no) + str(block_num) + str(count) 
-                    if consensus.verify_group_sig(expected_message, block.header.group_sig):
+#Use in case the OR in the next line does not work
+#                    if exit_from_dkg or dkg_on:
+#                        usePrevGroupKey = True
+#                    else: 
+#                        usePrevGroupKey = False
+                    if consensus.verify_group_sig(expected_message, block.header.group_sig, exit_from_dkg or dkg_on):
                         mainLog.debug("Verify Group Signature OK")
                     else:
                         raise BlsInvalidGroupSignature()                 
@@ -496,7 +501,7 @@ def run():
         #Trigger new DKG               
         try:
             if ((block_num + 1) % DKG_RENEWAL_INTERVAL == 0) and not dkg_on and not exit_from_dkg:
-                mainLog.info("Next block needs new Group Key. Triggerin DKG renewal.")
+                mainLog.info("Next block needs new Group Key. Triggering DKG renewal.")
                 dkg_on = True
                 dkg_group = chain.get_current_dkg_group()
                 in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
@@ -577,7 +582,7 @@ def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENE
                     consensus.set_current_group_key(block.header.group_pubkey)
                 #Verify group sig of the block to authenticate random number                
                 expected_message = str(last_random_no) + str(last_block_num) + str(count)
-                if consensus.verify_group_sig(expected_message, block.header.group_sig):
+                if consensus.verify_group_sig(expected_message, block.header.group_sig, (block.number % DKG_RENEWAL_INTERVAL == 0)):
                     mainLog.debug("[BOOTSTRAP]: previous random no: %s", last_random_no)    
                     mainLog.debug("[BOOTSTRAP]: hash of group signature: %s", hashlib.sha256(block.header.group_sig).hexdigest())
                     if block.header.random_number.encode('hex') == hashlib.sha256(block.header.group_sig).hexdigest():
