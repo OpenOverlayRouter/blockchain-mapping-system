@@ -39,6 +39,21 @@ def open_log_delay_create_txs():
         sys.exit(1)
     return out
 
+def check_old_processes_running():
+    blockchaincba = 0
+    network = 0
+    for p in psutil.process_iter(attrs=['name', 'cmdline']):
+        if p.info['name'] == 'python' and len(p.info['cmdline']) > 1:
+            if p.info['cmdline'][1] == 'blockchaincba.py':
+                blockchaincba = blockchaincba + 1
+            elif p.info['cmdline'][1] == 'network.py':
+               network = network + 1
+    if blockchaincba > 1:
+        print "blockchaincba.py still running, exiting"    
+        sys.exit(0)
+    if network > 1:               
+        print "network.py still running, exiting"    
+        sys.exit(0)
 
 def init_chain():
     db = LevelDB("./chain")
@@ -84,11 +99,7 @@ def init_logger():
 
 def run():
     #Check old processes are not running
-#    for p in psutil.process_iter(attrs=['name', 'cmdline']):
-#        if p.info['name'] == 'python' and len(p.info['cmdline']) > 1:
-#            if p.info['cmdline'][1] in ['blockchaincba.py', 'network.py']:
-#                print "blockchaincba.py or network.py still running, exiting"    
-#                sys.exit(0)               
+    check_old_processes_running()
     
     #Load config    
     config_data = ConfigParser.RawConfigParser()
