@@ -340,7 +340,7 @@ def run():
                     mainLog.info("Contextual information: Current time: %s --Last block timestamp: %s --Last random number: %s --Last block number: %s", \
                                  time.time(), timestamp, consensus.get_current_random_no(), block_num)
                     raise Exception("FATAL ERROR, Block tiemout expired. The feature to re-calculte the random number after a block timeout exprity is not implemented. Stopping...")
-                if consensus.shares_ready() or exit_from_dkg:
+                if (consensus.shares_ready() or exit_from_dkg) and not dkg_on:
                     if not exit_from_dkg:
                         #Normal operation
                         signer = consensus.get_next_signer(count) 
