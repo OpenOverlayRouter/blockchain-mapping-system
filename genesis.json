@@ -40,12 +40,12 @@
    }},
    {"0fe7e1fddbb9de21657da500d2f550b510b7210c":{
         "balance":{
-            "own_ips":["8000/2"]
+            "own_ips":["8000::/2"]
         }
-   }}
+   }},
       {"1a5b7e35fa8ddb937b48f335704088e5718ce308":{
         "balance":{
-            "own_ips":["C000/2"]
+            "own_ips":["C000::/2"]
         }
    }}
   
