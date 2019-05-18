@@ -284,7 +284,7 @@ class ChainService():
         return dkg_group
     
     def extract_first_ip_from_address(self, address):
-        ipset = self.get_delegated_ips(address)[address]
+        ipset = self.get_own_ips(address)
         for ip in ipset:
             return ip
         
