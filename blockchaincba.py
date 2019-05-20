@@ -512,7 +512,7 @@ def run():
        
         #Trigger new DKG               
         try:
-            if ((block_num + 1) % DKG_RENEWAL_INTERVAL == 0) and not dkg_on and not exit_from_dkg and not consensus.shares_ready():
+            if ((block_num + 1) % DKG_RENEWAL_INTERVAL == 0) and not dkg_on and not exit_from_dkg and consensus.shares_ready():
                 mainLog.info("Next block needs new Group Key. Triggering DKG renewal.")
                 dkg_on = True
                 dkg_group = chain.get_current_dkg_group()
