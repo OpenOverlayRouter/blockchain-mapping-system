@@ -381,6 +381,7 @@ def run():
                         consensus.calculate_next_signer(block_num)
                         last_random_no = consensus.get_current_random_no()
                         consensus.reset_bls()
+                        time.sleep(10)
                         if in_dkg_group:
                             count = 0
                             new_shares = consensus.create_shares(last_random_no, block_num, count)
