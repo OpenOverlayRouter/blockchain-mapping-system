@@ -304,9 +304,9 @@ class Consensus():
             print "shares.Dkg_Share('" + share.source.encode('hex') + "','" + share.to.encode('hex') + "','" + \
                 share.secret_share_contrib + "'," + str(share.verif_vector) + ")"
 
-    def bootstrap_master_add_secret_keys_manual(self, manual_keys):
+    def bootstrap_master_add_secret_keys_manual(self, manual_keys, my_dkg_ids):
         self.store_ids(self.dkg_group)        
-        self.own_ids = self.own_ids
+        self.own_ids = my_dkg_ids
         self.verified = False
         for oid, key in manual_keys.iteritems():
             self.secretKeys[oid] = key
