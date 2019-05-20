@@ -493,7 +493,9 @@ def run():
         try:
             share = p2p.get_share()
             while share is not None and not dkg_on:
+                mainLog.info("Received new BLS share from P2P.")
                 if not cache.in_bls_cache(share):
+                    mainLog.info("Share not in cache, processing")
                     msg = str(last_random_no) + str(block_num) + str(count)
                     res = consensus.store_share(share, msg, block_num)
 #TOREMOVE           if res:
