@@ -51,7 +51,7 @@ def check_old_processes_running():
     if blockchaincba > 1:
         print "blockchaincba.py still running, exiting"    
         sys.exit(0)
-    if network > 1:               
+    if network > 0:               
         print "network.py still running, exiting"    
         sys.exit(0)
 
@@ -492,7 +492,7 @@ def run():
         #Get shares from the network
         try:
             share = p2p.get_share()
-            while share is not None:
+            while share is not None and not dkg_on:
                 if not cache.in_bls_cache(share):
                     msg = str(last_random_no) + str(block_num) + str(count)
                     res = consensus.store_share(share, msg, block_num)
@@ -512,7 +512,7 @@ def run():
        
         #Trigger new DKG               
         try:
-            if ((block_num + 1) % DKG_RENEWAL_INTERVAL == 0) and not dkg_on and not exit_from_dkg:
+            if ((block_num + 1) % DKG_RENEWAL_INTERVAL == 0) and not dkg_on and not exit_from_dkg and not consensus.shares_ready():
                 mainLog.info("Next block needs new Group Key. Triggering DKG renewal.")
                 dkg_on = True
                 dkg_group = chain.get_current_dkg_group()

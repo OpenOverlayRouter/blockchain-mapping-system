@@ -156,6 +156,7 @@ class P2P():
         #A future improvement would send the shares directy to the destination node, without broadcasting
         try:
             self.sock.send(messages.set_dkg_share(dkg_share))
+            p2pLog.info("Sending DKG share to network.")
         except Exception as e:
             p2pLog.error("P2P set_dkg_share error")    
             p2pLog.exception(e)

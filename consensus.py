@@ -86,7 +86,7 @@ class Consensus():
     def create_shares(self, last_random_no, block_num, count=0):
         self.msg = str(last_random_no) + str(block_num) + str(count)
         digest = hashlib.sha256(self.msg).hexdigest()
-        consensusLog.info("Creating new shares with message %s, message hash: %s", self.msg, digest)
+        consensusLog.info("Creating new BLS shares with message %s, message hash: %s", self.msg, digest)
         new_shares =  []
         #Create one share for each of the node IDs        
         for oid in self.own_ids:
@@ -108,9 +108,9 @@ class Consensus():
         if dkg_id not in self.shares_ids and not self.verified:
             self.shares_ids.append(dkg_id)
             self.shares.append(share.signature)
-            consensusLog.info("Stored share from: %s", share.source.encode("hex"))
+            consensusLog.info("Stored BLS share from: %s", share.source.encode("hex"))
             if len(self.shares_ids) >= THRESHOLD:
-                consensusLog.debug("THRESHOLD shares received. Attempting to verify group signature with message %s", expected_message)
+                consensusLog.debug("THRESHOLD BLS shares received. Attempting to verify group signature with message %s", expected_message)
                 self.group_sig = bls.recover(self.shares_ids, self.shares)
                 if self.group_sig == "":
                     raise BlsRecoverError()
@@ -229,9 +229,9 @@ class Consensus():
         if dkg.verifyContributionShare(self.members[destination][destination]["id"], contrib, vVec):
             self.members[destination][oid]["receivedShare"] = contrib
             self.members[destination][oid]["vvec"] = vVec
-            consensusLog.info("Received valid share from member %s" % oid.encode('hex'))
+            consensusLog.info("Received valid DKG share from member %s" % oid.encode('hex'))
         else:
-            consensusLog.warning("Received invalid share from member %s, ignoring..." % oid.encode('hex'))
+            consensusLog.warning("Received invalid DKG share from member %s, ignoring..." % oid.encode('hex'))
     
         if self.allSharesReceived(destination):
             #global sk, groupPk
