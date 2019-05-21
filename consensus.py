@@ -244,7 +244,7 @@ class Consensus():
             if self.group_key == "":
                 raise DkgAddVerificationVectorsError()
             consensusLog.info("DKG setup completed for node ID %s", destination.encode('hex'))
-            consensusLog.info("Resulting group public key is " + self.group_key + "\n")
+            consensusLog.info("Resulting group public key is " + self.group_key)
             
         
     def allSharesReceived(self, current_id):

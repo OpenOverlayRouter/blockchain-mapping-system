@@ -106,6 +106,7 @@ def run():
     config_data.read('chain_config.cfg')   
     EXT_TX_PER_LOOP = config_data.getint('Transaction generation and processing','ext_tx_per_loop')
     USER_TX_PER_LOOP = config_data.getint('Transaction generation and processing','user_tx_per_loop')
+    LOOPS_PER_TX = config_data.getint('Transaction generation and processing','loops_per_tx')
     START_TIME = config_data.getint('Transaction generation and processing','start_time')
     DKG_RENEWAL_INTERVAL = config_data.getint('Consensus','dkg_renewal_interval')
     BLOCK_TIME = config_data.getint('General','block_time')
@@ -398,7 +399,7 @@ def run():
 
         # Process transactions from the user
         if ((time.time() - start_time) > START_TIME or isMaster) and not dkg_on:
-            if user_tx_count == 3:            
+            if user_tx_count == LOOPS_PER_TX - 1:
                 try:
                     tx_int = user.get_tx()
                     while tx_int is not None:
@@ -524,6 +525,11 @@ def run():
                     for dkg_share in to_send:
                         cache.store_dkg(dkg_share)
                         p2p.send_dkg_share(dkg_share)
+                    #For cases when one node does ALL the DKG
+                    if consensus.all_node_dkgs_finished():
+                        dkg_on = False
+                        exit_from_dkg = True
+                        mainLog.info("DKG Finished sucessfully for all node IDs. Exiting loop and resuming normal operation.")
                 else:
                     # Configure nodes that do not participate in the DKG so they can verfiy BLS shares later
                     consensus.store_ids(dkg_group)                    
@@ -565,8 +571,8 @@ def run():
                         cache.store_dkg(dkg_share)
                     dkg_share = p2p.get_dkg_share() 
             elif dkg_on:
-                mainLog.info("This node is not participating in the DKG. Will sleep for 3 min and wait for a block with the new public key")
-                time.sleep(180) 
+                mainLog.info("This node is not participating in the DKG. Will sleep for one block time and wait for a block with the new public key")
+                time.sleep(BLOCK_TIME) 
                 if (time.time() - timestamp) >= DKG_TIMEOUT:
                     mainLog.critical("Fatal Error. DKG renewal timeout expired. Stopping...")
                     raise Exception
