@@ -225,26 +225,30 @@ class Consensus():
         destination = dkg_contribution.to        #It is one of the node IDs, verified in the upper layer
         contrib = dkg_contribution.secret_share_contrib
         vVec = dkg_contribution.verif_vector
-           
-        if dkg.verifyContributionShare(self.members[destination][destination]["id"], contrib, vVec):
-            self.members[destination][oid]["receivedShare"] = contrib
-            self.members[destination][oid]["vvec"] = vVec
-            consensusLog.info("Received valid DKG share from member %s" % oid.encode('hex'))
+        
+        #Check to avoid processing the same share more than once
+        if self.members[destination][oid]["receivedShare"] is None:
+            if dkg.verifyContributionShare(self.members[destination][destination]["id"], contrib, vVec):
+                self.members[destination][oid]["receivedShare"] = contrib
+                self.members[destination][oid]["vvec"] = vVec
+                consensusLog.info("Received valid DKG share from member %s" % oid.encode('hex'))
+            else:
+                consensusLog.warning("Received invalid DKG share from member %s, ignoring..." % oid.encode('hex'))
+        
+            if self.allSharesReceived(destination):
+                #global sk, groupPk
+                self.secretKeys[destination] = dkg.addContributionShares( [ member["receivedShare"] for _,member in self.members[destination].iteritems() ])
+                if self.secretKeys[destination] == "":
+                    raise DkgAddContributionSharesError()
+                groupsvVec = dkg.addVerificationVectors( [ member["vvec"] for _,member in self.members[destination].iteritems() ])
+                #It does not matter if we rewrite it because it is the same for all members in a particular round
+                self.group_key = groupsvVec[0]
+                if self.group_key == "":
+                    raise DkgAddVerificationVectorsError()
+                consensusLog.info("DKG setup completed for node ID %s", destination.encode('hex'))
+                consensusLog.info("Resulting group public key is " + self.group_key)
         else:
-            consensusLog.warning("Received invalid DKG share from member %s, ignoring..." % oid.encode('hex'))
-    
-        if self.allSharesReceived(destination):
-            #global sk, groupPk
-            self.secretKeys[destination] = dkg.addContributionShares( [ member["receivedShare"] for _,member in self.members[destination].iteritems() ])
-            if self.secretKeys[destination] == "":
-                raise DkgAddContributionSharesError()
-            groupsvVec = dkg.addVerificationVectors( [ member["vvec"] for _,member in self.members[destination].iteritems() ])
-            #It does not matter if we rewrite it because it is the same for all members in a particular round
-            self.group_key = groupsvVec[0]
-            if self.group_key == "":
-                raise DkgAddVerificationVectorsError()
-            consensusLog.info("DKG setup completed for node ID %s", destination.encode('hex'))
-            consensusLog.info("Resulting group public key is " + self.group_key)
+            consensusLog.warning("Recevied a previously processed share, ignoring...")
             
         
     def allSharesReceived(self, current_id):

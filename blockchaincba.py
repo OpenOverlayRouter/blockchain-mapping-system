@@ -562,6 +562,9 @@ def run():
                                 dkg_on = False
                                 exit_from_dkg = True
                                 mainLog.info("DKG Finished sucessfully for all node IDs. Exiting loop and resuming normal operation.")
+                                if not isMaster:
+                                    mainLog.info("Sleeping for 1h15min to give time to master for its keys")                                
+                                    time.sleep(51*88)
                             elif (time.time() - timestamp) >= DKG_TIMEOUT:
                                 mainLog.critical("Fatal Error. DKG renewal timeout expired. Stopping...")
                                 raise Exception
