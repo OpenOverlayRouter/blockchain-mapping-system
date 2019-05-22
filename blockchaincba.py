@@ -230,7 +230,7 @@ def run():
                         exit_from_dkg = False
                         if block.header.group_pubkey != consensus.get_current_group_key():
                             mainLog.error("FATAL ERROR. A node in the DKG group received a block with a Group Public Key not matching the generated from the DKG.")
-                            raise e
+                            raise Exception("Unexpected group key in block header. Stopping")
                         signer = chain.extract_first_ip_from_address(signing_addr)
                     elif dkg_on:
                         # We ONLY enter here if the nodes DOES NOT belong to the DKG group and is waiting for a current DKG to finish
