@@ -66,7 +66,8 @@ def init_p2p(last_block_num):
     p2p = P2P(last_block_num)
     while (p2p.bootstrap()):
         time.sleep(1)
-    mainLog.info("P2P Bootstrap finished")
+    mainLog.info("P2P Bootstrap finished. Wait 10 sec. for inter-process communication")
+    time.sleep(10)
     return p2p
 
 
@@ -366,8 +367,8 @@ def run():
                         mainLog.info("Block Group Signature: %s --Random number: %s --Group Key: %s", new_block.header.group_sig, \
                              new_block.header.random_number.encode('hex'),  new_block.header.group_pubkey)
                         mainLog.info("This block contains %s transactions", new_block.transaction_count)
-                        mainLog.info("Sleeping 2s to give way to clock drift...")
-                        time.sleep(2)                                
+#                        mainLog.info("Sleeping 2s to give way to clock drift...")
+#                        time.sleep(2)                                
                         #Like receiving a new block
                         before = time.time()
                         chain.add_block(new_block)
@@ -383,7 +384,7 @@ def run():
                         consensus.calculate_next_signer(block_num)
                         last_random_no = consensus.get_current_random_no()
                         consensus.reset_bls()
-                        time.sleep(5)
+                        time.sleep(10)
                         if in_dkg_group and create_shares:
                             count = 0
                             new_shares = consensus.create_shares(last_random_no, block_num, count)
