@@ -404,6 +404,7 @@ class myFactory(Factory):
             if result > self.num_block:
                 for i in range(self.num_block+1, result+1):
                     self.sendMsgRandomPeer(messages.get_block_num(i))
+            _print("DHT response received, last block number: {}".format(result))
         else:
             _print("No response from DHT last block number query...")
     

@@ -184,9 +184,10 @@ def run():
     else:
         mainLog.warning("TODO: nodes that belong to the DKG group and connect after the DKG do not have private keys, so they shouldn't create shares. Needs to be disabled!")
         if not isMaster:
-            not_create_shares = True 
+            create_shares = False
     if isMaster:
         consensus.create_shares(last_random_no, block_num, count)
+        create_shares = True
     cache = Share_Cache()
     
         
@@ -275,7 +276,7 @@ def run():
                     #after a correct block: reset BLS and create and broadcast new shares (like receiving a new block)
                     consensus.calculate_next_signer(block_num)
                     consensus.reset_bls()
-                    if in_dkg_group:
+                    if in_dkg_group and create_shares:
                         count = 0
                         new_shares = consensus.create_shares(last_random_no, block_num, count)
                         for share in new_shares:
@@ -382,8 +383,8 @@ def run():
                         consensus.calculate_next_signer(block_num)
                         last_random_no = consensus.get_current_random_no()
                         consensus.reset_bls()
-                        time.sleep(10)
-                        if in_dkg_group:
+                        time.sleep(5)
+                        if in_dkg_group and create_shares:
                             count = 0
                             new_shares = consensus.create_shares(last_random_no, block_num, count)
                             for share in new_shares:
@@ -511,6 +512,13 @@ def run():
             p2p.stop()
             sys.exit(0)
  
+        if (time.time() - timestamp) > (BLOCK_TIME / 2) and not consensus.shares_ready():
+            mainLog.warning("This node has not computed yet Group Signature...")
+            if (time.time() - timestamp) > (BLOCK_TIME*0.99) and not isMaster:
+                mainLog.warning("It is nearly block time and we don't have Group Signature. Activating boostrap mode.")
+                from_bootstrap = True
+                
+                
         #DKG management
        
         #Trigger new DKG               
@@ -518,6 +526,7 @@ def run():
             if ((block_num + 1) % DKG_RENEWAL_INTERVAL == 0) and not dkg_on and not exit_from_dkg and consensus.shares_ready():
                 mainLog.info("Next block needs new Group Key. Triggering DKG renewal.")
                 dkg_on = True
+                create_shares = True
                 dkg_group = chain.get_current_dkg_group()
                 in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
                 if in_dkg_group:        
@@ -563,8 +572,8 @@ def run():
                                 exit_from_dkg = True
                                 mainLog.info("DKG Finished sucessfully for all node IDs. Exiting loop and resuming normal operation.")
                                 if not isMaster:
-                                    mainLog.info("Sleeping for 1h15min to give time to master for its keys")                                
-                                    time.sleep(51*88)
+                                    mainLog.info("Sleeping for 1hmin to give time to master for its keys")
+                                    time.sleep(40*88)
                             elif (time.time() - timestamp) >= DKG_TIMEOUT:
                                 mainLog.critical("Fatal Error. DKG renewal timeout expired. Stopping...")
                                 raise Exception

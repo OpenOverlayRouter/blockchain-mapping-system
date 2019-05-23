@@ -298,6 +298,7 @@ class Consensus():
              self.next_signer = self.formalize_IP(self.consensus_for_IPv4(random_no_in_bits))
         else:
              self.next_signer = self.formalize_IP(self.consensus_for_IPv6(random_no_in_bits))
+        consensusLog.debug("Calculated next signer: %s", self.next_signer)
     
     def print_share_array(self, array):
         for share in array:
