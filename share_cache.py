@@ -19,6 +19,7 @@ class Share_Cache():
     def __init__(self):
         self.dkg_share_cache = []
         self.bls_share_cache = []
+        self.bls_future_shares = {}
         
         config_data = ConfigParser.RawConfigParser()
         config_data.read('chain_config.cfg')   
@@ -45,3 +46,22 @@ class Share_Cache():
             self.dkg_share_cache = []
             self.last_time_clear = time.time()
         self.bls_share_cache.append(share.signature)
+        
+    def store_future_bls(self, share):
+        try:
+            self.bls_future_shares[share.block_number].append(share)
+        except KeyError:
+            self.bls_future_shares[share.block_number] = []
+            self.bls_future_shares[share.block_number].append(share)
+            
+    def pending_future_bls(self, block_num):
+        try:
+            if len(self.bls_future_shares[block_num]) > 0:
+                return True
+            else:
+                return False
+        except KeyError:
+            return False
+    
+    def get_future_bls(self, block_num):
+        return self.bls_future_shares[block_num].pop()

@@ -503,13 +503,18 @@ def run():
                         msg = str(last_random_no) + str(block_num) + str(count)
                         res = consensus.store_share(share, msg, block_num)
                     elif share.block_number > block_num:
-                        mainLog.debug("Receive a share for a future block number. Discarding...")
+                        mainLog.debug("Receive a share for a future block number. Saving for later...")
                         mainLog.debug("Current block no. %s, block no. in share: %s", block_num, share.block_number)
+                        cache.store_future_bls(share)
                     else:
                         mainLog.debug("Receive a share for a past block number. VERY STRANGE!!!  Discarding...")
                     cache.store_bls(share)
                     p2p.broadcast_share(share)
                 share = p2p.get_share()
+            while cache.pending_future_bls(block_num):
+                share = cache.get_future_bls(block_num)
+                msg = str(last_random_no) + str(block_num) + str(count)
+                res = consensus.store_share(share, msg, block_num)
         except Exception as e:
             mainLog.critical("Exception while processing received shares")
             mainLog.exception(e)
