@@ -499,10 +499,14 @@ def run():
                 mainLog.info("Received new BLS share from P2P.")
                 if not cache.in_bls_cache(share):
                     mainLog.info("Share not in cache, processing")
-                    msg = str(last_random_no) + str(block_num) + str(count)
-                    res = consensus.store_share(share, msg, block_num)
-#TOREMOVE           if res:
-#TOREMOVE               current_random_no = consensus.get_current_random_no()
+                    if share.block_number == block_num:
+                        msg = str(last_random_no) + str(block_num) + str(count)
+                        res = consensus.store_share(share, msg, block_num)
+                    elif share.block_number > block_num:
+                        mainLog.debug("Receive a share for a future block number. Discarding...")
+                        mainLog.debug("Current block no. %s, block no. in share: %s", block_num, share.block_number)
+                    else:
+                        mainLog.debug("Receive a share for a past block number. VERY STRANGE!!!  Discarding...")
                     cache.store_bls(share)
                     p2p.broadcast_share(share)
                 share = p2p.get_share()
@@ -513,7 +517,7 @@ def run():
             p2p.stop()
             sys.exit(0)
  
-        if (time.time() - timestamp) > (BLOCK_TIME / 2) and not consensus.shares_ready():
+        if (time.time() - timestamp) > (BLOCK_TIME*0.75) and not consensus.shares_ready():
             mainLog.warning("This node has not computed yet Group Signature...")
             if (time.time() - timestamp) > (BLOCK_TIME*0.99) and not isMaster:
                 mainLog.warning("It is nearly block time and we don't have Group Signature. Activating boostrap mode.")

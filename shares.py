@@ -5,7 +5,7 @@ Created on Mon Dec  3 16:01:43 2018
 @author: jordi
 """
 import rlp
-from rlp.sedes import binary, CountableList
+from rlp.sedes import binary, CountableList, big_endian_int
 from utils import address, sha3
 
 
@@ -13,7 +13,8 @@ class Share(rlp.Serializable):
 
     fields = [
     ('source', address),        
-    ('signature', binary)
+    ('signature', binary), 
+    ('block_number', big_endian_int)
 
 #Reserved in case we have to sign the shares
 #        ('v', big_endian_int),
@@ -22,10 +23,11 @@ class Share(rlp.Serializable):
     ]
     
 
-    def __init__ (self, source, signature):
+    def __init__ (self, source, signature, block_number):
         
         self.source = source
         self.signature = signature
+        self.block_number = block_number
 
             
     @property

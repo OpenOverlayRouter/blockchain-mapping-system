@@ -93,7 +93,7 @@ class Consensus():
             sig = bls.sign(digest, self.secretKeys[oid])
             if sig == "":
                 raise BlsSignError()
-            new_shares.append(Share(oid, sig))
+            new_shares.append(Share(oid, sig, block_num))
             consensusLog.info("Share content: %s", sig)
         consensusLog.info("Created %s new shares.", len(new_shares))
         #Directly store these shares internally
