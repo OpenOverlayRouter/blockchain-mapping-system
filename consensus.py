@@ -90,7 +90,10 @@ class Consensus():
         new_shares =  []
         #Create one share for each of the node IDs        
         for oid in self.own_ids:
-            sig = bls.sign(digest, self.secretKeys[oid])
+            try:
+                sig = bls.sign(digest, self.secretKeys[oid])
+            except KeyError:
+                consensusLog.error("This node does not have the DKG secret key associated with the blockchain address %s. Will not create share.",oid.encode('hex'))
             if sig == "":
                 raise BlsSignError()
             new_shares.append(Share(oid, sig, block_num))
