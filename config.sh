@@ -41,6 +41,7 @@ sudo pip install twisted
 sudo pip install pytricia
 sudo pip install bitstring
 sudo pip install py-radix
+sudo pip install psutil
 sudo pip install -I kademlia==0.6 rpcudp==2.0
 cd libs/ipgetter-master/
 sudo python setup.py install
