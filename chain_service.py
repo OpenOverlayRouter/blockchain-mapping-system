@@ -272,7 +272,7 @@ class ChainService():
         #List all addresses at the moment in the chain
         all_addresses = self.chain.get_all_current_addresses()
         databaseLog.debug("Recovered the list of current addresses, lenght: %s", len(all_addresses))
-        databaseLog.debug("Addresses in the list: %s", [addr.encode('hex') for addr in all_addresses] )
+        #databaseLog.debug("Addresses in the list: %s", [addr.encode('hex') for addr in all_addresses] )
         
         #Randomly select participants from all the addresses
         dkg_group = []

@@ -40,7 +40,7 @@ consensusLog = logging.getLogger('Consensus')
 
 class Consensus():
     
-    def __init__(self, dkg_group, node_ids, randno, group_key, block_no, group_signature):
+    def __init__(self, dkg_group, node_ids, randno, group_key, block_no, group_signature, prev_gp_key):
 #TODO: initizlize members correctly                
         self.dkg_group = dkg_group
         self.own_ids = node_ids
@@ -54,7 +54,7 @@ class Consensus():
         self.verified = True
         self.next_signer = None
         self.calculate_next_signer(block_no)
-        self.previous_group_key = None
+        self.previous_group_key = prev_gp_key
         consensusLog.debug("Next signer: %s", self.next_signer)
         consensusLog.debug("Consensus init, group members: %s", [elem.encode('hex') for elem in self.dkg_group])
         consensusLog.debug("Consensus init, node ids: %s", [elem.encode('hex') for elem in self.own_ids])

@@ -177,7 +177,7 @@ def run():
     in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
     
     mainLog.info("Initializing Consensus")
-    consensus = cons.Consensus(dkg_group, my_dkgIDs, last_random_no, current_group_key, block_num, current_group_sig)
+    consensus = cons.Consensus(dkg_group, my_dkgIDs, last_random_no, current_group_key, block_num, current_group_sig, current_group_key)
 
     isMaster = load_master_private_keys(consensus, my_dkgIDs)
     if not in_dkg_group:
@@ -529,82 +529,82 @@ def run():
                 from_bootstrap = True
                 
                 
-        #DKG management
-       
-        #Trigger new DKG               
-        try:
-            if ((block_num + 1) % DKG_RENEWAL_INTERVAL == 0) and not dkg_on and not exit_from_dkg and consensus.shares_ready():
-                mainLog.info("Next block needs new Group Key. Triggering DKG renewal.")
-                dkg_on = True
-                create_shares = True
-                dkg_group = chain.get_current_dkg_group()
-                in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
-                if in_dkg_group:        
-                    to_send = consensus.new_dkg(dkg_group, my_dkgIDs)
-                    for dkg_share in to_send:
-                        cache.store_dkg(dkg_share)
-                        p2p.send_dkg_share(dkg_share)
-                    #For cases when one node does ALL the DKG
-                    if consensus.all_node_dkgs_finished():
-                        dkg_on = False
-                        exit_from_dkg = True
-                        mainLog.info("DKG Finished sucessfully for all node IDs. Exiting loop and resuming normal operation.")
-                else:
-                    # Configure nodes that do not participate in the DKG so they can verfiy BLS shares later
-                    consensus.store_ids(dkg_group)                    
-                #Define new signer that has to be in the dkg_group. Selected randomly from the people in the group (temporal override of the BLS RN generation)
-                random_no = chain.get_block_by_number(block_num).header.random_number.encode('hex')
-                random_pos = compress_random_no_to_int(random_no, 16) % len(dkg_group)
-                # signing_addr will be used in block RX and block creation code in the beginning of the loop
-                signing_addr = dkg_group[random_pos]
-        except Exception as e:
-            mainLog.critical("Exception while creating DKG shares")
-            mainLog.exception(e)
-            # Stop P2P
-            p2p.stop()
-            sys.exit(0)
-        
-        #Collect DKG shares for the new DKG                
-        try:        
-            #During DKG, the prototype only works on DKG
-            if in_dkg_group:            
-                #WE STAY HERE FOR THE WHOLE DKG
-                dkg_share = p2p.get_dkg_share() 
-                while dkg_on and dkg_share is not None:
-                    mainLog.info("Received new DKG share from P2P")
-                    if not cache.in_dkg_cache(dkg_share):
-                        if dkg_share.to in my_dkgIDs:
-                        #Next fix if current fix does not work
-                        #if dkg_share.to in my_dkgIDs and consensus.allSharesReceived(dkg_sahre.to):
-                            consensus.verify_dkg_contribution(dkg_share)
-                            if consensus.all_node_dkgs_finished():
-                                dkg_on = False
-                                exit_from_dkg = True
-                                mainLog.info("DKG Finished sucessfully for all node IDs. Exiting loop and resuming normal operation.")
-#                                if not isMaster:
-#                                    mainLog.info("Sleeping for 1hmin to give time to master for its keys")
-#                                    time.sleep(30*88)
-                                time.sleep(120)
-                            elif (time.time() - timestamp) >= DKG_TIMEOUT:
-                                mainLog.critical("Fatal Error. DKG renewal timeout expired. Stopping...")
-                                raise Exception
-                        # Send shares that are NOT for me
-                        else: 
-                            p2p.send_dkg_share(dkg_share)
-                        cache.store_dkg(dkg_share)
-                    dkg_share = p2p.get_dkg_share() 
-            elif dkg_on:
-                mainLog.info("This node is not participating in the DKG. Will sleep for one block time and wait for a block with the new public key")
-                time.sleep(BLOCK_TIME) 
-                if (time.time() - timestamp) >= DKG_TIMEOUT:
-                    mainLog.critical("Fatal Error. DKG renewal timeout expired. Stopping...")
-                    raise Exception
-        except Exception as e:
-            mainLog.critical("Exception while processing received DKG shares")
-            mainLog.exception(e)
-            # Stop P2P
-            p2p.stop()
-            sys.exit(0)
+#        #DKG management
+#       
+#        #Trigger new DKG               
+#        try:
+#            if ((block_num + 1) % DKG_RENEWAL_INTERVAL == 0) and not dkg_on and not exit_from_dkg and consensus.shares_ready():
+#                mainLog.info("Next block needs new Group Key. Triggering DKG renewal.")
+#                dkg_on = True
+#                create_shares = True
+#                dkg_group = chain.get_current_dkg_group()
+#                in_dkg_group, my_dkgIDs = find_me_in_dkg_group(dkg_group, addresses)     
+#                if in_dkg_group:        
+#                    to_send = consensus.new_dkg(dkg_group, my_dkgIDs)
+#                    for dkg_share in to_send:
+#                        cache.store_dkg(dkg_share)
+#                        p2p.send_dkg_share(dkg_share)
+#                    #For cases when one node does ALL the DKG
+#                    if consensus.all_node_dkgs_finished():
+#                        dkg_on = False
+#                        exit_from_dkg = True
+#                        mainLog.info("DKG Finished sucessfully for all node IDs. Exiting loop and resuming normal operation.")
+#                else:
+#                    # Configure nodes that do not participate in the DKG so they can verfiy BLS shares later
+#                    consensus.store_ids(dkg_group)                    
+#                #Define new signer that has to be in the dkg_group. Selected randomly from the people in the group (temporal override of the BLS RN generation)
+#                random_no = chain.get_block_by_number(block_num).header.random_number.encode('hex')
+#                random_pos = compress_random_no_to_int(random_no, 16) % len(dkg_group)
+#                # signing_addr will be used in block RX and block creation code in the beginning of the loop
+#                signing_addr = dkg_group[random_pos]
+#        except Exception as e:
+#            mainLog.critical("Exception while creating DKG shares")
+#            mainLog.exception(e)
+#            # Stop P2P
+#            p2p.stop()
+#            sys.exit(0)
+#        
+#        #Collect DKG shares for the new DKG                
+#        try:        
+#            #During DKG, the prototype only works on DKG
+#            if in_dkg_group:            
+#                #WE STAY HERE FOR THE WHOLE DKG
+#                dkg_share = p2p.get_dkg_share() 
+#                while dkg_on and dkg_share is not None:
+#                    mainLog.info("Received new DKG share from P2P")
+#                    if not cache.in_dkg_cache(dkg_share):
+#                        if dkg_share.to in my_dkgIDs:
+#                        #Next fix if current fix does not work
+#                        #if dkg_share.to in my_dkgIDs and consensus.allSharesReceived(dkg_sahre.to):
+#                            consensus.verify_dkg_contribution(dkg_share)
+#                            if consensus.all_node_dkgs_finished():
+#                                dkg_on = False
+#                                exit_from_dkg = True
+#                                mainLog.info("DKG Finished sucessfully for all node IDs. Exiting loop and resuming normal operation.")
+##                                if not isMaster:
+##                                    mainLog.info("Sleeping for 1hmin to give time to master for its keys")
+##                                    time.sleep(30*88)
+#                                time.sleep(120)
+#                            elif (time.time() - timestamp) >= DKG_TIMEOUT:
+#                                mainLog.critical("Fatal Error. DKG renewal timeout expired. Stopping...")
+#                                raise Exception
+#                        # Send shares that are NOT for me
+#                        else: 
+#                            p2p.send_dkg_share(dkg_share)
+#                        cache.store_dkg(dkg_share)
+#                    dkg_share = p2p.get_dkg_share() 
+#            elif dkg_on:
+#                mainLog.info("This node is not participating in the DKG. Will sleep for one block time and wait for a block with the new public key")
+#                time.sleep(BLOCK_TIME) 
+#                if (time.time() - timestamp) >= DKG_TIMEOUT:
+#                    mainLog.critical("Fatal Error. DKG renewal timeout expired. Stopping...")
+#                    raise Exception
+#        except Exception as e:
+#            mainLog.critical("Exception while processing received DKG shares")
+#            mainLog.exception(e)
+#            # Stop P2P
+#            p2p.stop()
+#            sys.exit(0)
                 
 def perform_bootstrap(chain, p2p, consensus, delays_blocks, delays_txs, DKG_RENEWAL_INTERVAL, last_random_no, last_block_num, count):
     #Code here is exaclty equal to the 'Process new blocks' part in the main, but without generating shares after adding the block.
