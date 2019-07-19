@@ -1,6 +1,6 @@
 ﻿# IPchain: a blockchain-based mapping system
 
-IPcoins is a blockchain prototype to store IP addresses and prefixes. Similarly to how Bitcoin secures coins, IPcoins allows you to associate IP prefixes to a public key and record your ownership in the blockchain. You can also associate RLOCs and Map Servers to these prefixes to create a secure Mapping System. IPcoins also provides an interface to OOR so it can answer Map Requests. More information in [this IETF draft](https://tools.ietf.org/pdf/draft-paillisse-sidrops-blockchain-01.pdf). 
+IPchain is a blockchain prototype to store IP addresses and prefixes. Similarly to how Bitcoin secures coins, IPchain allows you to associate IP prefixes to a public key and record your ownership in the blockchain. You can also associate RLOCs and Map Servers to these prefixes to create a secure Mapping System. IPchain also provides an interface to OOR so it can answer Map Requests. More information in [this IETF draft](https://tools.ietf.org/pdf/draft-paillisse-sidrops-blockchain-01.pdf). 
 
 Please note that this prototype is experimental.
 
@@ -22,6 +22,7 @@ print k.address.encode("HEX")
 Before running, make sure:
 - The file Tests/transactions.txt exists
 - The folder keystore exists
+- The configuration in chain_config.cfg fits your scenario
 
 To run:
 ```bash
@@ -73,8 +74,4 @@ sudo apt install libgmp-dev libssl-dev
 ./Consensus/getDependencies.sh
 ```
 
-## Known vulnerabilities (to be fixed)
-- Apparently, neither blocks nor transaction signatures are verified. Needs more investigation
-- DKG and BLS shares are not signed when transmitted to peers
-- Conversion of blockcahin addresses to DKG and BLS ids may produce collisions
-- Non-DKG members cannot authenticate the new DKG group key (possible solution: 1-Keep the old keys being used for BLS (the blockchain keeps running) 2-Meanwhile, elect new DKG group, create new keys 3-Use the old group key to sign the new (i.e. previous memebers authenticat the new... it's not enough))
+
