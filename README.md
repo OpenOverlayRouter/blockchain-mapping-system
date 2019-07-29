@@ -4,7 +4,7 @@ IPchain is a blockchain prototype to store IP addresses and prefixes. Similarly 
 
 Please note that this prototype is experimental.
 
-##Creating your keys
+## Creating your keys
 
 In the Python console:
 ```python
@@ -17,10 +17,25 @@ k.save(k)
 print k.address.encode("HEX")
 ```
 
-##Running
+## Installation
+First, you need to compile the BLS, then install the python libraries:
+```bash
+cd blockchain-mapping-system
+sudo apt install libgmp-dev libssl-dev
+./Consensus/getDependencies.sh
+sudo sh install_python_libs.sh
+```
+## Configuration
+The file `chain_config.cfg` allows tuning several parameters of the blockchain, such as the block time or DKG threshold. Before running, make sure:
+- `bootstrap_node` points to the IP address of your bootstrap node
+- You have specified the amount of participants in the DKG in `dkg_threshold`, and
+- The minimum number of participants required to create a random number in `dkg_threshold`
+
+
+## Running
 
 Before running, make sure:
-- The file Tests/transactions.txt exists
+- The file transactions.txt exists in the main directory
 - The folder keystore exists
 - The configuration in chain_config.cfg fits your scenario
 
@@ -68,10 +83,18 @@ To properly install the last two packages:
 ```bash
 sudo pip install -I kademlia==0.6 rpcudp==2.0
 ```
-To compile the BLS, in the main directory (/blockchain):
-```
-sudo apt install libgmp-dev libssl-dev
-./Consensus/getDependencies.sh
-```
 
+## Utilities
+- `install_python_libs.sh` script to install all the requiered packages. Run AFTER compiling the BLS .exe
+- `stop.sh`  script to stop the two process of the prototype
+
+## Dataset
+The folder `dataset` contains files for an 11-node test, each identified by a city name and master for the bootstrap node. There is a set of keys and transactions for each node. It also conatins some scripts that can help in generating your own dataset.
+To replicate the test:
+1. Create 11 nodes
+2. Install the software
+3. Rename the transactions file of each node to transactions.txt, e.g. `mv dataset/transactions/canada-transactions.txt transactions.txt`
+4. Move the node keys to the keystore, e.g. `mv dataset/keystores/keystore-canada/* keystore`
+5. Create the master private key file, run this script in the master node: `python generate_master_dkg.py` (For 100 DKG participants it takes around 2h)
+6. Start all nodes
 

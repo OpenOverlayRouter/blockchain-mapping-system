@@ -13,7 +13,7 @@ dir="$(dirname $0)/../../bls"
 
 if [ ! -d "$dir" ]; then
   # Download bls
-  git clone https://github.com/janmroca/bls.git "$dir"
+  git clone https://github.com/OpenOverlayRouter/bls.git "$dir"
 
 fi
 
